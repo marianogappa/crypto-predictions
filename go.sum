@@ -1,0 +1,6 @@
+github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
+github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
+github.com/marianogappa/signal-checker v0.0.0-20210918212625-a4f62dfdbfb7 h1:Lw4z+60sSOoZILIGSEtqrIkQzO1nWdKETbqnUKX9I84=
+github.com/marianogappa/signal-checker v0.0.0-20210918212625-a4f62dfdbfb7/go.mod h1:DyLXd44gzu5HzzmMYWXq3abmKMP8q1SY/O2ykJK35ps=
+golang.org/x/sys v0.0.0-20220209214540-3681064d5158 h1:rm+CHSpPEEW2IsXUib1ThaHIjuBVZjxNgSKmBLFfD4c=
+golang.org/x/sys v0.0.0-20220209214540-3681064d5158/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
