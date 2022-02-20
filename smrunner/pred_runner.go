@@ -12,25 +12,22 @@ import (
 
 type predRunner struct {
 	prediction types.Prediction
-	tickers    map[string]map[string]*market.TickIterator
+	tickers    map[string]map[string]types.TickIterator
 	isInactive bool
 }
 
 func newPredRunner(prediction types.Prediction, m market.Market, nowTs int) (*predRunner, []error) {
 	errs := []error{}
-	result := predRunner{prediction: prediction, tickers: make(map[string]map[string]*market.TickIterator)}
-	for name, condition := range prediction.Define {
+	result := predRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
+	for name, condition := range prediction.Given {
 		if condition.Evaluate() != types.UNDECIDED {
 			continue
 		}
-		startTs := condition.FromTs
-		if condition.State.LastTs > condition.FromTs {
-			startTs = condition.State.LastTs
-		}
+		startTs := calculateStartTs(condition)
 		if startTs > nowTs {
 			continue
 		}
-		result.tickers[name] = map[string]*market.TickIterator{}
+		result.tickers[name] = map[string]types.TickIterator{}
 		for _, operand := range condition.Operands {
 			if operand.Type == types.COIN || operand.Type == types.MARKETCAP {
 				ts := common.ISO8601(time.Unix(int64(startTs), 0).Format(time.RFC3339))
@@ -49,6 +46,17 @@ func newPredRunner(prediction types.Prediction, m market.Market, nowTs int) (*pr
 		log.Printf("newPredRunner: errors creating new predRunner: %v\n", errs)
 	}
 	return &result, errs
+}
+
+func calculateStartTs(c *types.Condition) int {
+	if c.State.LastTs > c.FromTs {
+		tickDurationSecs := 60
+		if c.Operands[0].Type == types.MARKETCAP {
+			tickDurationSecs = 60 * 60 * 24
+		}
+		return c.State.LastTs + tickDurationSecs
+	}
+	return c.FromTs
 }
 
 func (r *predRunner) Run() []error {
@@ -76,11 +84,11 @@ func (r *predRunner) Run() []error {
 		}
 
 		var timestamp *int
-		ticks := map[string]*common.Tick{}
+		ticks := map[string]*types.Tick{}
 		for key, ticker := range tickers {
 			tick, err := ticker.Next()
 			if err != nil {
-				if err != common.ErrOutOfCandlesticks {
+				if err != types.ErrOutOfTicks {
 					errs = append(errs, err)
 				}
 				// TODO: check if error is retryable before bailing (e.g. greylist, rate-limit)
@@ -106,9 +114,9 @@ func (r *predRunner) Run() []error {
 	return errs
 }
 
-func isAnyTickerOutOfTicks(ts map[string]*market.TickIterator) bool {
+func isAnyTickerOutOfTicks(ts map[string]types.TickIterator) bool {
 	for _, ticker := range ts {
-		if ticker.IsOutOfTicks {
+		if ticker.IsOutOfTicks() {
 			return true
 		}
 	}

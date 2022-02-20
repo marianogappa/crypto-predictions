@@ -19,12 +19,13 @@ type predictionState struct {
 }
 
 type condition struct {
-	Operator string         `json:"operator"`
-	Operands []string       `json:"operands"`
-	FromTs   common.ISO8601 `json:"fromTs"` // won't work for dynamic
-	ToTs     common.ISO8601 `json:"toTs"`   // won't work for dynamic
-	Assumed  []string       `json:"assumed"`
-	State    conditionState `json:"state"`
+	Condition        string         `json:"condition"`
+	FromISO8601      common.ISO8601 `json:"fromISO8601"`
+	ToISO8601        common.ISO8601 `json:"toISO8601"`
+	ToDuration       string         `json:"toDuration"`
+	Assumed          []string       `json:"assumed"`
+	State            conditionState `json:"state"`
+	ErrorMarginRatio float64        `json:"errorMarginRatio"`
 }
 
 type prePredict struct {
@@ -42,9 +43,10 @@ type predict struct {
 type prediction struct {
 	Version         string               `json:"version"`
 	CreatedAt       common.ISO8601       `json:"createdAt"`
-	AuthorHandle    string               `json:"authorHandle"`
-	Post            string               `json:"post"`
-	Define          map[string]condition `json:"define"`
+	PostAuthor      string               `json:"postAuthor"`
+	PostedAt        common.ISO8601       `json:"postedAt"`
+	PostUrl         string               `json:"postUrl"`
+	Given           map[string]condition `json:"given"`
 	PrePredict      *prePredict          `json:"prePredict,omitempty"`
 	Predict         predict              `json:"predict"`
 	PredictionState predictionState      `json:"state"`

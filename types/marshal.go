@@ -21,32 +21,32 @@ func (p *Prediction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(prediction{
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
-		AuthorHandle:    p.AuthorHandle,
-		Post:            p.Post,
-		Define:          marshalDefine(p.Define),
+		PostAuthor:      p.PostAuthor,
+		PostedAt:        p.PostedAt,
+		PostUrl:         p.PostUrl,
+		Given:           marshalGiven(p.Given),
 		PrePredict:      pp,
 		Predict:         pd,
 		PredictionState: marshalPredictionState(p.State),
 	})
 }
 
-func marshallOperands(ops []Operand) []string {
-	ss := []string{}
-	for _, op := range ops {
-		ss = append(ss, op.Str)
+func marshalInnerCondition(c *Condition) string {
+	if c.Operator == "BETWEEN" {
+		return fmt.Sprintf(`%v BETWEEN %v AND %v`, c.Operands[0].Str, c.Operands[1].Str, c.Operands[2].Str)
 	}
-	return ss
+	return fmt.Sprintf(`%v %v %v`, c.Operands[0].Str, c.Operator, c.Operands[1].Str)
 }
 
-func marshalDefine(define map[string]*Condition) map[string]condition {
+func marshalGiven(given map[string]*Condition) map[string]condition {
 	result := map[string]condition{}
-	for key, cond := range define {
+	for key, cond := range given {
 		c := condition{
-			Operator: cond.Operator,
-			Operands: marshallOperands(cond.Operands),
-			FromTs:   common.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
-			ToTs:     common.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
-			Assumed:  cond.Assumed,
+			Condition:   marshalInnerCondition(cond),
+			FromISO8601: common.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
+			ToISO8601:   common.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
+			ToDuration:  cond.ToDuration,
+			Assumed:     cond.Assumed,
 			State: conditionState{
 				Status: cond.State.Status.String(),
 				LastTs: cond.State.LastTs,

@@ -73,7 +73,7 @@ func (s BoltDBStateStorage) UpsertPredictions(ps map[string]types.Prediction) er
 				log.Printf("BoltDBStateStorage.UpsertPredictions: error marshalling prediction: %v\n", err)
 				continue
 			}
-			err = b.Put([]byte(prediction.Post), bs)
+			err = b.Put([]byte(prediction.PostUrl), bs)
 			if err != nil {
 				log.Printf("BoltDBStateStorage.UpsertPredictions: error putting marshalled prediction: %v\n", err)
 				continue

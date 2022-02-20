@@ -27,7 +27,7 @@ func (s MemoryStateStorage) GetPredictions(css []types.PredictionStateValue) (ma
 
 func (s MemoryStateStorage) UpsertPredictions(ps map[string]types.Prediction) error {
 	for _, prediction := range ps {
-		s.predictions[prediction.Post] = prediction
+		s.predictions[prediction.PostUrl] = prediction
 	}
 	return nil
 }

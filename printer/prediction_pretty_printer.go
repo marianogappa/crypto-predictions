@@ -16,7 +16,7 @@ func NewPredictionPrettyPrinter(p types.Prediction) PredictionPrettyPrinter {
 
 func (p PredictionPrettyPrinter) Default() string {
 	if p.prediction.PrePredict.PredictIf != nil {
-		return fmt.Sprintf("%v predicts that, given that %v, then %v", p.prediction.AuthorHandle, printPrePredict(p.prediction.PrePredict), printPredict(p.prediction.Predict))
+		return fmt.Sprintf("%v predicts that, given that %v, then %v", p.prediction.PostAuthor, printPrePredict(p.prediction.PrePredict), printPredict(p.prediction.Predict))
 	}
-	return fmt.Sprintf("%v predicts that %v", p.prediction.AuthorHandle, printPredict(p.prediction.Predict))
+	return fmt.Sprintf("%v predicts that %v", p.prediction.PostAuthor, printPredict(p.prediction.Predict))
 }

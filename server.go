@@ -88,9 +88,9 @@ func (s server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	pDatas := []map[string]string{}
 	for _, pred := range predictions {
 		pData := map[string]string{}
-		pData["predictionUrl"] = pred.Post
+		pData["predictionUrl"] = pred.PostUrl
 		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
-		pData["predictionAuthor"] = pred.AuthorHandle
+		pData["predictionAuthor"] = pred.PostAuthor
 		pData["predictionStatus"] = pred.State.Status.String()
 		pData["predictionValue"] = pred.State.Value.String()
 		pDatas = append(pDatas, pData)

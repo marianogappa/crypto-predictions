@@ -2,21 +2,21 @@ package types
 
 import (
 	"fmt"
-
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type Condition struct {
-	Name     string
-	Operator string
-	Operands []Operand
-	FromTs   int // won't work for dynamic
-	ToTs     int // won't work for dynamic
-	Assumed  []string
-	State    ConditionState
+	Name             string
+	Operator         string
+	Operands         []Operand
+	FromTs           int // won't work for dynamic
+	ToTs             int // won't work for dynamic
+	ToDuration       string
+	Assumed          []string
+	State            ConditionState
+	ErrorMarginRatio float64
 }
 
-func (c *Condition) Run(ticks map[string]*common.Tick) error {
+func (c *Condition) Run(ticks map[string]*Tick) error {
 	// log.Printf("Condition.RunTick: with name %v status is %v and value is %v, ticks are %v\n", c.Name, c.State.Status, c.State.Value, ticks)
 	if c.State.Status == FINISHED {
 		// log.Println("status == finished")
@@ -52,38 +52,33 @@ func (c *Condition) Run(ticks map[string]*common.Tick) error {
 			if !ok {
 				return fmt.Errorf("internal error: ticker for operand %v was not supplied", operand.Str)
 			}
-			operandValues = append(operandValues, float64(tick.Price))
+			operandValues = append(operandValues, float64(tick.Value))
 		}
 	}
 
 	switch c.Operator {
-	case "==":
-		if operandValues[0] == operandValues[1] {
-			c.State.Status = FINISHED
-			c.State.Value = TRUE
-		}
 	case ">=":
-		if operandValues[0] >= operandValues[1] {
+		if operandValues[0] >= operandValues[1]*(1.0-c.ErrorMarginRatio) {
 			c.State.Status = FINISHED
 			c.State.Value = TRUE
 		}
 	case "<=":
-		if operandValues[0] <= operandValues[1] {
+		if operandValues[0] <= operandValues[1]*(1.0+c.ErrorMarginRatio) {
 			c.State.Status = FINISHED
 			c.State.Value = TRUE
 		}
 	case ">":
-		if operandValues[0] > operandValues[1] {
+		if operandValues[0] > operandValues[1]*(1.0-c.ErrorMarginRatio) {
 			c.State.Status = FINISHED
 			c.State.Value = TRUE
 		}
 	case "<":
-		if operandValues[0] < operandValues[1] {
+		if operandValues[0] < operandValues[1]*(1.0+c.ErrorMarginRatio) {
 			c.State.Status = FINISHED
 			c.State.Value = TRUE
 		}
 	case "BETWEEN":
-		if operandValues[0] >= operandValues[1] && operandValues[0] <= operandValues[2] {
+		if operandValues[0] >= operandValues[1]*(1.0-c.ErrorMarginRatio/2) && operandValues[0] <= operandValues[2]*(1.0+c.ErrorMarginRatio/2) {
 			c.State.Status = FINISHED
 			c.State.Value = TRUE
 		}
