@@ -5,9 +5,10 @@ import (
 )
 
 type conditionState struct {
-	Status string `json:"status"`
-	LastTs int    `json:"lastTs"`
-	Value  string `json:"value"`
+	Status    string          `json:"status"`
+	LastTs    int             `json:"lastTs"`
+	LastTicks map[string]Tick `json:"lastTicks"`
+	Value     string          `json:"value"`
 	// add state to provide evidence of alleged condition result
 }
 
@@ -41,6 +42,7 @@ type predict struct {
 }
 
 type prediction struct {
+	UUID            string               `json:"uuid"`
 	Version         string               `json:"version"`
 	CreatedAt       common.ISO8601       `json:"createdAt"`
 	PostAuthor      string               `json:"postAuthor"`

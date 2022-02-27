@@ -49,41 +49,10 @@ func (v OperandType) String() string {
 }
 
 type ConditionState struct {
-	Status ConditionStatus
-	LastTs int
-	Value  ConditionStateValue
-	// add state to provide evidence of alleged condition result
-}
-
-func (a ConditionStateValue) And(b ConditionStateValue) ConditionStateValue {
-	if a == FALSE || b == FALSE {
-		return FALSE
-	}
-	if a != UNDECIDED || b != UNDECIDED {
-		return UNDECIDED
-	}
-	return TRUE
-}
-
-func (a ConditionStateValue) Or(b ConditionStateValue) ConditionStateValue {
-	if a == TRUE || b == TRUE {
-		return TRUE
-	}
-	if a != UNDECIDED || b != UNDECIDED {
-		return UNDECIDED
-	}
-	return FALSE
-}
-
-func (a ConditionStateValue) Not() ConditionStateValue {
-	switch a {
-	case UNDECIDED:
-		return UNDECIDED
-	case TRUE:
-		return FALSE
-	default: // FALSE
-		return TRUE
-	}
+	Status    ConditionStatus
+	LastTs    int
+	LastTicks map[string]Tick
+	Value     ConditionStateValue
 }
 
 type BoolOperator int
@@ -130,33 +99,6 @@ func (v ConditionStatus) String() string {
 	}
 }
 
-type ConditionStateValue int
-
-func ConditionStateValueFromString(s string) (ConditionStateValue, error) {
-	switch s {
-	case "UNDECIDED", "":
-		return UNDECIDED, nil
-	case "TRUE":
-		return TRUE, nil
-	case "FALSE":
-		return FALSE, nil
-	default:
-		return 0, fmt.Errorf("unknown value for ConditionStateValue: %v", s)
-	}
-}
-func (v ConditionStateValue) String() string {
-	switch v {
-	case UNDECIDED:
-		return "UNDECIDED"
-	case TRUE:
-		return "TRUE"
-	case FALSE:
-		return "FALSE"
-	default:
-		return ""
-	}
-}
-
 type PredictionStateValue int
 
 func PredictionStateValueFromString(s string) (PredictionStateValue, error) {
@@ -169,6 +111,8 @@ func PredictionStateValueFromString(s string) (PredictionStateValue, error) {
 		return CORRECT, nil
 	case "INCORRECT":
 		return INCORRECT, nil
+	case "ANNULLED":
+		return ANNULLED, nil
 	default:
 		return 0, fmt.Errorf("unknown value for PredictionStateValue: %v", s)
 	}
@@ -183,6 +127,8 @@ func (v PredictionStateValue) String() string {
 		return "CORRECT"
 	case INCORRECT:
 		return "INCORRECT"
+	case ANNULLED:
+		return "ANNULLED"
 	default:
 		return ""
 	}
@@ -202,160 +148,12 @@ const (
 )
 
 const (
-	UNDECIDED ConditionStateValue = iota
-	TRUE
-	FALSE
-)
-
-const (
 	ONGOING_PRE_PREDICTION PredictionStateValue = iota
 	ONGOING_PREDICTION
 	CORRECT
 	INCORRECT
 	ANNULLED
 )
-
-type BoolExpr struct {
-	Operator BoolOperator
-	Operands []*BoolExpr
-	Literal  *Condition
-}
-
-func (p *BoolExpr) UndecidedConditions() []*Condition {
-	conds := []*Condition{}
-	if p == nil || (p.Operator == LITERAL && p.Literal == nil) {
-		return conds
-	}
-	switch p.Operator {
-	case AND, OR:
-		for _, operand := range p.Operands {
-			conds = append(conds, operand.UndecidedConditions()...)
-		}
-	default:
-		if (*p).Literal.Evaluate() == UNDECIDED {
-			conds = append(conds, p.Literal)
-		}
-	}
-	return conds
-}
-
-func (p *BoolExpr) Evaluate() ConditionStateValue {
-	if p == nil {
-		return TRUE
-	}
-	switch p.Operator {
-	case AND:
-		if len(p.Operands) == 0 {
-			return TRUE
-		}
-		result := p.Operands[0].Evaluate()
-		for _, operand := range p.Operands[1:] {
-			result = result.And(operand.Evaluate())
-		}
-		return result
-	case OR:
-		if len(p.Operands) == 0 {
-			return TRUE
-		}
-		result := p.Operands[0].Evaluate()
-		for _, operand := range p.Operands[1:] {
-			result = result.Or(operand.Evaluate())
-		}
-		return result
-	case NOT:
-		return p.Literal.Evaluate().Not()
-	default:
-		return p.Literal.Evaluate()
-	}
-}
-
-type PrePredict struct {
-	WrongIf    *BoolExpr
-	AnnulledIf *BoolExpr
-	PredictIf  *BoolExpr
-}
-
-func (p PrePredict) UndecidedConditions() []*Condition {
-	conds := []*Condition{}
-	conds = append(conds, p.WrongIf.UndecidedConditions()...)
-	conds = append(conds, p.AnnulledIf.UndecidedConditions()...)
-	conds = append(conds, p.PredictIf.UndecidedConditions()...)
-	return conds
-}
-
-func (p PrePredict) Evaluate() PredictionStateValue {
-	if p.WrongIf == nil && p.AnnulledIf == nil && p.PredictIf == nil {
-		return CORRECT
-	}
-	var (
-		wrongIfValue    = FALSE
-		annulledIfValue = FALSE
-		predictIfValue  = TRUE
-	)
-	if p.WrongIf != nil {
-		wrongIfValue = p.WrongIf.Evaluate()
-	}
-	if wrongIfValue == TRUE {
-		return INCORRECT
-	}
-	if p.AnnulledIf != nil {
-		annulledIfValue = p.AnnulledIf.Evaluate()
-	}
-	if annulledIfValue == TRUE {
-		return ANNULLED
-	}
-	if p.PredictIf != nil {
-		predictIfValue = p.PredictIf.Evaluate()
-	}
-	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictIfValue == UNDECIDED {
-		return ONGOING_PRE_PREDICTION
-	}
-	if predictIfValue == FALSE {
-		return INCORRECT
-	}
-	return ONGOING_PREDICTION
-}
-
-type Predict struct {
-	WrongIf    *BoolExpr
-	AnnulledIf *BoolExpr
-	Predict    BoolExpr
-}
-
-func (p Predict) UndecidedConditions() []*Condition {
-	conds := []*Condition{}
-	conds = append(conds, p.WrongIf.UndecidedConditions()...)
-	conds = append(conds, p.AnnulledIf.UndecidedConditions()...)
-	conds = append(conds, p.Predict.UndecidedConditions()...)
-	return conds
-}
-
-func (p Predict) Evaluate() PredictionStateValue {
-	var (
-		wrongIfValue    = FALSE
-		annulledIfValue = FALSE
-		predictValue    = p.Predict.Evaluate()
-	)
-	if p.WrongIf != nil {
-		wrongIfValue = p.WrongIf.Evaluate()
-	}
-	if wrongIfValue == TRUE {
-		return INCORRECT
-	}
-	if p.AnnulledIf != nil {
-		annulledIfValue = p.AnnulledIf.Evaluate()
-	}
-	if annulledIfValue == TRUE {
-		return ANNULLED
-	}
-	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictValue == UNDECIDED {
-		return ONGOING_PREDICTION
-	}
-	if predictValue == FALSE {
-		return INCORRECT
-	}
-	return CORRECT
-}
 
 type PredictionState struct {
 	Status ConditionStatus

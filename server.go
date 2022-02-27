@@ -65,6 +65,7 @@ func (s server) mustBlockinglyServeAll(port int) {
 	}
 	http.HandleFunc("/", s.indexHandler)
 	http.HandleFunc("/add", s.putHandler)
+	http.HandleFunc("/reRunAll", s.reRunAllHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
 
@@ -123,5 +124,29 @@ func (s server) putHandler(w http.ResponseWriter, r *http.Request) {
 		types.ANNULLED,
 	})
 	log.Println(predictions, err)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s server) reRunAllHandler(w http.ResponseWriter, r *http.Request) {
+	predictions, err := s.store.GetPredictions([]types.PredictionStateValue{
+		types.ONGOING_PRE_PREDICTION,
+		types.ONGOING_PREDICTION,
+		types.CORRECT,
+		types.INCORRECT,
+		types.ANNULLED,
+	})
+	if err != nil {
+		log.Println(err)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	for key := range predictions {
+		pred := predictions[key]
+		(&pred).ClearState()
+		predictions[key] = pred
+	}
+	if err := s.store.UpsertPredictions(predictions); err != nil {
+		log.Fatal(err)
+	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

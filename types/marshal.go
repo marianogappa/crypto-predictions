@@ -19,6 +19,7 @@ func (p *Prediction) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(prediction{
+		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
 		PostAuthor:      p.PostAuthor,
@@ -48,9 +49,10 @@ func marshalGiven(given map[string]*Condition) map[string]condition {
 			ToDuration:  cond.ToDuration,
 			Assumed:     cond.Assumed,
 			State: conditionState{
-				Status: cond.State.Status.String(),
-				LastTs: cond.State.LastTs,
-				Value:  cond.State.Value.String(),
+				Status:    cond.State.Status.String(),
+				LastTs:    cond.State.LastTs,
+				LastTicks: cond.State.LastTicks,
+				Value:     cond.State.Value.String(),
 			},
 		}
 		result[key] = c

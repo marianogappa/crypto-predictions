@@ -2,13 +2,12 @@ package boolunmarshal
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 )
 
 func TestParse(t *testing.T) {
-	var anyError = errors.New("Any error for now...")
+	var anyError = errors.New("any error for now...")
 
 	tss := []struct {
 		name     string
@@ -184,7 +183,6 @@ func TestParse(t *testing.T) {
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
 			actualNode, actualErr := NewExprParser(ts.s).Parse()
-			fmt.Println(actualNode)
 
 			if actualErr != nil && ts.err == nil {
 				t.Logf("expected no error but had '%v'", actualErr)

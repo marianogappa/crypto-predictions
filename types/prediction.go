@@ -5,6 +5,7 @@ import (
 )
 
 type Prediction struct {
+	UUID       string
 	Version    string
 	CreatedAt  common.ISO8601
 	PostAuthor string
@@ -18,6 +19,7 @@ type Prediction struct {
 }
 
 func (p *Prediction) Evaluate() PredictionStateValue {
+	// TODO: only calculate if not in final state? Why not?
 	value := p.calculateValue()
 	p.State.Value = value
 	switch p.State.Value {
@@ -30,10 +32,17 @@ func (p *Prediction) Evaluate() PredictionStateValue {
 }
 
 func (p Prediction) calculateValue() PredictionStateValue {
+	// TODO: only calculate if not in final state? Why not?
 	prePredictValue := p.PrePredict.Evaluate()
-	if prePredictValue == ONGOING_PRE_PREDICTION || prePredictValue == INCORRECT {
+	if prePredictValue == ONGOING_PRE_PREDICTION || prePredictValue == INCORRECT || prePredictValue == ANNULLED {
 		return prePredictValue
 	}
 	predictValue := p.Predict.Evaluate()
 	return predictValue
+}
+
+func (p *Prediction) ClearState() {
+	p.State = PredictionState{}
+	p.PrePredict.ClearState()
+	p.Predict.ClearState()
 }

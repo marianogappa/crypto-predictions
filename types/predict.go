@@ -1,0 +1,49 @@
+package types
+
+type Predict struct {
+	WrongIf    *BoolExpr
+	AnnulledIf *BoolExpr
+	Predict    BoolExpr
+}
+
+func (p Predict) UndecidedConditions() []*Condition {
+	conds := []*Condition{}
+	conds = append(conds, p.WrongIf.UndecidedConditions()...)
+	conds = append(conds, p.AnnulledIf.UndecidedConditions()...)
+	conds = append(conds, p.Predict.UndecidedConditions()...)
+	return conds
+}
+
+func (p Predict) Evaluate() PredictionStateValue {
+	var (
+		wrongIfValue    = FALSE
+		annulledIfValue = FALSE
+		predictValue    = p.Predict.Evaluate()
+	)
+	if p.AnnulledIf != nil {
+		annulledIfValue = p.AnnulledIf.Evaluate()
+	}
+	if annulledIfValue == TRUE {
+		return ANNULLED
+	}
+	if p.WrongIf != nil {
+		wrongIfValue = p.WrongIf.Evaluate()
+	}
+	if annulledIfValue == FALSE && (predictValue == FALSE || wrongIfValue == TRUE) {
+		return INCORRECT
+	}
+	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictValue == UNDECIDED {
+		return ONGOING_PREDICTION
+	}
+	return CORRECT
+}
+
+func (p *Predict) ClearState() {
+	if p.AnnulledIf != nil {
+		p.AnnulledIf.ClearState()
+	}
+	if p.WrongIf != nil {
+		p.WrongIf.ClearState()
+	}
+	p.Predict.ClearState()
+}

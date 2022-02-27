@@ -2,7 +2,6 @@ package boolunmarshal
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -63,7 +62,6 @@ type BoolExprParser struct {
 }
 
 func NewExprParser(s string) *BoolExprParser {
-	log.Printf("NewExprParser: parsing '%v'\n", s)
 	return &BoolExprParser{s: s, i: 0}
 }
 

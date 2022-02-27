@@ -1,11 +1,13 @@
 package smrunner
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
@@ -16,10 +18,25 @@ type predRunner struct {
 	isInactive bool
 }
 
-func newPredRunner(prediction types.Prediction, m market.Market, nowTs int) (*predRunner, []error) {
+var (
+	errPredictionAtFinalStateAtCreation = errors.New("prediction is in final state at creation time")
+)
+
+func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*predRunner, []error) {
 	errs := []error{}
 	result := predRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
-	for name, condition := range prediction.Given {
+
+	predStateValue := prediction.Evaluate()
+	if predStateValue != types.ONGOING_PRE_PREDICTION && predStateValue != types.ONGOING_PREDICTION {
+		errs = append(errs, errPredictionAtFinalStateAtCreation)
+		return nil, errs
+	}
+
+	var undecidedConditions []*types.Condition
+	undecidedConditions = append(undecidedConditions, prediction.PrePredict.UndecidedConditions()...)
+	undecidedConditions = append(undecidedConditions, prediction.Predict.UndecidedConditions()...)
+
+	for _, condition := range undecidedConditions {
 		if condition.Evaluate() != types.UNDECIDED {
 			continue
 		}
@@ -27,7 +44,7 @@ func newPredRunner(prediction types.Prediction, m market.Market, nowTs int) (*pr
 		if startTs > nowTs {
 			continue
 		}
-		result.tickers[name] = map[string]types.TickIterator{}
+		result.tickers[condition.Name] = map[string]types.TickIterator{}
 		for _, operand := range condition.Operands {
 			if operand.Type == types.COIN || operand.Type == types.MARKETCAP {
 				ts := common.ISO8601(time.Unix(int64(startTs), 0).Format(time.RFC3339))
@@ -37,7 +54,7 @@ func newPredRunner(prediction types.Prediction, m market.Market, nowTs int) (*pr
 					return &result, errs
 				}
 				log.Printf("newPredRunner: created ticker for %v:%v:%v-%v at %v\n", operand.Type, operand.Provider, operand.BaseAsset, operand.QuoteAsset, ts)
-				result.tickers[name][operand.Str] = ticker
+				result.tickers[condition.Name][operand.Str] = ticker
 			}
 		}
 
@@ -75,7 +92,6 @@ func (r *predRunner) Run() []error {
 		return nil
 	}
 
-	log.Printf("predRunner.Run: prediction: %+v, status: %v, value: %v, undecidedConditions: %v\n", r.prediction, r.prediction.State.Status, r.prediction.State.Value, len(undecidedConditions))
 	errs := []error{}
 	for _, cond := range undecidedConditions {
 		tickers := r.tickers[cond.Name]
@@ -84,7 +100,7 @@ func (r *predRunner) Run() []error {
 		}
 
 		var timestamp *int
-		ticks := map[string]*types.Tick{}
+		ticks := map[string]types.Tick{}
 		for key, ticker := range tickers {
 			tick, err := ticker.Next()
 			if err != nil {
@@ -95,6 +111,7 @@ func (r *predRunner) Run() []error {
 				r.isInactive = true
 				continue
 			}
+			log.Printf("For %v: read tick %v = %v\n", printer.NewPredictionPrettyPrinter(r.prediction).Default(), time.Unix(int64(tick.Timestamp), 0).Format(time.RFC3339), tick.Value)
 			// Timestamps must match on these ticks! Otherwise we're comparing apples & oranges!
 			if timestamp == nil {
 				timestamp = &tick.Timestamp
@@ -105,11 +122,16 @@ func (r *predRunner) Run() []error {
 				r.isInactive = true
 				continue
 			}
-			ticks[key] = &tick
+			ticks[key] = tick
 		}
 
-		cond.Run(ticks)
-		log.Println(cond.Evaluate())
+		err := cond.Run(ticks)
+		if err != nil {
+			errs = append(errs, err)
+			r.isInactive = true
+			return errs
+		}
+		log.Printf("Evaluating %v: %v", cond.Name, cond.Evaluate())
 	}
 	return errs
 }

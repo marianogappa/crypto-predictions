@@ -18,13 +18,21 @@ var (
 	strCondition        = fmt.Sprintf(` *%v *%v *%v *`, strFloatOrVariable, strOperator, strFloatOrVariable)
 	strBetweenCondition = fmt.Sprintf(` *%v +BETWEEN +%v +AND +%v *`, strFloatOrVariable, strFloatOrVariable, strFloatOrVariable)
 	strFloatOrVariable  = fmt.Sprintf(`(%v|%v)`, strFloat, strVariable)
-	strOperator         = `(	>=|<=|>|<)`
+	strOperator         = `(>=|<=|>|<)`
 	strFloat            = `[0-9]+(.[0-9]*)?`
 	strVariable         = `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
 	rxVariable          = regexp.MustCompile(strVariable)
 	rxCondition         = regexp.MustCompile(strCondition)
 	rxBetweenCondition  = regexp.MustCompile(strBetweenCondition)
+	rxDurationWeeks     = regexp.MustCompile(`([0-9]+)w`)
+	rxDurationDays      = regexp.MustCompile(`([0-9]+)d`)
+	rxDurationMonths    = regexp.MustCompile(`([0-9]+)m`)
+	rxDurationHours     = regexp.MustCompile(`([0-9]+)h`)
 )
+
+func MapOperandForTests(v string) (Operand, error) {
+	return mapOperand(v)
+}
 
 func mapOperand(v string) (Operand, error) {
 	v = strings.ToUpper(v)
@@ -61,6 +69,35 @@ func mapOperands(ss []string) ([]Operand, error) {
 	return ops, nil
 }
 
+func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
+	dur = strings.ToLower(dur)
+	if dur == "eoy" {
+		t, _ := time.Parse("2006", fmt.Sprintf("%v", fromTime.Year()+1))
+		return t.Sub(fromTime), nil
+	}
+	matches := rxDurationMonths.FindStringSubmatch(dur)
+	if len(matches) == 2 {
+		num, _ := strconv.Atoi(matches[1])
+		return time.Duration(24*30*num) * time.Hour, nil
+	}
+	matches = rxDurationWeeks.FindStringSubmatch(dur)
+	if len(matches) == 2 {
+		num, _ := strconv.Atoi(matches[1])
+		return time.Duration(24*7*num) * time.Hour, nil
+	}
+	matches = rxDurationDays.FindStringSubmatch(dur)
+	if len(matches) == 2 {
+		num, _ := strconv.Atoi(matches[1])
+		return time.Duration(24*num) * time.Hour, nil
+	}
+	matches = rxDurationHours.FindStringSubmatch(dur)
+	if len(matches) == 2 {
+		num, _ := strconv.Atoi(matches[1])
+		return time.Duration(num) * time.Hour, nil
+	}
+	return 0, fmt.Errorf("invalid duration: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", dur)
+}
+
 func mapFromTs(c condition, postedAt common.ISO8601) (int, error) {
 	s, err := c.FromISO8601.Seconds()
 	if err == nil {
@@ -81,7 +118,7 @@ func mapToTs(c condition, fromTs int) (int, error) {
 		return 0, fmt.Errorf("invalid ToISO8601 for condition: %v", c.ToISO8601)
 	}
 	fromTime := time.Unix(int64(fromTs), 0)
-	duration, err := time.ParseDuration(c.ToDuration)
+	duration, err := parseDuration(c.ToDuration, fromTime)
 	if err != nil {
 		return 0, fmt.Errorf("invalid ToDuration for condition: %v, error: %v", c.ToDuration, err)
 	}
@@ -155,9 +192,10 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition,
 		ToDuration:       c.ToDuration,
 		Assumed:          c.Assumed,
 		State: ConditionState{
-			Status: stateStatus,
-			LastTs: c.State.LastTs,
-			Value:  stateValue,
+			Status:    stateStatus,
+			LastTs:    c.State.LastTs,
+			LastTicks: c.State.LastTicks,
+			Value:     stateValue,
 		},
 	}, nil
 }
@@ -212,6 +250,7 @@ func (p *Prediction) UnmarshalJSON(rawPredictionBs []byte) error {
 		raw.CreatedAt = common.ISO8601(time.Now().Format(time.RFC3339))
 	}
 
+	(*p).UUID = raw.UUID
 	(*p).PostAuthor = raw.PostAuthor
 	(*p).CreatedAt = raw.CreatedAt
 	(*p).PostUrl = raw.PostUrl

@@ -11,16 +11,21 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 	if e == nil {
 		return ""
 	}
+	var prefix, postfix string
+	if nestLevel > 0 {
+		prefix = "("
+		postfix = ")"
+	}
+	operands := []string{}
+	for _, operand := range e.Operands {
+		s := printBoolExpr(operand, nestLevel+1)
+		if s == "" {
+			continue
+		}
+		operands = append(operands, s)
+	}
 	switch e.Operator {
 	case types.AND, types.OR:
-		operands := []string{}
-		for _, operand := range e.Operands {
-			s := printBoolExpr(operand, nestLevel+1)
-			if s == "" {
-				continue
-			}
-			operands = append(operands, s)
-		}
 		if len(operands) == 0 {
 			return ""
 		}
@@ -32,13 +37,9 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 		if e.Operator == types.OR {
 			connector = " or "
 		}
-		var prefix, postfix string
-		if nestLevel > 0 {
-			prefix = "("
-			postfix = ")"
-		}
-
 		return fmt.Sprintf("%v%v%v", prefix, strings.Join(operands, connector), postfix)
+	case types.NOT:
+		return fmt.Sprintf("%vNOT %v%v", prefix, operands[0], postfix)
 	default:
 		return printCondition(*e.Literal)
 	}

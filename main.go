@@ -11,46 +11,15 @@ import (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	// var prediction types.Prediction
-	// err := json.Unmarshal([]byte(`
-	// {
-	// 	"version": "1.0.0",
-	// 	"createdAt": "2022-02-09T17:22:00Z",
-	// 	"authorHandle": "MarianoGappa",
-	// 	"post": "https://twitter.com/kjwebgjkweb",
-	// 	"define": {
-	// 		"a": {
-	// 			"variable": "BINANCE:BTC-USDT",
-	// 			"operator": ">=",
-	// 			"operand": 67601,
-	// 			"from_ts": "2022-02-09T17:22:00Z",
-	// 			"to_ts": "2022-04-26T00:00:00Z"
-	// 		}
-	// 	},
-	// 	"predict": {
-	// 		"predict": ""
-	// 	}
-	// }
-	// `), &prediction)
 
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// bs, err := json.Marshal(&prediction)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(string(bs))
-	// os.Exit(0)
-
-	boltDBStorage, err := statestorage.NewBoltDBStateStorage()
+	postgresDBStorage, err := statestorage.NewPostgresDBStateStorage()
 	if err != nil {
 		log.Fatal(err)
 	}
 	market := market.NewMarket()
 
-	s := newServer(boltDBStorage, market)
-	runner := smrunner.NewSMRunner(boltDBStorage, market)
+	s := newServer(postgresDBStorage, market)
+	runner := smrunner.NewSMRunner(postgresDBStorage, market)
 	go func() {
 		for {
 			result := runner.Run(int(time.Now().Unix()))
