@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
@@ -241,7 +242,7 @@ func TestNewPredRunner(t *testing.T) {
 }
 
 func operand(s string) types.Operand {
-	op, _ := types.MapOperandForTests(s)
+	op, _ := compiler.MapOperandForTests(s)
 	return op
 }
 

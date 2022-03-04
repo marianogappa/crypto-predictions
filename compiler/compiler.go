@@ -1,4 +1,4 @@
-package types
+package compiler
 
 import (
 	"encoding/json"
@@ -10,7 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marianogappa/predictions/twitter"
+	"github.com/marianogappa/predictions/metadatafetcher"
+	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
 
@@ -30,25 +31,25 @@ var (
 	rxDurationHours     = regexp.MustCompile(`([0-9]+)h`)
 )
 
-func MapOperandForTests(v string) (Operand, error) {
+func MapOperandForTests(v string) (types.Operand, error) {
 	return mapOperand(v)
 }
 
-func mapOperand(v string) (Operand, error) {
+func mapOperand(v string) (types.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return Operand{Type: NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+		return types.Operand{Type: types.NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {
-		return Operand{}, fmt.Errorf("operand %v doesn't parse to float nor match the regex %v", v, strVariable)
+		return types.Operand{}, fmt.Errorf("operand %v doesn't parse to float nor match the regex %v", v, strVariable)
 	}
-	operandType, err := OperandTypeFromString(matches[1])
+	operandType, err := types.OperandTypeFromString(matches[1])
 	if err != nil {
-		return Operand{}, fmt.Errorf("invalid operand type %v", matches[1])
+		return types.Operand{}, fmt.Errorf("invalid operand type %v", matches[1])
 	}
-	return Operand{
+	return types.Operand{
 		Type:       operandType,
 		Provider:   matches[2],
 		BaseAsset:  matches[3],
@@ -57,8 +58,8 @@ func mapOperand(v string) (Operand, error) {
 	}, nil
 }
 
-func mapOperands(ss []string) ([]Operand, error) {
-	ops := []Operand{}
+func mapOperands(ss []string) ([]types.Operand, error) {
+	ops := []types.Operand{}
 	for _, s := range ss {
 		op, err := mapOperand(s)
 		if err != nil {
@@ -125,7 +126,7 @@ func mapToTs(c condition, fromTs int) (int, error) {
 	return int(fromTime.Add(duration).Unix()), nil
 }
 
-func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition, error) {
+func mapCondition(c condition, name string, postedAt common.ISO8601) (types.Condition, error) {
 	var (
 		operator    string
 		strOperands []string
@@ -134,7 +135,7 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition,
 	if len(matchCondition) == 0 {
 		matchCondition := rxBetweenCondition.FindStringSubmatch(c.Condition)
 		if len(matchCondition) == 0 {
-			return Condition{}, fmt.Errorf("invalid condition; expecting regex match for '%v' or '%v' but got '%v'", rxCondition, rxBetweenCondition, c.Condition)
+			return types.Condition{}, fmt.Errorf("invalid condition; expecting regex match for '%v' or '%v' but got '%v'", rxCondition, rxBetweenCondition, c.Condition)
 		}
 		operator = "BETWEEN"
 		strOperands = []string{matchCondition[1], matchCondition[8], matchCondition[15]}
@@ -145,44 +146,44 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition,
 
 	operands, err := mapOperands(strOperands)
 	if err != nil {
-		return Condition{}, err
+		return types.Condition{}, err
 	}
 
 	if operator != ">" && operator != "<" && operator != ">=" && operator != "<=" && operator != "BETWEEN" {
-		return Condition{}, fmt.Errorf("unknown operator %v", operator)
+		return types.Condition{}, fmt.Errorf("unknown operator %v", operator)
 	}
 	if operator == "BETWEEN" && len(operands) != 3 {
-		return Condition{}, fmt.Errorf("operator BETWEEN requires 3 operands but %v were supplied", len(operands))
+		return types.Condition{}, fmt.Errorf("operator BETWEEN requires 3 operands but %v were supplied", len(operands))
 	}
 	if operator != "BETWEEN" && len(operands) != 2 {
-		return Condition{}, fmt.Errorf("operator %v requires 2 operands but %v were supplied", operator, len(operands))
+		return types.Condition{}, fmt.Errorf("operator %v requires 2 operands but %v were supplied", operator, len(operands))
 	}
 
 	if c.ErrorMarginRatio > 0.3 {
-		return Condition{}, fmt.Errorf("error margin ratio above 30%% is not allowed, but was %v", c.ErrorMarginRatio)
+		return types.Condition{}, fmt.Errorf("error margin ratio above 30%% is not allowed, but was %v", c.ErrorMarginRatio)
 	}
 
-	stateValue, err := ConditionStateValueFromString(c.State.Value)
+	stateValue, err := types.ConditionStateValueFromString(c.State.Value)
 	if err != nil {
-		return Condition{}, err
+		return types.Condition{}, err
 	}
 
-	stateStatus, err := ConditionStatusFromString(c.State.Status)
+	stateStatus, err := types.ConditionStatusFromString(c.State.Status)
 	if err != nil {
-		return Condition{}, err
+		return types.Condition{}, err
 	}
 
 	fromTs, err := mapFromTs(c, postedAt)
 	if err != nil {
-		return Condition{}, err
+		return types.Condition{}, err
 	}
 
 	toTs, err := mapToTs(c, fromTs)
 	if err != nil {
-		return Condition{}, err
+		return types.Condition{}, err
 	}
 
-	return Condition{
+	return types.Condition{
 		Name:             name,
 		Operator:         operator,
 		Operands:         operands,
@@ -191,7 +192,7 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition,
 		ToTs:             toTs,
 		ToDuration:       c.ToDuration,
 		Assumed:          c.Assumed,
-		State: ConditionState{
+		State: types.ConditionState{
 			Status:    stateStatus,
 			LastTs:    c.State.LastTs,
 			LastTicks: c.State.LastTicks,
@@ -200,7 +201,7 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (Condition,
 	}, nil
 }
 
-func mapBoolExpr(expr *string, def map[string]*Condition) (*BoolExpr, error) {
+func mapBoolExpr(expr *string, def map[string]*types.Condition) (*types.BoolExpr, error) {
 	if expr == nil {
 		return nil, nil
 	}
@@ -211,37 +212,44 @@ func mapBoolExpr(expr *string, def map[string]*Condition) (*BoolExpr, error) {
 	return e, nil
 }
 
-func (p *Prediction) UnmarshalJSON(rawPredictionBs []byte) error {
+type PredictionCompiler struct {
+	metadataFetcher *metadatafetcher.MetadataFetcher
+}
+
+func NewPredictionCompiler() PredictionCompiler {
+	return PredictionCompiler{metadataFetcher: metadatafetcher.NewMetadataFetcher()}
+}
+
+func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, error) {
 	rawPrediction := string(rawPredictionBs)
-	*p = Prediction{}
+	p := types.Prediction{}
 
 	raw := prediction{}
 	err := json.Unmarshal([]byte(rawPrediction), &raw)
 	if err != nil {
-		return err
+		return p, err
 	}
 
 	if raw.PostUrl == "" {
-		return errors.New("postUrl cannot be empty")
+		return p, errors.New("postUrl cannot be empty")
 	}
-	// TODO these 3 fields should be fetchable using the Twitter API, but only if they don't exist (to allow caching)
+	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
 	if raw.PostAuthor == "" || raw.PostedAt == "" {
-		splitUrl := strings.Split(raw.PostUrl, "/")
-		tweet, err := twitter.NewTwitter().GetTweetByID(splitUrl[len(splitUrl)-1])
+		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
+		log.Printf("result of fetching metadata for %v: err %v data %v\n", raw.PostUrl, err, metadata)
 		if err == nil {
-			raw.PostAuthor = tweet.UserHandle
-			raw.PostedAt = common.ISO8601(tweet.TweetCreatedAt)
+			raw.PostAuthor = metadata.Author
+			raw.PostedAt = metadata.PostCreatedAt
 		}
-		log.Println(err)
 	}
 	if raw.PostAuthor == "" {
-		return errors.New("postAuthor cannot be empty")
+		return p, errors.New("postAuthor cannot be empty")
 	}
 	if raw.PostedAt == "" {
-		return errors.New("postedAt cannot be empty")
+		return p, errors.New("postedAt cannot be empty")
 	}
 	if _, err := raw.PostedAt.Seconds(); err != nil {
-		return errors.New("postedAt must be a valid ISO8601 timestamp")
+		return p, errors.New("postedAt must be a valid ISO8601 timestamp")
 	}
 	if raw.Version == "" {
 		raw.Version = "1.0.0"
@@ -250,93 +258,85 @@ func (p *Prediction) UnmarshalJSON(rawPredictionBs []byte) error {
 		raw.CreatedAt = common.ISO8601(time.Now().Format(time.RFC3339))
 	}
 
-	(*p).UUID = raw.UUID
-	(*p).PostAuthor = raw.PostAuthor
-	(*p).CreatedAt = raw.CreatedAt
-	(*p).PostUrl = raw.PostUrl
-	(*p).PostedAt = raw.PostedAt
-	(*p).Version = raw.Version
+	p.UUID = raw.UUID
+	p.PostAuthor = raw.PostAuthor
+	p.CreatedAt = raw.CreatedAt
+	p.PostUrl = raw.PostUrl
+	p.PostedAt = raw.PostedAt
+	p.Version = raw.Version
 
-	(*p).Given = map[string]*Condition{}
+	p.Given = map[string]*types.Condition{}
 	for name, condition := range raw.Given {
 		c, err := mapCondition(condition, name, raw.PostedAt)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).Given[name] = &c
+		p.Given[name] = &c
 	}
 
 	var (
-		b *BoolExpr
+		b *types.BoolExpr
 	)
 	if raw.PrePredict != nil {
-		b, err = mapBoolExpr(raw.PrePredict.WrongIf, (*p).Given)
+		b, err = mapBoolExpr(raw.PrePredict.WrongIf, p.Given)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).PrePredict.WrongIf = b
+		p.PrePredict.WrongIf = b
 
-		b, err = mapBoolExpr(raw.PrePredict.AnnulledIf, (*p).Given)
+		b, err = mapBoolExpr(raw.PrePredict.AnnulledIf, p.Given)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).PrePredict.AnnulledIf = b
+		p.PrePredict.AnnulledIf = b
 
-		b, err = mapBoolExpr(raw.PrePredict.PredictIf, (*p).Given)
+		b, err = mapBoolExpr(raw.PrePredict.PredictIf, p.Given)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).PrePredict.PredictIf = b
+		p.PrePredict.PredictIf = b
 
-		if (*p).PrePredict.PredictIf == nil && ((*p).PrePredict.WrongIf != nil || (*p).PrePredict.AnnulledIf != nil) {
+		if p.PrePredict.PredictIf == nil && (p.PrePredict.WrongIf != nil || p.PrePredict.AnnulledIf != nil) {
 			err := errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
-			return err
+			return p, err
 		}
 	}
 
 	if raw.Predict.WrongIf != nil {
-		b, err = mapBoolExpr(raw.Predict.WrongIf, (*p).Given)
+		b, err = mapBoolExpr(raw.Predict.WrongIf, p.Given)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).Predict.WrongIf = b
+		p.Predict.WrongIf = b
 	}
 
 	if raw.Predict.AnnulledIf != nil {
-		b, err = mapBoolExpr(raw.Predict.AnnulledIf, (*p).Given)
+		b, err = mapBoolExpr(raw.Predict.AnnulledIf, p.Given)
 		if err != nil {
-			return err
+			return p, err
 		}
-		(*p).Predict.AnnulledIf = b
+		p.Predict.AnnulledIf = b
 	}
 
-	b, err = mapBoolExpr(&raw.Predict.Predict, (*p).Given)
+	b, err = mapBoolExpr(&raw.Predict.Predict, p.Given)
 	if err != nil {
-		return err
+		return p, err
 	}
-	(*p).Predict.Predict = *b
+	p.Predict.Predict = *b
 
-	status, err := ConditionStatusFromString(raw.PredictionState.Status)
+	status, err := types.ConditionStatusFromString(raw.PredictionState.Status)
 	if err != nil {
-		return err
+		return p, err
 	}
-	value, err := PredictionStateValueFromString(raw.PredictionState.Value)
+	value, err := types.PredictionStateValueFromString(raw.PredictionState.Value)
 	if err != nil {
-		return err
+		return p, err
 	}
-	(*p).State = PredictionState{
+	p.State = types.PredictionState{
 		Status: status,
 		LastTs: raw.PredictionState.LastTs,
 		Value:  value,
 	}
 
-	return nil
-}
-
-func CompilePrediction(bs []byte) (Prediction, error) {
-	var prediction Prediction
-	if err := json.Unmarshal(bs, &prediction); err != nil {
-		return Prediction{}, err
-	}
-	return prediction, nil
+	return p, nil
 }

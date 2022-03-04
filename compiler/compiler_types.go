@@ -1,14 +1,15 @@
-package types
+package compiler
 
 import (
+	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
 
 type conditionState struct {
-	Status    string          `json:"status"`
-	LastTs    int             `json:"lastTs"`
-	LastTicks map[string]Tick `json:"lastTicks"`
-	Value     string          `json:"value"`
+	Status    string                `json:"status"`
+	LastTs    int                   `json:"lastTs"`
+	LastTicks map[string]types.Tick `json:"lastTicks"`
+	Value     string                `json:"value"`
 	// add state to provide evidence of alleged condition result
 }
 
@@ -32,7 +33,7 @@ type condition struct {
 type prePredict struct {
 	WrongIf    *string `json:"wrongIf,omitempty"`
 	AnnulledIf *string `json:"annulledIf,omitempty"`
-	PredictIf  *string `json:"predict,omitempty"`
+	PredictIf  *string `json:"predictIf,omitempty"`
 }
 
 type predict struct {

@@ -41,6 +41,7 @@ func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*p
 			continue
 		}
 		startTs := calculateStartTs(condition)
+		// TODO: for Messari API, current day is not available until day's end, so for MARKETCAP TYPE, nowTs doesn't work
 		if startTs > nowTs {
 			continue
 		}
@@ -107,6 +108,7 @@ func (r *predRunner) Run() []error {
 				if err != types.ErrOutOfTicks {
 					errs = append(errs, err)
 				}
+				// log.Printf("For %v: for error after reading tick %v: %v\n", printer.NewPredictionPrettyPrinter(r.prediction).Default(), tick, err)
 				// TODO: check if error is retryable before bailing (e.g. greylist, rate-limit)
 				r.isInactive = true
 				continue
@@ -131,7 +133,7 @@ func (r *predRunner) Run() []error {
 			r.isInactive = true
 			return errs
 		}
-		log.Printf("Evaluating %v: %v", cond.Name, cond.Evaluate())
+		// log.Printf("Evaluating %v: %v", cond.Name, cond.Evaluate())
 	}
 	return errs
 }

@@ -83,6 +83,7 @@ type metricsResult struct {
 }
 
 func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metricsResult, error) {
+	log.Println("Running time-series request against Messari API for asset...", asset)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vassets/%v/metrics/%v/time-series", b.apiURL, asset, metricID), nil)
 
 	after := time.Unix(int64(startTimeMillis/1000), 0).Format("2006-01-02")
@@ -115,6 +116,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 		err := fmt.Errorf("messari returned broken body response! Was: %v", string(byts))
 		return metricsResult{err: err, httpStatus: 500}, err
 	}
+	log.Println("Messari API response...", string(byts))
 
 	res := response{}
 	err = json.Unmarshal(byts, &res)

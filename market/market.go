@@ -1,6 +1,7 @@
 package market
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -31,6 +32,7 @@ var (
 		common.BINANCE_USDM_FUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
 	}
 	supportedVariableProviders = map[string]struct{}{}
+	errEmptyBaseAsset          = errors.New("base asset must be supplied in order to create Tick Iterator")
 )
 
 func NewMarket() Market {
@@ -64,5 +66,8 @@ func (m Market) getCoinTickIterator(operand types.Operand, initialISO8601 common
 }
 
 func (m Market) getMarketcapTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error) {
-	return messari.NewMessari().BuildTickIterator(operand.QuoteAsset, "mcap.out", initialISO8601), nil
+	if operand.BaseAsset == "" {
+		return nil, errEmptyBaseAsset
+	}
+	return messari.NewMessari().BuildTickIterator(operand.BaseAsset, "mcap.out", initialISO8601), nil
 }

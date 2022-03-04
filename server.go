@@ -2,13 +2,14 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
+	"sort"
 	"text/template"
 
+	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
@@ -89,6 +90,7 @@ func (s server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	pDatas := []map[string]string{}
 	for _, pred := range predictions {
 		pData := map[string]string{}
+		pData["predictionCreatedAt"] = string(pred.CreatedAt)
 		pData["predictionUrl"] = pred.PostUrl
 		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
 		pData["predictionAuthor"] = pred.PostAuthor
@@ -96,6 +98,8 @@ func (s server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		pData["predictionValue"] = pred.State.Value.String()
 		pDatas = append(pDatas, pData)
 	}
+	sort.Slice(pDatas, func(i, j int) bool { return pDatas[i]["predictionCreatedAt"] > pDatas[j]["predictionCreatedAt"] })
+
 	data["Predictions"] = pDatas
 
 	if err := t.Execute(w, data); err != nil {
@@ -108,23 +112,37 @@ func (s server) putHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 	rawString := r.FormValue("prediction_input")
-	var prediction types.Prediction
-	if err := json.Unmarshal([]byte(rawString), &prediction); err != nil {
+
+	prediction, err := compiler.NewPredictionCompiler().Compile([]byte(rawString))
+	if err == nil {
+		err = s.store.UpsertPredictions(map[string]types.Prediction{"unused": prediction})
+	}
+
+	t, ok := templates["add.html"]
+	if !ok {
+		log.Fatal("Couldn't find add.hmtl")
+	}
+
+	data := make(map[string]interface{})
+	data["Err"] = err
+
+	pDatas := []map[string]string{}
+
+	if err == nil {
+		pred := prediction
+		pData := map[string]string{}
+		pData["predictionUrl"] = pred.PostUrl
+		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
+		pData["predictionAuthor"] = pred.PostAuthor
+		pData["predictionStatus"] = pred.State.Status.String()
+		pData["predictionValue"] = pred.State.Value.String()
+		pDatas = append(pDatas, pData)
+	}
+
+	data["Predictions"] = pDatas
+	if err := t.Execute(w, data); err != nil {
 		log.Fatal(err)
 	}
-	log.Println(prediction)
-	if err := s.store.UpsertPredictions(map[string]types.Prediction{"unused": prediction}); err != nil {
-		log.Fatal(err)
-	}
-	predictions, err := s.store.GetPredictions([]types.PredictionStateValue{
-		types.ONGOING_PRE_PREDICTION,
-		types.ONGOING_PREDICTION,
-		types.CORRECT,
-		types.INCORRECT,
-		types.ANNULLED,
-	})
-	log.Println(predictions, err)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s server) reRunAllHandler(w http.ResponseWriter, r *http.Request) {

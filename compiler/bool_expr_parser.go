@@ -1,13 +1,14 @@
-package types
+package compiler
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/marianogappa/predictions/types/boolunmarshal"
+	"github.com/marianogappa/predictions/compiler/boolunmarshal"
+	"github.com/marianogappa/predictions/types"
 )
 
-func parseBoolExpr(s string, def map[string]*Condition) (*BoolExpr, error) {
+func parseBoolExpr(s string, def map[string]*types.Condition) (*types.BoolExpr, error) {
 	n, err := boolunmarshal.NewExprParser(s).Parse()
 	if err != nil {
 		return nil, err
@@ -15,7 +16,7 @@ func parseBoolExpr(s string, def map[string]*Condition) (*BoolExpr, error) {
 	return nodeToBoolExpr(n, def)
 }
 
-func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*Condition) (*BoolExpr, error) {
+func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*types.BoolExpr, error) {
 	switch n.TT {
 	case boolunmarshal.UNKNOWN, boolunmarshal.EOF:
 		return nil, errors.New("attempted to parse an invalid/unresolved node to a bool expression")
@@ -23,16 +24,16 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*Condition) (*BoolExpr,
 		if _, ok := def[n.Token]; !ok {
 			return nil, fmt.Errorf("unknown identifier '%v'...maybe you forgot to add it to the define clause", n.Token)
 		}
-		return &BoolExpr{
-			Operator: LITERAL,
+		return &types.BoolExpr{
+			Operator: types.LITERAL,
 			Literal:  def[n.Token],
 		}, nil
 	case boolunmarshal.AND:
 		if len(n.Nodes) == 0 {
 			return nil, fmt.Errorf("AND clause with zero operands")
 		}
-		e := BoolExpr{
-			Operator: AND,
+		e := types.BoolExpr{
+			Operator: types.AND,
 		}
 		for _, node := range n.Nodes {
 			operand, err := nodeToBoolExpr(node, def)
@@ -46,8 +47,8 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*Condition) (*BoolExpr,
 		if len(n.Nodes) == 0 {
 			return nil, fmt.Errorf("OR clause with zero operands")
 		}
-		e := BoolExpr{
-			Operator: OR,
+		e := types.BoolExpr{
+			Operator: types.OR,
 		}
 		for _, node := range n.Nodes {
 			operand, err := nodeToBoolExpr(node, def)
@@ -65,9 +66,9 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*Condition) (*BoolExpr,
 		if err != nil {
 			return nil, err
 		}
-		return &BoolExpr{
-			Operator: NOT,
-			Operands: []*BoolExpr{operand},
+		return &types.BoolExpr{
+			Operator: types.NOT,
+			Operands: []*types.BoolExpr{operand},
 		}, nil
 	}
 	return nil, fmt.Errorf("unknown token %v", n.Token)

@@ -3,7 +3,6 @@ package statestorage
 import (
 	"database/sql"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
+	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -113,7 +113,7 @@ func (s PostgresDBStateStorage) GetPredictions(css []types.PredictionStateValue)
 			log.Printf("error reading predictions fields from db, with error: %v\n", err)
 		}
 		var pred types.Prediction
-		if err := json.Unmarshal(clBlob, &pred); err != nil {
+		if pred, err = compiler.NewPredictionCompiler().Compile(clBlob); err != nil {
 			log.Printf("read corrupted prediction from db, with error: %v\n", err)
 			continue
 		}
@@ -133,7 +133,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps map[string]types.Prediction
 		if p.UUID == "" {
 			p.UUID = uuid.NewString()
 		}
-		blob, err := json.Marshal(&p)
+		blob, err := compiler.NewPredictionSerializer().Serialize(&p)
 		if err != nil {
 			log.Printf("Failed to marshal prediction, with error: %v\n", err)
 		}

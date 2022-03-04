@@ -1,4 +1,4 @@
-package types
+package compiler
 
 import (
 	"encoding/json"
@@ -6,10 +6,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
 
-func (p *Prediction) MarshalJSON() ([]byte, error) {
+type PredictionSerializer struct {
+}
+
+func NewPredictionSerializer() PredictionSerializer {
+	return PredictionSerializer{}
+}
+
+func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
 		return nil, err
@@ -32,14 +40,14 @@ func (p *Prediction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func marshalInnerCondition(c *Condition) string {
+func marshalInnerCondition(c *types.Condition) string {
 	if c.Operator == "BETWEEN" {
 		return fmt.Sprintf(`%v BETWEEN %v AND %v`, c.Operands[0].Str, c.Operands[1].Str, c.Operands[2].Str)
 	}
 	return fmt.Sprintf(`%v %v %v`, c.Operands[0].Str, c.Operator, c.Operands[1].Str)
 }
 
-func marshalGiven(given map[string]*Condition) map[string]condition {
+func marshalGiven(given map[string]*types.Condition) map[string]condition {
 	result := map[string]condition{}
 	for key, cond := range given {
 		c := condition{
@@ -60,7 +68,7 @@ func marshalGiven(given map[string]*Condition) map[string]condition {
 	return result
 }
 
-func marshalBoolExpr(b *BoolExpr, nestLevel int) (*string, error) {
+func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 	if b == nil {
 		return nil, nil
 	}
@@ -70,11 +78,11 @@ func marshalBoolExpr(b *BoolExpr, nestLevel int) (*string, error) {
 		suffix = ")"
 	}
 	switch b.Operator {
-	case LITERAL:
+	case types.LITERAL:
 		return &b.Literal.Name, nil
-	case AND, OR:
+	case types.AND, types.OR:
 		operator := " and "
-		if b.Operator == OR {
+		if b.Operator == types.OR {
 			operator = " or "
 		}
 		operands := []string{}
@@ -90,7 +98,7 @@ func marshalBoolExpr(b *BoolExpr, nestLevel int) (*string, error) {
 		}
 		s := fmt.Sprintf("%v%v%v", prefix, strings.Join(operands, operator), suffix)
 		return &s, nil
-	case NOT:
+	case types.NOT:
 		operand, err := marshalBoolExpr(b.Operands[0], nestLevel+1)
 		if err != nil {
 			return nil, err
@@ -101,7 +109,7 @@ func marshalBoolExpr(b *BoolExpr, nestLevel int) (*string, error) {
 	return nil, fmt.Errorf("marshalBoolExpr: unknown operator '%v'", b.Operator)
 }
 
-func marshalPrePredict(pp PrePredict) (*prePredict, error) {
+func marshalPrePredict(pp types.PrePredict) (*prePredict, error) {
 	wrongIf, err := marshalBoolExpr(pp.WrongIf, 0)
 	if err != nil {
 		return nil, err
@@ -122,7 +130,7 @@ func marshalPrePredict(pp PrePredict) (*prePredict, error) {
 	return result, nil
 }
 
-func marshalPredict(p Predict) (predict, error) {
+func marshalPredict(p types.Predict) (predict, error) {
 	wrongIf, err := marshalBoolExpr(p.WrongIf, 0)
 	if err != nil {
 		return predict{}, err
@@ -143,7 +151,7 @@ func marshalPredict(p Predict) (predict, error) {
 	return result, nil
 }
 
-func marshalPredictionState(ps PredictionState) predictionState {
+func marshalPredictionState(ps types.PredictionState) predictionState {
 	return predictionState{
 		Status: ps.Status.String(),
 		LastTs: ps.LastTs,

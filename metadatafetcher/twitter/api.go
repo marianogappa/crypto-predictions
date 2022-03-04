@@ -4,29 +4,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/marianogappa/signal-checker/common"
 )
 
 type Twitter struct {
 	apiKey      string
 	apiSecret   string
 	bearerToken string
+	apiURL      string
 }
 
-func NewTwitter() Twitter {
+func NewTwitter(apiURL string) Twitter {
+	if apiURL == "" {
+		apiURL = "https://api.twitter.com/2"
+	}
 	return Twitter{
 		apiKey:      "QdmLenpIKLH28DYY1jc1VPLQc",
 		apiSecret:   "Ag8rw5sZfQUgXOCYIYydWDDoBGZDXogDL64Md9yuw7uwJQ9oVH",
 		bearerToken: "AAAAAAAAAAAAAAAAAAAAABavZQEAAAAAF5aVr9QJGBBpmQ0SaSvzMvalLoc%3D3Atd8zTPdeuq1VVK7nRaKg08EDwh03Aao9VlPTJrPP5CgrKAoG",
+		apiURL:      apiURL,
 	}
 }
 
 type Tweet struct {
 	TweetText      string
 	TweetID        string
-	TweetCreatedAt string
+	TweetCreatedAt common.ISO8601
 	UserID         string
 	UserName       string
 	UserHandle     string
@@ -54,19 +60,26 @@ type response struct {
 	Includes responseIncludes `json:"includes"`
 }
 
-func (r response) toTweet() Tweet {
+func (r response) toTweet() (Tweet, error) {
+	_, err := common.ISO8601(r.Data.CreatedAt).Time()
+	if err != nil {
+		return Tweet{}, err
+	}
+	if len(r.Includes.Users) < 1 {
+		return Tweet{}, fmt.Errorf("expecting len(r.Includes.Users) to be >= 1, but was %v", len(r.Includes.Users))
+	}
 	return Tweet{
 		TweetText:      r.Data.Text,
 		TweetID:        r.Data.ID,
-		TweetCreatedAt: r.Data.CreatedAt,
+		TweetCreatedAt: common.ISO8601(r.Data.CreatedAt),
 		UserID:         r.Includes.Users[0].ID,
 		UserName:       r.Includes.Users[0].Name,
 		UserHandle:     r.Includes.Users[0].Username,
-	}
+	}, nil
 }
 
 func (t Twitter) GetTweetByID(id string) (Tweet, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("https://api.twitter.com/2/tweets/%v?tweet.fields=created_at&expansions=author_id", id), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%v/tweets/%v?tweet.fields=created_at&expansions=author_id", t.apiURL, id), nil)
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.bearerToken))
 	req.Header.Add("Cookie", "guest_id=v1%3A164530605018760344; Path=/; Domain=.twitter.com; Secure; Expires=Wed, 22 Mar 2023 21:27:30 GMT;")
@@ -90,7 +103,11 @@ func (t Twitter) GetTweetByID(id string) (Tweet, error) {
 		err2 := fmt.Errorf("twitter returned invalid JSON response! Response was: %v. Error is: %v", string(byts), err)
 		return Tweet{}, err2
 	}
-	log.Println("tweet", string(byts), "response", res)
 
-	return res.toTweet(), nil
+	tweet, err := res.toTweet()
+	if err != nil {
+		return tweet, err
+	}
+
+	return tweet, nil
 }

@@ -2,12 +2,52 @@ package types
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/marianogappa/signal-checker/common"
 )
+
+var (
+	strVariable = `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
+	rxVariable  = regexp.MustCompile(strVariable)
+)
+
+func tp(s string) time.Time {
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return t
+}
 
 func tInt(s string) int {
 	return int(tp(s).Unix())
+}
+
+func mapOperand(v string) (Operand, error) {
+	v = strings.ToUpper(v)
+	f, err := strconv.ParseFloat(v, 64)
+	if err == nil {
+		return Operand{Type: NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+	}
+	matches := rxVariable.FindStringSubmatch(v)
+	if len(matches) == 0 {
+		return Operand{}, fmt.Errorf("operand %v doesn't parse to float nor match the regex %v", v, strVariable)
+	}
+	operandType, err := OperandTypeFromString(matches[1])
+	if err != nil {
+		return Operand{}, fmt.Errorf("invalid operand type %v", matches[1])
+	}
+	return Operand{
+		Type:       operandType,
+		Provider:   matches[2],
+		BaseAsset:  matches[3],
+		QuoteAsset: matches[5],
+		Str:        v,
+	}, nil
 }
 
 func operand(s string) Operand {

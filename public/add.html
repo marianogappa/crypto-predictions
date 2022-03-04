@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .prediction {}
+
+        .predictionText {}
+
+        .predictionAuthor {}
+
+        .predictionStatus {}
+
+        .predictionValue {}
+
+        .predictionUrlTitle,
+        .predictionTextTitle,
+        .predictionAuthorTitle,
+        .predictionStatusTitle,
+        .predictionValueTitle {
+            font-weight: bolder;
+            margin-top: 10px;
+        }
+
+        #resp-table-header {
+            display: table-header-group;
+            background-color: rgb(223, 222, 222);
+            font-weight: bold;
+            font-size: 25px;
+        }
+
+        .table-header-cell {
+            display: table-cell;
+            padding: 10px;
+            text-align: justify;
+            border-bottom: 1px solid black;
+        }
+
+        #resp-table-body {
+            display: table-row-group;
+        }
+
+        .resp-table-row {
+            display: table-row;
+        }
+
+        .resp-table-cell {
+            display: table-cell;
+            padding: 10px;
+        }
+
+        #resp-table {
+            width: 100%;
+            display: table;
+        }
+
+        .green {
+            color: green;
+            font-weight: bolder;
+        }
+
+        .red {
+            color: red;
+            font-weight: bolder;
+        }
+
+        .yellow {
+            color: #ff8f00;
+            font-weight: bolder;
+        }
+
+        textarea {
+            width: 996px;
+            height: 388px;
+        }
+    </style>
+</head>
+
+<body>
+    {{if .Err}}
+    <h1>Error creating prediction</h1>
+    <span>{{.Err}}</span>
+    {{end}}
+    {{if .Predictions}}
+    <h1>Created Predictions</h1>
+    <div id="resp-table">
+        <div id="resp-table-header">
+            <div class="table-header-cell">
+                Url
+            </div>
+            <div class="table-header-cell">
+                Prediction
+            </div>
+            <div class="table-header-cell">
+                Author
+            </div>
+            <div class="table-header-cell">
+                Status
+            </div>
+            <div class="table-header-cell">
+                Result
+            </div>
+        </div>
+        <div id="resp-table-body">
+            {{range .Predictions}}
+            <div class="prediction resp-table-row">
+                <div class="predictionUrl resp-table-cell">
+                    <a href="{{.predictionUrl}}">{{.predictionUrl}}</a>
+                </div>
+                <div class="predictionText resp-table-cell">
+                    {{.predictionText}}
+                </div>
+                <div class="predictionAuthor resp-table-cell">
+                    {{.predictionAuthor}}
+                </div>
+                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus " UNSTARTED")}}{{print "red"
+                    }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
+                    }}{{end}}">
+                    {{.predictionStatus}}
+                </div>
+                <div class="predictionValue resp-table-cell {{if(eq .predictionValue " INCORRECT")}}{{print "red"
+                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+                    {{.predictionValue}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    <div>
+        <a href="/">Back</a>
+    </div>
+    <form action="/add">
+        <h1>Add Prediction</h1>
+        <textarea id="prediction_input" name="prediction_input"></textarea>
+        <br />
+        <input type="submit"></button>
+    </form>
+</body>
+
+</html>
