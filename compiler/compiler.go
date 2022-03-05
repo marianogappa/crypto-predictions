@@ -19,16 +19,36 @@ var (
 	strCondition        = fmt.Sprintf(` *%v *%v *%v *`, strFloatOrVariable, strOperator, strFloatOrVariable)
 	strBetweenCondition = fmt.Sprintf(` *%v +BETWEEN +%v +AND +%v *`, strFloatOrVariable, strFloatOrVariable, strFloatOrVariable)
 	strFloatOrVariable  = fmt.Sprintf(`(%v|%v)`, strFloat, strVariable)
-	strOperator         = `(>=|<=|>|<)`
+	strOperator         = `([>=!<]+)`
 	strFloat            = `[0-9]+(.[0-9]*)?`
 	strVariable         = `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
-	rxVariable          = regexp.MustCompile(strVariable)
+	rxVariable          = regexp.MustCompile(fmt.Sprintf("^%v$", strVariable))
 	rxCondition         = regexp.MustCompile(strCondition)
 	rxBetweenCondition  = regexp.MustCompile(strBetweenCondition)
 	rxDurationWeeks     = regexp.MustCompile(`([0-9]+)w`)
 	rxDurationDays      = regexp.MustCompile(`([0-9]+)d`)
 	rxDurationMonths    = regexp.MustCompile(`([0-9]+)m`)
 	rxDurationHours     = regexp.MustCompile(`([0-9]+)h`)
+)
+
+var (
+	ErrInvalidOperand                     = errors.New("invalid operand")
+	ErrEmptyQuoteAsset                    = errors.New("quote asset cannot be empty")
+	ErrNonEmptyQuoteAssetOnNonCoin        = errors.New("quote asset must be empty for non-coin operand types")
+	ErrEqualBaseQuoteAssets               = errors.New("base asset cannot be equal to quote asset")
+	ErrInvalidDuration                    = errors.New("invalid duration")
+	ErrInvalidFromISO8601                 = errors.New("invalid FromISO8601")
+	ErrInvalidToISO8601                   = errors.New("invalid ToISO8601")
+	ErrOneOfToISO8601ToDurationRequired   = errors.New("one of ToISO8601 or ToDuration is required")
+	ErrInvalidConditionSyntax             = errors.New("invalid condition syntax")
+	ErrUnknownConditionOperator           = errors.New("unknown condition operator: supported are [>|<|>=|<=|BETWEEN...AND]")
+	ErrErrorMarginRatioAbove30            = errors.New("error margin ratio above 30%% is not allowed")
+	ErrInvalidJSON                        = errors.New("invalid JSON")
+	ErrEmptyPostURL                       = errors.New("postUrl cannot be empty")
+	ErrEmptyPostAuthor                    = errors.New("postAuthor cannot be empty")
+	ErrEmptyPostedAt                      = errors.New("postedAt cannot be empty")
+	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
+	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
 )
 
 func MapOperandForTests(v string) (types.Operand, error) {
@@ -43,11 +63,17 @@ func mapOperand(v string) (types.Operand, error) {
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {
-		return types.Operand{}, fmt.Errorf("operand %v doesn't parse to float nor match the regex %v", v, strVariable)
+		return types.Operand{}, fmt.Errorf("%w: operand %v doesn't parse to float nor match the regex %v", ErrInvalidOperand, v, strVariable)
 	}
-	operandType, err := types.OperandTypeFromString(matches[1])
-	if err != nil {
-		return types.Operand{}, fmt.Errorf("invalid operand type %v", matches[1])
+	operandType, _ := types.OperandTypeFromString(matches[1])
+	if operandType == types.MARKETCAP && matches[5] != "" {
+		return types.Operand{}, ErrNonEmptyQuoteAssetOnNonCoin
+	}
+	if operandType == types.COIN && matches[5] == "" {
+		return types.Operand{}, ErrEmptyQuoteAsset
+	}
+	if matches[3] == matches[5] {
+		return types.Operand{}, ErrEqualBaseQuoteAssets
 	}
 	return types.Operand{
 		Type:       operandType,
@@ -96,7 +122,7 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 		num, _ := strconv.Atoi(matches[1])
 		return time.Duration(num) * time.Hour, nil
 	}
-	return 0, fmt.Errorf("invalid duration: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", dur)
+	return 0, fmt.Errorf("%w: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", ErrInvalidDuration, dur)
 }
 
 func mapFromTs(c condition, postedAt common.ISO8601) (int, error) {
@@ -105,7 +131,7 @@ func mapFromTs(c condition, postedAt common.ISO8601) (int, error) {
 		return s, nil
 	}
 	if c.FromISO8601 != "" && err != nil {
-		return 0, fmt.Errorf("invalid FromISO8601 for condition: %v", c.FromISO8601)
+		return 0, fmt.Errorf("%w for condition: %v", ErrInvalidFromISO8601, c.FromISO8601)
 	}
 	return postedAt.Seconds()
 }
@@ -116,12 +142,15 @@ func mapToTs(c condition, fromTs int) (int, error) {
 		return s, nil
 	}
 	if c.ToISO8601 != "" && err != nil {
-		return 0, fmt.Errorf("invalid ToISO8601 for condition: %v", c.ToISO8601)
+		return 0, fmt.Errorf("%w for condition: %v", ErrInvalidToISO8601, c.ToISO8601)
+	}
+	if c.ToISO8601 == "" && c.ToDuration == "" {
+		return 0, ErrOneOfToISO8601ToDurationRequired
 	}
 	fromTime := time.Unix(int64(fromTs), 0)
 	duration, err := parseDuration(c.ToDuration, fromTime)
 	if err != nil {
-		return 0, fmt.Errorf("invalid ToDuration for condition: %v, error: %v", c.ToDuration, err)
+		return 0, fmt.Errorf("invalid ToDuration for condition: %v, error: %w", c.ToDuration, err)
 	}
 	return int(fromTime.Add(duration).Unix()), nil
 }
@@ -135,7 +164,7 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (types.Cond
 	if len(matchCondition) == 0 {
 		matchCondition := rxBetweenCondition.FindStringSubmatch(c.Condition)
 		if len(matchCondition) == 0 {
-			return types.Condition{}, fmt.Errorf("invalid condition; expecting regex match for '%v' or '%v' but got '%v'", rxCondition, rxBetweenCondition, c.Condition)
+			return types.Condition{}, fmt.Errorf("%w; expecting regex match for '%v' or '%v' but got '%v'", ErrInvalidConditionSyntax, rxCondition, rxBetweenCondition, c.Condition)
 		}
 		operator = "BETWEEN"
 		strOperands = []string{matchCondition[1], matchCondition[8], matchCondition[15]}
@@ -150,17 +179,11 @@ func mapCondition(c condition, name string, postedAt common.ISO8601) (types.Cond
 	}
 
 	if operator != ">" && operator != "<" && operator != ">=" && operator != "<=" && operator != "BETWEEN" {
-		return types.Condition{}, fmt.Errorf("unknown operator %v", operator)
-	}
-	if operator == "BETWEEN" && len(operands) != 3 {
-		return types.Condition{}, fmt.Errorf("operator BETWEEN requires 3 operands but %v were supplied", len(operands))
-	}
-	if operator != "BETWEEN" && len(operands) != 2 {
-		return types.Condition{}, fmt.Errorf("operator %v requires 2 operands but %v were supplied", operator, len(operands))
+		return types.Condition{}, fmt.Errorf("%w %v", ErrUnknownConditionOperator, operator)
 	}
 
 	if c.ErrorMarginRatio > 0.3 {
-		return types.Condition{}, fmt.Errorf("error margin ratio above 30%% is not allowed, but was %v", c.ErrorMarginRatio)
+		return types.Condition{}, fmt.Errorf("%w, but was %v", ErrErrorMarginRatioAbove30, c.ErrorMarginRatio)
 	}
 
 	stateValue, err := types.ConditionStateValueFromString(c.State.Value)
@@ -214,10 +237,11 @@ func mapBoolExpr(expr *string, def map[string]*types.Condition) (*types.BoolExpr
 
 type PredictionCompiler struct {
 	metadataFetcher *metadatafetcher.MetadataFetcher
+	timeNow         func() time.Time
 }
 
 func NewPredictionCompiler() PredictionCompiler {
-	return PredictionCompiler{metadataFetcher: metadatafetcher.NewMetadataFetcher()}
+	return PredictionCompiler{metadataFetcher: metadatafetcher.NewMetadataFetcher(), timeNow: time.Now}
 }
 
 func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, error) {
@@ -227,11 +251,11 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	raw := prediction{}
 	err := json.Unmarshal([]byte(rawPrediction), &raw)
 	if err != nil {
-		return p, err
+		return p, fmt.Errorf("%w: %v", ErrInvalidJSON, err)
 	}
 
 	if raw.PostUrl == "" {
-		return p, errors.New("postUrl cannot be empty")
+		return p, ErrEmptyPostURL
 	}
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
 	if raw.PostAuthor == "" || raw.PostedAt == "" {
@@ -243,19 +267,19 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		}
 	}
 	if raw.PostAuthor == "" {
-		return p, errors.New("postAuthor cannot be empty")
+		return p, ErrEmptyPostAuthor
 	}
 	if raw.PostedAt == "" {
-		return p, errors.New("postedAt cannot be empty")
+		return p, ErrEmptyPostedAt
 	}
 	if _, err := raw.PostedAt.Seconds(); err != nil {
-		return p, errors.New("postedAt must be a valid ISO8601 timestamp")
+		return p, ErrInvalidPostedAt
 	}
 	if raw.Version == "" {
 		raw.Version = "1.0.0"
 	}
 	if raw.CreatedAt == "" {
-		raw.CreatedAt = common.ISO8601(time.Now().Format(time.RFC3339))
+		raw.CreatedAt = common.ISO8601(c.timeNow().Format(time.RFC3339))
 	}
 
 	p.UUID = raw.UUID
@@ -297,8 +321,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		p.PrePredict.PredictIf = b
 
 		if p.PrePredict.PredictIf == nil && (p.PrePredict.WrongIf != nil || p.PrePredict.AnnulledIf != nil) {
-			err := errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
-			return p, err
+			return p, ErrMissingRequiredPrePredictPredictIf
 		}
 	}
 

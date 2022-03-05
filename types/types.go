@@ -1,9 +1,17 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/marianogappa/signal-checker/common"
+)
+
+var (
+	ErrUnknownOperandType          = errors.New("unknown value for operandType")
+	ErrUnknownBoolOperator         = errors.New("unknown value for BoolOperator")
+	ErrUnknownConditionStatus      = errors.New("invalid state: unknown value for ConditionStatus")
+	ErrUnknownPredictionStateValue = errors.New("invalid state: unknown value for PredictionStateValue")
 )
 
 type Operand struct {
@@ -32,7 +40,7 @@ func OperandTypeFromString(s string) (OperandType, error) {
 	case "MARKETCAP":
 		return MARKETCAP, nil
 	default:
-		return 0, fmt.Errorf("unknown value for OperandType: %v", s)
+		return 0, fmt.Errorf("%w: %v", ErrUnknownOperandType, s)
 	}
 }
 func (v OperandType) String() string {
@@ -68,7 +76,7 @@ func BoolOperatorFromString(s string) (BoolOperator, error) {
 	case "NOT":
 		return NOT, nil
 	default:
-		return 0, fmt.Errorf("unknown value for BoolOperator: %v", s)
+		return 0, fmt.Errorf("%w: %v", ErrUnknownBoolOperator, s)
 	}
 }
 
@@ -83,7 +91,7 @@ func ConditionStatusFromString(s string) (ConditionStatus, error) {
 	case "FINISHED":
 		return FINISHED, nil
 	default:
-		return 0, fmt.Errorf("unknown value for ConditionStatus: %v", s)
+		return 0, fmt.Errorf("%w: %v", ErrUnknownConditionStatus, s)
 	}
 }
 func (v ConditionStatus) String() string {
@@ -114,7 +122,7 @@ func PredictionStateValueFromString(s string) (PredictionStateValue, error) {
 	case "ANNULLED":
 		return ANNULLED, nil
 	default:
-		return 0, fmt.Errorf("unknown value for PredictionStateValue: %v", s)
+		return 0, fmt.Errorf("%w: %v", ErrUnknownPredictionStateValue, s)
 	}
 }
 func (v PredictionStateValue) String() string {

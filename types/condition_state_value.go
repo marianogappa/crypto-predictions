@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type ConditionStateValue int
 
@@ -8,6 +11,10 @@ const (
 	UNDECIDED ConditionStateValue = iota
 	TRUE
 	FALSE
+)
+
+var (
+	ErrUnknownConditionStateValue = errors.New("invalid state: unknown condition state value")
 )
 
 func ConditionStateValueFromString(s string) (ConditionStateValue, error) {
@@ -19,7 +26,7 @@ func ConditionStateValueFromString(s string) (ConditionStateValue, error) {
 	case "FALSE":
 		return FALSE, nil
 	default:
-		return 0, fmt.Errorf("unknown value for ConditionStateValue: %v", s)
+		return 0, fmt.Errorf("%w: %v", ErrUnknownConditionStateValue, s)
 	}
 }
 func (v ConditionStateValue) String() string {

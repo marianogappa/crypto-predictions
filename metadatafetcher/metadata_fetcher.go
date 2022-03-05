@@ -15,7 +15,7 @@ type SpecificFetcher interface {
 }
 
 type MetadataFetcher struct {
-	fetchers []SpecificFetcher
+	Fetchers []SpecificFetcher
 }
 
 func NewMetadataFetcher() *MetadataFetcher {
@@ -28,7 +28,7 @@ func (f MetadataFetcher) Fetch(rawURL string) (types.PostMetadata, error) {
 		return types.PostMetadata{}, err
 	}
 
-	for _, fetcher := range f.fetchers {
+	for _, fetcher := range f.Fetchers {
 		if !fetcher.IsCorrectFetcher(url) {
 			continue
 		}

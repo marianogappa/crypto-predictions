@@ -31,7 +31,7 @@ func TestMetadataFetcherFetchHappyCase(t *testing.T) {
 	defer ts.Close()
 
 	mf := NewMetadataFetcher()
-	mf.fetchers = []SpecificFetcher{youtube.NewMetadataFetcher("nope"), twitter.NewMetadataFetcher(ts.URL)}
+	mf.Fetchers = []SpecificFetcher{youtube.NewMetadataFetcher("nope"), twitter.NewMetadataFetcher(ts.URL)}
 	_, err := mf.Fetch("https://twitter.com/CryptoCapo_/status/1491357566974054400")
 	if err != nil {
 		t.Errorf("shouldn't have failed, but had error: %v", err)
@@ -45,7 +45,7 @@ func TestMetadataFetcherFetchErrorInFetcher(t *testing.T) {
 	defer ts.Close()
 
 	mf := NewMetadataFetcher()
-	mf.fetchers = []SpecificFetcher{youtube.NewMetadataFetcher("nope"), twitter.NewMetadataFetcher(ts.URL)}
+	mf.Fetchers = []SpecificFetcher{youtube.NewMetadataFetcher("nope"), twitter.NewMetadataFetcher(ts.URL)}
 	_, err := mf.Fetch("https://twitter.com/CryptoCapo_/status/1491357566974054400")
 	if err == nil {
 		t.Errorf("should have failed with invalid date")

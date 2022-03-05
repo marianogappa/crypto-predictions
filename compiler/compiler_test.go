@@ -2,13 +2,25 @@ package compiler
 
 import (
 	"errors"
+	"net/url"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/marianogappa/predictions/metadatafetcher"
+	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
+	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/signal-checker/common"
 )
 
 func tp(s string) time.Time {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
 	return t
+}
+
+func tpToISO(s string) common.ISO8601 {
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return common.ISO8601(t.Format(time.RFC3339))
 }
 
 func TestParseDuration(t *testing.T) {
@@ -77,6 +89,844 @@ func TestParseDuration(t *testing.T) {
 				t.FailNow()
 			}
 			if actual != ts.expected {
+				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestMapOperand(t *testing.T) {
+	tss := []struct {
+		raw      string
+		err      error
+		expected types.Operand
+	}{
+		{
+			raw:      "",
+			err:      ErrInvalidOperand,
+			expected: types.Operand{},
+		},
+		{
+			raw: "1.1",
+			err: nil,
+			expected: types.Operand{
+				Type:       types.NUMBER,
+				Provider:   "",
+				QuoteAsset: "",
+				BaseAsset:  "",
+				Number:     1.1,
+				Str:        "1.1",
+			},
+		},
+		{
+			raw:      "COIN:BINANCE:BTC:USDT",
+			err:      ErrInvalidOperand,
+			expected: types.Operand{},
+		},
+		{
+			raw:      "COIN:BINANCE:BTC-BTC",
+			err:      ErrEqualBaseQuoteAssets,
+			expected: types.Operand{},
+		},
+		{
+			raw: "COIN:BINANCE:BTC-USDT",
+			err: nil,
+			expected: types.Operand{
+				Type:       types.COIN,
+				Provider:   "BINANCE",
+				BaseAsset:  "BTC",
+				QuoteAsset: "USDT",
+				Number:     0,
+				Str:        "COIN:BINANCE:BTC-USDT",
+			},
+		},
+		{
+			raw: "COIN:BINANCE:BTC",
+			err: ErrEmptyQuoteAsset,
+		},
+		{
+			raw: "MARKETCAP:MESSARI:BTC-USDT",
+			err: ErrNonEmptyQuoteAssetOnNonCoin,
+		},
+		{
+			raw: "MARKETCAP:MESSARI:BTC",
+			err: nil,
+			expected: types.Operand{
+				Type:      types.MARKETCAP,
+				Provider:  "MESSARI",
+				BaseAsset: "BTC",
+				Number:    0,
+				Str:       "MARKETCAP:MESSARI:BTC",
+			},
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.raw, func(t *testing.T) {
+			actual, actualErr := MapOperandForTests(ts.raw)
+
+			if actualErr != nil && ts.err == nil {
+				t.Logf("expected no error but had '%v'", actualErr)
+				t.FailNow()
+			}
+			if actualErr == nil && ts.err != nil {
+				t.Logf("expected error '%v' but had no error", actualErr)
+				t.FailNow()
+			}
+			if ts.err != nil && actualErr != nil && !errors.Is(actualErr, ts.err) {
+				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
+				t.FailNow()
+			}
+			if actual != ts.expected {
+				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestMapOperands(t *testing.T) {
+	ops, err := mapOperands([]string{"COIN:BINANCE:BTC-USDT", "1.1"})
+	if err != nil {
+		t.Errorf("should have succeeded but error happened: %v", err)
+		t.FailNow()
+	}
+
+	expected := []types.Operand{
+		{
+			Type:       types.COIN,
+			Provider:   "BINANCE",
+			BaseAsset:  "BTC",
+			QuoteAsset: "USDT",
+			Number:     0,
+			Str:        "COIN:BINANCE:BTC-USDT",
+		},
+		{
+			Type:   types.NUMBER,
+			Number: 1.1,
+			Str:    "1.1",
+		},
+	}
+	if !reflect.DeepEqual(ops, expected) {
+		t.Errorf("expected %v but got: %v", expected, ops)
+		t.FailNow()
+	}
+
+	_, err = mapOperands([]string{"", "1.1"})
+	if !errors.Is(err, ErrInvalidOperand) {
+		t.Errorf("expected %v but got: %v", ErrInvalidOperand, err)
+		t.FailNow()
+	}
+}
+
+func TestMapFromTs(t *testing.T) {
+	tss := []struct {
+		name     string
+		cond     condition
+		postedAt common.ISO8601
+		err      error
+		expected int
+	}{
+		{
+			name:     "Uses postedAt when empty",
+			cond:     condition{FromISO8601: ""},
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      nil,
+			expected: int(tp("2020-01-02 00:00:00").Unix()),
+		},
+		{
+			name:     "Invalid dates fail",
+			cond:     condition{FromISO8601: "invalid date"},
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrInvalidFromISO8601,
+			expected: 0,
+		},
+		{
+			name:     "Valid dates take precedence over postedAt",
+			cond:     condition{FromISO8601: tpToISO("2022-01-02 00:00:00")},
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      nil,
+			expected: int(tp("2022-01-02 00:00:00").Unix()),
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			actual, actualErr := mapFromTs(ts.cond, ts.postedAt)
+
+			if actualErr != nil && ts.err == nil {
+				t.Logf("expected no error but had '%v'", actualErr)
+				t.FailNow()
+			}
+			if actualErr == nil && ts.err != nil {
+				t.Logf("expected error '%v' but had no error", actualErr)
+				t.FailNow()
+			}
+			if ts.err != nil && actualErr != nil && !errors.Is(actualErr, ts.err) {
+				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
+				t.FailNow()
+			}
+			if actual != ts.expected {
+				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestMapToTs(t *testing.T) {
+	tss := []struct {
+		name     string
+		cond     condition
+		fromTs   int
+		err      error
+		expected int
+	}{
+		{
+			name:   "All empty",
+			cond:   condition{ToISO8601: "", ToDuration: ""},
+			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
+			err:    ErrOneOfToISO8601ToDurationRequired,
+		},
+		{
+			name:   "Invalid duration",
+			cond:   condition{ToISO8601: "", ToDuration: "invalid"},
+			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
+			err:    ErrInvalidDuration,
+		},
+		{
+			name:     "Uses FromISO8601+ToDuration when ToISO8601",
+			cond:     condition{ToISO8601: "", ToDuration: "2d"},
+			fromTs:   int(tp("2020-01-02 00:00:00").Unix()),
+			err:      nil,
+			expected: int(tp("2020-01-04 00:00:00").Unix()),
+		},
+		{
+			name:   "Invalid dates fail",
+			cond:   condition{ToISO8601: "invalid date", ToDuration: "2w"},
+			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
+			err:    ErrInvalidToISO8601,
+		},
+		{
+			name:     "Valid dates take precedence over everything",
+			cond:     condition{ToISO8601: tpToISO("2022-01-02 00:00:00"), ToDuration: "2w"},
+			fromTs:   int(tp("2020-01-02 00:00:00").Unix()),
+			err:      nil,
+			expected: int(tp("2022-01-02 00:00:00").Unix()),
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			actual, actualErr := mapToTs(ts.cond, ts.fromTs)
+
+			if actualErr != nil && ts.err == nil {
+				t.Logf("expected no error but had '%v'", actualErr)
+				t.FailNow()
+			}
+			if actualErr == nil && ts.err != nil {
+				t.Logf("expected error '%v' but had no error", actualErr)
+				t.FailNow()
+			}
+			if ts.err != nil && actualErr != nil && !errors.Is(actualErr, ts.err) {
+				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
+				t.FailNow()
+			}
+			if actual != ts.expected {
+				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestMapCondition(t *testing.T) {
+	tss := []struct {
+		name     string
+		cond     condition
+		condName string
+		postedAt common.ISO8601
+		err      error
+		expected types.Condition
+	}{
+		{
+			name:     "Invalid condition syntax",
+			cond:     condition{Condition: "invalid condition syntax!!"},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrInvalidConditionSyntax,
+		},
+		{
+			name:     "Empty quote asset",
+			cond:     condition{Condition: "COIN:BINANCE:BTC >= 60000"},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrEmptyQuoteAsset,
+		},
+		{
+			name:     "Unknown condition operator",
+			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT != 60000"},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrUnknownConditionOperator,
+		},
+		{
+			name:     "Unknown condition operator",
+			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", ErrorMarginRatio: 0.4},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrErrorMarginRatioAbove30,
+		},
+		{
+			name:     "Unknown condition state value",
+			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: conditionState{Value: "???"}},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      types.ErrUnknownConditionStateValue,
+		},
+		{
+			name:     "Unknown condition status",
+			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: conditionState{Value: "UNDECIDED", Status: "???"}},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      types.ErrUnknownConditionStatus,
+		},
+		{
+			name: "Invalid FromISO8601",
+			cond: condition{
+				Condition:   "COIN:BINANCE:BTC-USDT >= 60000",
+				State:       conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				FromISO8601: "invalid",
+			},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrInvalidFromISO8601,
+		},
+		{
+			name: "Invalid ToISO8601",
+			cond: condition{
+				Condition: "COIN:BINANCE:BTC-USDT >= 60000",
+				State:     conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				ToISO8601: "invalid",
+			},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      ErrInvalidToISO8601,
+		},
+		{
+			name: "Happy case",
+			cond: condition{
+				Condition: "COIN:BINANCE:BTC-USDT BETWEEN 60000 AND 70000",
+				State:     conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				ToISO8601: tpToISO("2020-01-03 00:00:00"),
+			},
+			condName: "main",
+			postedAt: tpToISO("2020-01-02 00:00:00"),
+			err:      nil,
+			expected: types.Condition{
+				Name:     "main",
+				Operator: "BETWEEN",
+				Operands: []types.Operand{
+					{
+						Type:       types.COIN,
+						Provider:   "BINANCE",
+						QuoteAsset: "USDT",
+						BaseAsset:  "BTC",
+						Str:        "COIN:BINANCE:BTC-USDT",
+					},
+					{
+						Type:   types.NUMBER,
+						Number: 60000,
+						Str:    "60000",
+					},
+					{
+						Type:   types.NUMBER,
+						Number: 70000,
+						Str:    "70000",
+					},
+				},
+				FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
+				ToTs:             int(tp("2020-01-03 00:00:00").Unix()),
+				ToDuration:       "",
+				Assumed:          nil,
+				State:            types.ConditionState{Value: types.UNDECIDED, Status: types.STARTED},
+				ErrorMarginRatio: 0,
+			},
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			actual, actualErr := mapCondition(ts.cond, ts.condName, ts.postedAt)
+
+			if actualErr != nil && ts.err == nil {
+				t.Logf("expected no error but had '%v'", actualErr)
+				t.FailNow()
+			}
+			if actualErr == nil && ts.err != nil {
+				t.Logf("expected error '%v' but had no error", actualErr)
+				t.FailNow()
+			}
+			if ts.err != nil && actualErr != nil && !errors.Is(actualErr, ts.err) {
+				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
+				t.FailNow()
+			}
+			if !reflect.DeepEqual(actual, ts.expected) {
+				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestMapBoolExprNil(t *testing.T) {
+	res, err := mapBoolExpr(nil, nil)
+	if res != nil {
+		t.Errorf("res should have been nil but was %v", res)
+	}
+	if err != nil {
+		t.Errorf("err should have been nil but was %v", err)
+	}
+}
+
+func TestMapBoolExprInvalid(t *testing.T) {
+	invalid := "invalid"
+	_, err := mapBoolExpr(&invalid, nil)
+	if !errors.Is(err, ErrBoolExprSyntaxError) {
+		t.Errorf("err should have been ErrBoolExprSyntaxError but was %v", err)
+	}
+}
+
+func TestMapBoolExprHappyCase(t *testing.T) {
+	valid := "main"
+	_, err := mapBoolExpr(&valid, map[string]*types.Condition{"main": {}})
+	if err != nil {
+		t.Errorf("err should have been nil but was %v", err)
+	}
+}
+
+type testMetadataFetcher struct {
+	postMetadata         mfTypes.PostMetadata
+	postMetadataFetchErr error
+}
+
+func newTestMetadataFetcher(postMetadata mfTypes.PostMetadata, postMetadataFetchErr error) *testMetadataFetcher {
+	return &testMetadataFetcher{postMetadata, postMetadataFetchErr}
+}
+
+func (f testMetadataFetcher) Fetch(u *url.URL) (mfTypes.PostMetadata, error) {
+	return f.postMetadata, f.postMetadataFetchErr
+}
+
+func (f testMetadataFetcher) IsCorrectFetcher(u *url.URL) bool {
+	return true
+}
+
+func TestCompile(t *testing.T) {
+	tss := []struct {
+		name                 string
+		pred                 string
+		postMetadata         mfTypes.PostMetadata
+		timeNow              func() time.Time
+		postMetadataFetchErr error
+		err                  error
+		expected             types.Prediction
+	}{
+		{
+			name:     "Invalid JSON",
+			pred:     "invalid!!",
+			err:      ErrInvalidJSON,
+			expected: types.Prediction{},
+		},
+		{
+			name:     "Empty postUrl",
+			pred:     `{"postUrl": ""}`,
+			err:      ErrEmptyPostURL,
+			expected: types.Prediction{},
+		},
+		{
+			name:                 "Metadata fetcher returns error",
+			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			postMetadataFetchErr: errors.New("error for test"),
+			err:                  ErrEmptyPostAuthor,
+			expected:             types.Prediction{},
+		},
+		{
+			name:                 "Metadata fetcher returns postAuthor but not postedAt",
+			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: common.ISO8601(""),
+			},
+			err:      ErrEmptyPostedAt,
+			expected: types.Prediction{},
+		},
+		{
+			name:                 "Metadata fetcher returns postAuthor and invalid postedAt",
+			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: common.ISO8601("INVALID!!!"),
+			},
+			err:      ErrInvalidPostedAt,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping condition: no ToISO8601",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845"
+					}
+				},
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrOneOfToISO8601ToDurationRequired,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping prePredict.predictIf: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"predictIf": "???"
+				},
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping prePredict.wrongIf: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"wrongIf": "???",
+					"predictIf": "main"
+				},
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping prePredict.annulledIf: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"annulledIf": "???",
+					"wrongIf": "main",
+					"predictIf": "main"
+				},
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Must have prePredict.predictIf if it has prePredict.wrongIf",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"wrongIf": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrMissingRequiredPrePredictPredictIf,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Must have prePredict.predictIf if it has prePredict.annulledIf",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"annulledIf": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrMissingRequiredPrePredictPredictIf,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping predict.wrongIf: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"predict": {
+					"wrongIf": "???",
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping predict.annulledIf: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"predict": {
+					"annulledIf": "???",
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping predict.predict: ErrBoolExprSyntaxError",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"predict": {
+					"predict": "???"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      ErrBoolExprSyntaxError,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping prediction state: ErrUnknownConditionStatus",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"predictIf": "main"
+				},
+				"predict": {
+					"annulledIf": "main",
+					"wrongIf": "main",
+					"predict": "main"
+				},
+				"state": {
+					"status": "???"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      types.ErrUnknownConditionStatus,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Error mapping prediction state: ErrUnknownPredictionStateValue",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2w"
+					}
+				},
+				"prePredict": {
+					"predictIf": "main"
+				},
+				"predict": {
+					"annulledIf": "main",
+					"wrongIf": "main",
+					"predict": "main"
+				},
+				"state": {
+					"status": "STARTED",
+					"value": "???"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err:      types.ErrUnknownPredictionStateValue,
+			expected: types.Prediction{},
+		},
+		{
+			name: "Happy case",
+			pred: `{
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2d"
+					}
+				},
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
+			err:     nil,
+			expected: types.Prediction{
+				Version:    "1.0.0",
+				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
+				PostAuthor: "CryptoCapo_",
+				PostText:   "",
+				PostedAt:   tpToISO("2020-01-02 00:00:00"),
+				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				Given: map[string]*types.Condition{
+					"main": {
+						Name:     "main",
+						Operator: "<=",
+						Operands: []types.Operand{
+							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+							{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+						},
+						FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
+						ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
+						ToDuration: "2d",
+					},
+				},
+				Predict: types.Predict{
+					Predict: types.BoolExpr{
+						Operator: types.LITERAL,
+						Operands: nil,
+						Literal: &types.Condition{
+							Name:     "main",
+							Operator: "<=",
+							Operands: []types.Operand{
+								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+							},
+							FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
+							ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
+							ToDuration: "2d",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			pc := NewPredictionCompiler()
+			pc.metadataFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
+				newTestMetadataFetcher(ts.postMetadata, ts.postMetadataFetchErr),
+			}
+			if ts.timeNow != nil {
+				pc.timeNow = ts.timeNow
+			}
+			actual, actualErr := pc.Compile([]byte(ts.pred))
+
+			if actualErr != nil && ts.err == nil {
+				t.Logf("expected no error but had '%v'", actualErr)
+				t.FailNow()
+			}
+			if actualErr == nil && ts.err != nil {
+				t.Logf("expected error '%v' but had no error", actualErr)
+				t.FailNow()
+			}
+			if ts.err != nil && actualErr != nil && !errors.Is(actualErr, ts.err) {
+				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
+				t.FailNow()
+			}
+			if ts.err == nil && !reflect.DeepEqual(actual, ts.expected) {
 				t.Logf("expected %v but got %v", ts.expected, actual)
 				t.FailNow()
 			}
