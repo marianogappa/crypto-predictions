@@ -22,6 +22,13 @@ var (
 	errPredictionAtFinalStateAtCreation = errors.New("prediction is in final state at creation time")
 )
 
+func isDateEqual(ts1, ts2 int) bool {
+	t1, t2 := time.Unix(int64(ts1), 0), time.Unix(int64(ts2), 0)
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
 func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*predRunner, []error) {
 	errs := []error{}
 	result := predRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
@@ -41,8 +48,8 @@ func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*p
 			continue
 		}
 		startTs := calculateStartTs(condition)
-		// TODO: for Messari API, current day is not available until day's end, so for MARKETCAP TYPE, nowTs doesn't work
-		if startTs > nowTs {
+		// N.B. For Messari API, current day is not available until day's end, so a special condition is needed.
+		if startTs > nowTs || (condition.Operands[0].Type == types.MARKETCAP && isDateEqual(startTs, nowTs)) {
 			continue
 		}
 		result.tickers[condition.Name] = map[string]types.TickIterator{}
@@ -93,6 +100,11 @@ func (r *predRunner) Run() []error {
 		return nil
 	}
 
+	if !r.isAnyConditionHaveTickers(undecidedConditions) {
+		r.isInactive = true
+		return nil
+	}
+
 	errs := []error{}
 	for _, cond := range undecidedConditions {
 		tickers := r.tickers[cond.Name]
@@ -127,15 +139,26 @@ func (r *predRunner) Run() []error {
 			ticks[key] = tick
 		}
 
-		err := cond.Run(ticks)
-		if err != nil {
-			errs = append(errs, err)
-			r.isInactive = true
-			return errs
+		if !r.isInactive {
+			err := cond.Run(ticks)
+			if err != nil {
+				errs = append(errs, err)
+				r.isInactive = true
+				return errs
+			}
 		}
 		// log.Printf("Evaluating %v: %v", cond.Name, cond.Evaluate())
 	}
 	return errs
+}
+
+func (r *predRunner) isAnyConditionHaveTickers(conds []*types.Condition) bool {
+	for _, cond := range conds {
+		if len(r.tickers[cond.Name]) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func isAnyTickerOutOfTicks(ts map[string]types.TickIterator) bool {

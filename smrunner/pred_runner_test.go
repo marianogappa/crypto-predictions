@@ -218,6 +218,26 @@ func TestNewPredRunner(t *testing.T) {
 			isError:     false,
 			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-28 16:20:00")}},
 		},
+		{
+			name: "Undecided prediction should NOT make a call because it's a MARKETCAP type, and it's lastTs is yesterday, so today according to nowTs won't have MESSARI data yet",
+			prediction: newPredictionWith(
+				types.PrePredict{},
+				types.Predict{
+					Predict: types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: &types.Condition{
+						FromTs:   tInt("2022-02-25 15:20:00"),
+						ToTs:     tInt("2022-03-27 15:20:00"),
+						Operands: []types.Operand{operand("MARKETCAP:MESSARI:BTC"), operand("60000")},
+						State: types.ConditionState{
+							Value:     types.UNDECIDED,
+							LastTs:    tInt("2022-02-26 16:20:00"),
+							LastTicks: map[string]types.Tick{"MARKETCAP:MESSARI:BTC": {Timestamp: tInt("2022-02-26 16:20:00"), Value: 60000}},
+						},
+					}},
+				}),
+			nowTs:       tInt("2022-02-27 19:20:00"),
+			isError:     false,
+			marketCalls: nil,
+		},
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {

@@ -1,6 +1,7 @@
 package smrunner
 
 import (
+	"errors"
 	"log"
 
 	"github.com/marianogappa/predictions/market"
@@ -36,8 +37,12 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 	activePredRunners := map[string]*predRunner{}
 	for pk, prediction := range predictions {
 		predRunner, errs := newPredRunner(prediction, r.market, nowTs)
+		for _, err := range errs {
+			if !errors.Is(err, errPredictionAtFinalStateAtCreation) {
+				result.Errors = append(result.Errors, err)
+			}
+		}
 		if len(errs) > 0 {
-			result.Errors = append(result.Errors, errs...)
 			continue
 		}
 		activePredRunners[pk] = predRunner

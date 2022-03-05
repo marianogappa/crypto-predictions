@@ -30,6 +30,7 @@ func (it *TickFromCandleIterator) Next() (types.Tick, error) {
 	if err != nil {
 		if err == common.ErrOutOfCandlesticks {
 			it.isOutOfTicks = true
+			err = types.ErrOutOfTicks
 		}
 		return it.lastTick, err
 	}
