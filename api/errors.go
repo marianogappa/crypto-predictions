@@ -1,6 +1,9 @@
 package api
 
-import "github.com/marianogappa/predictions/types"
+import (
+	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/signal-checker/common"
+)
 
 var (
 	errToResponse = map[error]response{
@@ -26,5 +29,7 @@ var (
 		types.ErrInvalidPostedAt:                    {Status: 400, ErrorCode: "ErrInvalidPostedAt", Message: "postedAt must be a valid ISO8601 timestamp"},
 		types.ErrMissingRequiredPrePredictPredictIf: {Status: 400, ErrorCode: "ErrMissingRequiredPrePredictPredictIf", Message: "pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause"},
 		types.ErrBoolExprSyntaxError:                {Status: 400, ErrorCode: "ErrBoolExprSyntaxError", Message: "syntax error in bool expression"},
+		types.ErrPredictionFinishedAtStartTime:      {Status: 400, ErrorCode: "ErrPredictionFinishedAtStartTime", Message: "prediction is finished at start time"},
+		common.ErrInvalidMarketPair:                 {Status: 400, ErrorCode: "ErrInvalidMarketPair", Message: "market pair does not exist on exchange"},
 	}
 )

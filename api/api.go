@@ -14,10 +14,7 @@ import (
 	"github.com/marianogappa/predictions/smrunner"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
-)
-
-var (
-	ErrPredictionFinishedAtStartTime = errors.New("prediction is finished at start time")
+	"github.com/marianogappa/signal-checker/common"
 )
 
 type API struct {
@@ -47,7 +44,6 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 	pc := compiler.NewPredictionCompiler()
 	pred, err := pc.Compile(bs)
 	if err != nil {
-		log.Println("!!!", string(bs), err)
 		respond(w, nil, nil, err)
 		return
 	}
@@ -56,9 +52,15 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 	if pred.State == (types.PredictionState{}) {
 		predRunner, errs := smrunner.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
 		if len(errs) == 0 {
-			predRunner.Run()
+			predRunnerErrs := predRunner.Run()
+			for _, err := range predRunnerErrs {
+				if errors.Is(err, common.ErrInvalidMarketPair) {
+					respond(w, nil, nil, common.ErrInvalidMarketPair)
+					return
+				}
+			}
 			if pred.Evaluate().IsFinal() {
-				respond(w, nil, nil, ErrPredictionFinishedAtStartTime)
+				respond(w, nil, nil, types.ErrPredictionFinishedAtStartTime)
 				return
 			}
 		}

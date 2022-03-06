@@ -30,6 +30,7 @@ var (
 	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
 	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
 	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
+	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")
 )
 
 type Operand struct {
