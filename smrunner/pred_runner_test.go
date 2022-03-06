@@ -1,11 +1,14 @@
 package smrunner
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
@@ -242,7 +245,7 @@ func TestNewPredRunner(t *testing.T) {
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
 			tm := &testMarket{}
-			_, errs := newPredRunner(ts.prediction, tm, ts.nowTs)
+			_, errs := NewPredRunner(&ts.prediction, tm, ts.nowTs)
 			if len(errs) > 0 && !ts.isError {
 				t.Logf("should not have errored but these errors happened: %v", errs)
 				t.FailNow()
@@ -261,8 +264,29 @@ func TestNewPredRunner(t *testing.T) {
 	}
 }
 
+func mapOperand(v string) (types.Operand, error) {
+	v = strings.ToUpper(v)
+	f, err := strconv.ParseFloat(v, 64)
+	if err == nil {
+		return types.Operand{Type: types.NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+	}
+	strVariable := `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
+	rxVariable := regexp.MustCompile(fmt.Sprintf("^%v$", strVariable))
+	matches := rxVariable.FindStringSubmatch(v)
+
+	operandType, _ := types.OperandTypeFromString(matches[1])
+
+	return types.Operand{
+		Type:       operandType,
+		Provider:   matches[2],
+		BaseAsset:  matches[3],
+		QuoteAsset: matches[5],
+		Str:        v,
+	}, nil
+}
+
 func operand(s string) types.Operand {
-	op, _ := compiler.MapOperandForTests(s)
+	op, _ := mapOperand(s)
 	return op
 }
 

@@ -104,7 +104,7 @@ func TestMapOperand(t *testing.T) {
 	}{
 		{
 			raw:      "",
-			err:      ErrInvalidOperand,
+			err:      types.ErrInvalidOperand,
 			expected: types.Operand{},
 		},
 		{
@@ -121,12 +121,12 @@ func TestMapOperand(t *testing.T) {
 		},
 		{
 			raw:      "COIN:BINANCE:BTC:USDT",
-			err:      ErrInvalidOperand,
+			err:      types.ErrInvalidOperand,
 			expected: types.Operand{},
 		},
 		{
 			raw:      "COIN:BINANCE:BTC-BTC",
-			err:      ErrEqualBaseQuoteAssets,
+			err:      types.ErrEqualBaseQuoteAssets,
 			expected: types.Operand{},
 		},
 		{
@@ -143,11 +143,11 @@ func TestMapOperand(t *testing.T) {
 		},
 		{
 			raw: "COIN:BINANCE:BTC",
-			err: ErrEmptyQuoteAsset,
+			err: types.ErrEmptyQuoteAsset,
 		},
 		{
 			raw: "MARKETCAP:MESSARI:BTC-USDT",
-			err: ErrNonEmptyQuoteAssetOnNonCoin,
+			err: types.ErrNonEmptyQuoteAssetOnNonCoin,
 		},
 		{
 			raw: "MARKETCAP:MESSARI:BTC",
@@ -213,8 +213,8 @@ func TestMapOperands(t *testing.T) {
 	}
 
 	_, err = mapOperands([]string{"", "1.1"})
-	if !errors.Is(err, ErrInvalidOperand) {
-		t.Errorf("expected %v but got: %v", ErrInvalidOperand, err)
+	if !errors.Is(err, types.ErrInvalidOperand) {
+		t.Errorf("expected %v but got: %v", types.ErrInvalidOperand, err)
 		t.FailNow()
 	}
 }
@@ -238,7 +238,7 @@ func TestMapFromTs(t *testing.T) {
 			name:     "Invalid dates fail",
 			cond:     condition{FromISO8601: "invalid date"},
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrInvalidFromISO8601,
+			err:      types.ErrInvalidFromISO8601,
 			expected: 0,
 		},
 		{
@@ -285,13 +285,13 @@ func TestMapToTs(t *testing.T) {
 			name:   "All empty",
 			cond:   condition{ToISO8601: "", ToDuration: ""},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    ErrOneOfToISO8601ToDurationRequired,
+			err:    types.ErrOneOfToISO8601ToDurationRequired,
 		},
 		{
 			name:   "Invalid duration",
 			cond:   condition{ToISO8601: "", ToDuration: "invalid"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    ErrInvalidDuration,
+			err:    types.ErrInvalidDuration,
 		},
 		{
 			name:     "Uses FromISO8601+ToDuration when ToISO8601",
@@ -304,7 +304,7 @@ func TestMapToTs(t *testing.T) {
 			name:   "Invalid dates fail",
 			cond:   condition{ToISO8601: "invalid date", ToDuration: "2w"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    ErrInvalidToISO8601,
+			err:    types.ErrInvalidToISO8601,
 		},
 		{
 			name:     "Valid dates take precedence over everything",
@@ -352,28 +352,28 @@ func TestMapCondition(t *testing.T) {
 			cond:     condition{Condition: "invalid condition syntax!!"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrInvalidConditionSyntax,
+			err:      types.ErrInvalidConditionSyntax,
 		},
 		{
 			name:     "Empty quote asset",
 			cond:     condition{Condition: "COIN:BINANCE:BTC >= 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrEmptyQuoteAsset,
+			err:      types.ErrEmptyQuoteAsset,
 		},
 		{
 			name:     "Unknown condition operator",
 			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT != 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrUnknownConditionOperator,
+			err:      types.ErrUnknownConditionOperator,
 		},
 		{
 			name:     "Unknown condition operator",
 			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", ErrorMarginRatio: 0.4},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrErrorMarginRatioAbove30,
+			err:      types.ErrErrorMarginRatioAbove30,
 		},
 		{
 			name:     "Unknown condition state value",
@@ -398,7 +398,7 @@ func TestMapCondition(t *testing.T) {
 			},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrInvalidFromISO8601,
+			err:      types.ErrInvalidFromISO8601,
 		},
 		{
 			name: "Invalid ToISO8601",
@@ -409,7 +409,7 @@ func TestMapCondition(t *testing.T) {
 			},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      ErrInvalidToISO8601,
+			err:      types.ErrInvalidToISO8601,
 		},
 		{
 			name: "Happy case",
@@ -489,7 +489,7 @@ func TestMapBoolExprNil(t *testing.T) {
 func TestMapBoolExprInvalid(t *testing.T) {
 	invalid := "invalid"
 	_, err := mapBoolExpr(&invalid, nil)
-	if !errors.Is(err, ErrBoolExprSyntaxError) {
+	if !errors.Is(err, types.ErrBoolExprSyntaxError) {
 		t.Errorf("err should have been ErrBoolExprSyntaxError but was %v", err)
 	}
 }
@@ -532,20 +532,20 @@ func TestCompile(t *testing.T) {
 		{
 			name:     "Invalid JSON",
 			pred:     "invalid!!",
-			err:      ErrInvalidJSON,
+			err:      types.ErrInvalidJSON,
 			expected: types.Prediction{},
 		},
 		{
 			name:     "Empty postUrl",
 			pred:     `{"postUrl": ""}`,
-			err:      ErrEmptyPostURL,
+			err:      types.ErrEmptyPostURL,
 			expected: types.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns error",
 			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: errors.New("error for test"),
-			err:                  ErrEmptyPostAuthor,
+			err:                  types.ErrEmptyPostAuthor,
 			expected:             types.Prediction{},
 		},
 		{
@@ -556,7 +556,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: common.ISO8601(""),
 			},
-			err:      ErrEmptyPostedAt,
+			err:      types.ErrEmptyPostedAt,
 			expected: types.Prediction{},
 		},
 		{
@@ -567,7 +567,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: common.ISO8601("INVALID!!!"),
 			},
-			err:      ErrInvalidPostedAt,
+			err:      types.ErrInvalidPostedAt,
 			expected: types.Prediction{},
 		},
 		{
@@ -588,7 +588,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrOneOfToISO8601ToDurationRequired,
+			err:      types.ErrOneOfToISO8601ToDurationRequired,
 			expected: types.Prediction{},
 		},
 		{
@@ -613,7 +613,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{
@@ -639,7 +639,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{
@@ -666,7 +666,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{
@@ -688,7 +688,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrMissingRequiredPrePredictPredictIf,
+			err:      types.ErrMissingRequiredPrePredictPredictIf,
 			expected: types.Prediction{},
 		},
 		{
@@ -710,7 +710,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrMissingRequiredPrePredictPredictIf,
+			err:      types.ErrMissingRequiredPrePredictPredictIf,
 			expected: types.Prediction{},
 		},
 		{
@@ -733,7 +733,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{
@@ -756,7 +756,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{
@@ -778,7 +778,7 @@ func TestCompile(t *testing.T) {
 				Author:        "CryptoCapo_",
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      ErrBoolExprSyntaxError,
+			err:      types.ErrBoolExprSyntaxError,
 			expected: types.Prediction{},
 		},
 		{

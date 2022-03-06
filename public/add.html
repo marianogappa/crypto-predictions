@@ -83,7 +83,10 @@
 <body>
     {{if .Err}}
     <h1>Error creating prediction</h1>
-    <span>{{.Err}}</span>
+    <div>{{.Err}}</div>
+    <div>{{.Status}}</div>
+    <div>{{.ErrCode}}</div>
+    <div>{{.InternalMessage}}</div>
     {{end}}
     {{if .Predictions}}
     <h1>Created Predictions</h1>

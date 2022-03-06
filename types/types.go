@@ -8,10 +8,28 @@ import (
 )
 
 var (
-	ErrUnknownOperandType          = errors.New("unknown value for operandType")
-	ErrUnknownBoolOperator         = errors.New("unknown value for BoolOperator")
-	ErrUnknownConditionStatus      = errors.New("invalid state: unknown value for ConditionStatus")
-	ErrUnknownPredictionStateValue = errors.New("invalid state: unknown value for PredictionStateValue")
+	ErrUnknownOperandType                 = errors.New("unknown value for operandType")
+	ErrUnknownBoolOperator                = errors.New("unknown value for BoolOperator")
+	ErrUnknownConditionStatus             = errors.New("invalid state: unknown value for ConditionStatus")
+	ErrUnknownPredictionStateValue        = errors.New("invalid state: unknown value for PredictionStateValue")
+	ErrInvalidOperand                     = errors.New("invalid operand")
+	ErrEmptyQuoteAsset                    = errors.New("quote asset cannot be empty")
+	ErrNonEmptyQuoteAssetOnNonCoin        = errors.New("quote asset must be empty for non-coin operand types")
+	ErrEqualBaseQuoteAssets               = errors.New("base asset cannot be equal to quote asset")
+	ErrInvalidDuration                    = errors.New("invalid duration")
+	ErrInvalidFromISO8601                 = errors.New("invalid FromISO8601")
+	ErrInvalidToISO8601                   = errors.New("invalid ToISO8601")
+	ErrOneOfToISO8601ToDurationRequired   = errors.New("one of ToISO8601 or ToDuration is required")
+	ErrInvalidConditionSyntax             = errors.New("invalid condition syntax")
+	ErrUnknownConditionOperator           = errors.New("unknown condition operator: supported are [>|<|>=|<=|BETWEEN...AND]")
+	ErrErrorMarginRatioAbove30            = errors.New("error margin ratio above 30%% is not allowed")
+	ErrInvalidJSON                        = errors.New("invalid JSON")
+	ErrEmptyPostURL                       = errors.New("postUrl cannot be empty")
+	ErrEmptyPostAuthor                    = errors.New("postAuthor cannot be empty")
+	ErrEmptyPostedAt                      = errors.New("postedAt cannot be empty")
+	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
+	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
+	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
 )
 
 type Operand struct {
@@ -140,6 +158,10 @@ func (v PredictionStateValue) String() string {
 	default:
 		return ""
 	}
+}
+
+func (v PredictionStateValue) IsFinal() bool {
+	return v != ONGOING_PRE_PREDICTION && v != ONGOING_PREDICTION
 }
 
 const (

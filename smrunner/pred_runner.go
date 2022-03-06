@@ -12,8 +12,8 @@ import (
 	"github.com/marianogappa/signal-checker/common"
 )
 
-type predRunner struct {
-	prediction types.Prediction
+type PredRunner struct {
+	prediction *types.Prediction
 	tickers    map[string]map[string]types.TickIterator
 	isInactive bool
 }
@@ -29,9 +29,9 @@ func isDateEqual(ts1, ts2 int) bool {
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
-func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*predRunner, []error) {
+func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredRunner, []error) {
 	errs := []error{}
-	result := predRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
+	result := PredRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
 
 	predStateValue := prediction.Evaluate()
 	if predStateValue != types.ONGOING_PRE_PREDICTION && predStateValue != types.ONGOING_PREDICTION {
@@ -68,7 +68,7 @@ func newPredRunner(prediction types.Prediction, m market.IMarket, nowTs int) (*p
 
 	}
 	if len(errs) > 0 {
-		log.Printf("newPredRunner: errors creating new predRunner: %v\n", errs)
+		log.Printf("newPredRunner: errors creating new PredRunner: %v\n", errs)
 	}
 	return &result, errs
 }
@@ -84,7 +84,7 @@ func calculateStartTs(c *types.Condition) int {
 	return c.FromTs
 }
 
-func (r *predRunner) Run() []error {
+func (r *PredRunner) Run() []error {
 	if r.isInactive {
 		return nil
 	}
@@ -125,7 +125,7 @@ func (r *predRunner) Run() []error {
 				r.isInactive = true
 				continue
 			}
-			log.Printf("For %v: read tick %v = %v\n", printer.NewPredictionPrettyPrinter(r.prediction).Default(), time.Unix(int64(tick.Timestamp), 0).Format(time.RFC3339), tick.Value)
+			log.Printf("For %v: read tick %v = %v\n", printer.NewPredictionPrettyPrinter(*r.prediction).Default(), time.Unix(int64(tick.Timestamp), 0).Format(time.RFC3339), tick.Value)
 			// Timestamps must match on these ticks! Otherwise we're comparing apples & oranges!
 			if timestamp == nil {
 				timestamp = &tick.Timestamp
@@ -152,7 +152,7 @@ func (r *predRunner) Run() []error {
 	return errs
 }
 
-func (r *predRunner) isAnyConditionHaveTickers(conds []*types.Condition) bool {
+func (r *PredRunner) isAnyConditionHaveTickers(conds []*types.Condition) bool {
 	for _, cond := range conds {
 		if len(r.tickers[cond.Name]) > 0 {
 			return true

@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/marianogappa/predictions/compiler/boolunmarshal"
@@ -11,22 +10,18 @@ import (
 func parseBoolExpr(s string, def map[string]*types.Condition) (*types.BoolExpr, error) {
 	n, err := boolunmarshal.NewExprParser(s).Parse()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBoolExprSyntaxError, err)
+		return nil, fmt.Errorf("%w: %v", types.ErrBoolExprSyntaxError, err)
 	}
 	return nodeToBoolExpr(n, def)
 }
 
-var (
-	ErrBoolExprSyntaxError = errors.New("syntax error in bool expression")
-)
-
 func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*types.BoolExpr, error) {
 	switch n.TT {
 	case boolunmarshal.UNKNOWN, boolunmarshal.EOF:
-		return nil, fmt.Errorf("%w: attempted to parse an invalid/unresolved node to a bool expression", ErrBoolExprSyntaxError)
+		return nil, fmt.Errorf("%w: attempted to parse an invalid/unresolved node to a bool expression", types.ErrBoolExprSyntaxError)
 	case boolunmarshal.INDENTIFIER:
 		if _, ok := def[n.Token]; !ok {
-			return nil, fmt.Errorf("%w: unknown identifier '%v'...maybe you forgot to add it to the define clause", ErrBoolExprSyntaxError, n.Token)
+			return nil, fmt.Errorf("%w: unknown identifier '%v'...maybe you forgot to add it to the define clause", types.ErrBoolExprSyntaxError, n.Token)
 		}
 		return &types.BoolExpr{
 			Operator: types.LITERAL,
@@ -34,7 +29,7 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*typ
 		}, nil
 	case boolunmarshal.AND:
 		if len(n.Nodes) == 0 {
-			return nil, fmt.Errorf("%w: AND clause with zero operands", ErrBoolExprSyntaxError)
+			return nil, fmt.Errorf("%w: AND clause with zero operands", types.ErrBoolExprSyntaxError)
 		}
 		e := types.BoolExpr{
 			Operator: types.AND,
@@ -49,7 +44,7 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*typ
 		return &e, nil
 	case boolunmarshal.OR:
 		if len(n.Nodes) == 0 {
-			return nil, fmt.Errorf("%w: OR clause with zero operands", ErrBoolExprSyntaxError)
+			return nil, fmt.Errorf("%w: OR clause with zero operands", types.ErrBoolExprSyntaxError)
 		}
 		e := types.BoolExpr{
 			Operator: types.OR,
@@ -64,7 +59,7 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*typ
 		return &e, nil
 	case boolunmarshal.NOT:
 		if len(n.Nodes) != 1 {
-			return nil, fmt.Errorf("%w: NOT clause must have exactly one operand", ErrBoolExprSyntaxError)
+			return nil, fmt.Errorf("%w: NOT clause must have exactly one operand", types.ErrBoolExprSyntaxError)
 		}
 		operand, err := nodeToBoolExpr(n.Nodes[0], def)
 		if err != nil {
@@ -75,5 +70,5 @@ func nodeToBoolExpr(n boolunmarshal.Node, def map[string]*types.Condition) (*typ
 			Operands: []*types.BoolExpr{operand},
 		}, nil
 	}
-	return nil, fmt.Errorf("%w: unknown token %v", ErrBoolExprSyntaxError, n.Token)
+	return nil, fmt.Errorf("%w: unknown token %v", types.ErrBoolExprSyntaxError, n.Token)
 }

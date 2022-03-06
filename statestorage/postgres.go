@@ -23,6 +23,14 @@ type PostgresDBStateStorage struct {
 //go:embed migrations/*.sql
 var fs embed.FS
 
+func MustNewPostgresDBStateStorage() PostgresDBStateStorage {
+	p, err := NewPostgresDBStateStorage()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return p
+}
+
 func NewPostgresDBStateStorage() (PostgresDBStateStorage, error) {
 	connStr := "postgres://marianol@localhost/marianol?sslmode=disable"
 

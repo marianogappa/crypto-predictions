@@ -3,6 +3,7 @@ package smrunner
 import (
 	"errors"
 	"log"
+	"time"
 
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/statestorage"
@@ -19,8 +20,22 @@ type SMRunnerResult struct {
 	Predictions map[string]types.Prediction
 }
 
-func NewSMRunner(store statestorage.StateStorage, market market.Market) *SMRunner {
+func NewSMRunner(market market.Market, store statestorage.StateStorage) *SMRunner {
 	return &SMRunner{store: store, market: market}
+}
+
+func (r *SMRunner) BlockinglyRunEvery(dur time.Duration) SMRunnerResult {
+	for {
+		result := r.Run(int(time.Now().Unix()))
+		if len(result.Errors) > 0 {
+			log.Println("State Machine runner finished with errors:")
+			for i, err := range result.Errors {
+				log.Printf("%v) %v", i+1, err.Error())
+			}
+			log.Println()
+		}
+		time.Sleep(dur)
+	}
 }
 
 func (r *SMRunner) Run(nowTs int) SMRunnerResult {
@@ -34,9 +49,10 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 	}
 
 	// Create prediction runners from all ongoing predictions
-	activePredRunners := map[string]*predRunner{}
+	activePredRunners := map[string]*PredRunner{}
 	for pk, prediction := range predictions {
-		predRunner, errs := newPredRunner(prediction, r.market, nowTs)
+		pred := prediction
+		predRunner, errs := NewPredRunner(&pred, r.market, nowTs)
 		for _, err := range errs {
 			if !errors.Is(err, errPredictionAtFinalStateAtCreation) {
 				result.Errors = append(result.Errors, err)
@@ -57,7 +73,7 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 				result.Errors = append(result.Errors, errs...)
 			}
 			if predRunner.isInactive {
-				result.Predictions[pk] = predRunner.prediction
+				result.Predictions[pk] = *predRunner.prediction
 				delete(activePredRunners, pk)
 			}
 		}
