@@ -103,15 +103,98 @@ func (b *pgUpsertManyBuilder) build() (string, []interface{}) {
 	), b.values
 }
 
-func (s PostgresDBStateStorage) GetPredictions(css []types.PredictionStateValue) (map[string]types.Prediction, error) {
+func buildWhere(filters types.APIFilters) (string, []interface{}) {
+	args := []interface{}{}
+	filterArr := []string{}
+
+	if len(filters.AuthorHandles) > 0 {
+		params := []string{}
+		for _, authorHandle := range filters.AuthorHandles {
+			args = append(args, authorHandle)
+			params = append(params, fmt.Sprintf("$%v", len(args)))
+		}
+		filterArr = append(filterArr, fmt.Sprintf("blob->>'postAuthor' IN (%v)", strings.Join(params, ", ")))
+	}
+
+	if len(filters.PredictionStateValues) > 0 {
+		params := []string{}
+		for _, rawPredictionStateValue := range filters.PredictionStateValues {
+			if _, err := types.PredictionStateValueFromString(rawPredictionStateValue); err != nil {
+				continue
+			}
+			args = append(args, rawPredictionStateValue)
+			params = append(params, fmt.Sprintf("$%v", len(args)))
+		}
+		if len(params) > 0 {
+			filterArr = append(filterArr, fmt.Sprintf("blob->'state'->>'value' IN (%v)", strings.Join(params, ", ")))
+		}
+	}
+
+	if len(filters.PredictionStateStatus) > 0 {
+		params := []string{}
+		for _, rawPredictionStateStatus := range filters.PredictionStateStatus {
+			if _, err := types.ConditionStatusFromString(rawPredictionStateStatus); err != nil {
+				continue
+			}
+			args = append(args, rawPredictionStateStatus)
+			params = append(params, fmt.Sprintf("$%v", len(args)))
+		}
+		if len(params) > 0 {
+			filterArr = append(filterArr, fmt.Sprintf("blob->'state'->>'status' IN (%v)", strings.Join(params, ", ")))
+		}
+	}
+
+	if len(filters.UUIDs) > 0 {
+		params := []string{}
+		for _, uuid := range filters.UUIDs {
+			args = append(args, uuid)
+			params = append(params, fmt.Sprintf("$%v", len(args)))
+		}
+		filterArr = append(filterArr, fmt.Sprintf("uuid IN (%v)", strings.Join(params, ", ")))
+	}
+
+	if len(filterArr) == 0 {
+		filterArr = append(filterArr, "$1 = $1")
+		args = append(args, 1)
+	}
+	return strings.Join(filterArr, "AND"), args
+}
+
+func buildOrderBy(orderBys []string) string {
+	if len(orderBys) == 0 {
+		orderBys = []string{types.CREATED_AT_DESC.String()}
+	}
+	resultArr := []string{}
+	for _, orderBy := range orderBys {
+		switch orderBy {
+		case types.CREATED_AT_DESC.String():
+			resultArr = append(resultArr, "created_at DESC")
+		case types.CREATED_AT_ASC.String():
+			resultArr = append(resultArr, "created_at ASC")
+		case types.POSTED_AT_DESC.String():
+			resultArr = append(resultArr, "posted_at DESC")
+		case types.POSTED_AT_ASC.String():
+			resultArr = append(resultArr, "posted_at ASC")
+		}
+	}
+	return strings.Join(resultArr, ", ")
+}
+
+func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBys []string) ([]types.Prediction, error) {
+	where, args := buildWhere(filters)
+	orderBy := buildOrderBy(orderBys)
+
+	sql := fmt.Sprintf("SELECT uuid, blob FROM predictions WHERE %v ORDER BY %v", where, orderBy)
+	log.Println(sql)
+
 	// TODO filter
-	rows, err := s.db.Query("SELECT uuid, blob FROM predictions")
+	rows, err := s.db.Query(sql, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	result := map[string]types.Prediction{}
+	result := []types.Prediction{}
 	for rows.Next() {
 		var (
 			clUUID, clBlob []byte
@@ -126,7 +209,7 @@ func (s PostgresDBStateStorage) GetPredictions(css []types.PredictionStateValue)
 			continue
 		}
 		pred.UUID = string(clUUID)
-		result[pred.PostUrl] = pred
+		result = append(result, pred)
 	}
 
 	return result, nil

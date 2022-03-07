@@ -1,9 +1,10 @@
 package types
 
 type Predict struct {
-	WrongIf    *BoolExpr
-	AnnulledIf *BoolExpr
-	Predict    BoolExpr
+	WrongIf                           *BoolExpr
+	AnnulledIf                        *BoolExpr
+	Predict                           BoolExpr
+	IgnoreUndecidedIfPredictIsDefined bool
 }
 
 func (p Predict) UndecidedConditions() []*Condition {
@@ -31,6 +32,34 @@ func (p Predict) Evaluate() PredictionStateValue {
 	}
 	if annulledIfValue == FALSE && (predictValue == FALSE || wrongIfValue == TRUE) {
 		return INCORRECT
+	}
+	if p.IgnoreUndecidedIfPredictIsDefined && predictValue != UNDECIDED {
+		switch {
+		case annulledIfValue == FALSE && predictValue == TRUE && wrongIfValue == TRUE:
+			return INCORRECT
+		case annulledIfValue == FALSE && predictValue == TRUE && wrongIfValue == FALSE:
+			return CORRECT
+		case annulledIfValue == FALSE && predictValue == TRUE && wrongIfValue == UNDECIDED:
+			return CORRECT
+		case annulledIfValue == FALSE && predictValue == FALSE && wrongIfValue == TRUE:
+			return INCORRECT
+		case annulledIfValue == FALSE && predictValue == FALSE && wrongIfValue == FALSE:
+			return INCORRECT
+		case annulledIfValue == FALSE && predictValue == FALSE && wrongIfValue == UNDECIDED:
+			return INCORRECT
+		case annulledIfValue == UNDECIDED && predictValue == TRUE && wrongIfValue == TRUE:
+			return INCORRECT
+		case annulledIfValue == UNDECIDED && predictValue == TRUE && wrongIfValue == FALSE:
+			return CORRECT
+		case annulledIfValue == UNDECIDED && predictValue == TRUE && wrongIfValue == UNDECIDED:
+			return CORRECT
+		case annulledIfValue == UNDECIDED && predictValue == FALSE && wrongIfValue == TRUE:
+			return INCORRECT
+		case annulledIfValue == UNDECIDED && predictValue == FALSE && wrongIfValue == FALSE:
+			return INCORRECT
+		case annulledIfValue == UNDECIDED && predictValue == FALSE && wrongIfValue == UNDECIDED:
+			return INCORRECT
+		}
 	}
 	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictValue == UNDECIDED {
 		return ONGOING_PREDICTION

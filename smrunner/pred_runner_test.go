@@ -61,7 +61,7 @@ func TestNewPredRunner(t *testing.T) {
 			name: "False pre-prediction makes no calls",
 			prediction: newPredictionWith(
 				types.PrePredict{
-					PredictIf: literalFalseBoolExpr,
+					Predict: literalFalseBoolExpr,
 				},
 				types.Predict{}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
@@ -96,7 +96,7 @@ func TestNewPredRunner(t *testing.T) {
 				types.PrePredict{
 					AnnulledIf: literalTrueBoolExpr,
 					WrongIf:    literalUndecidedBoolExpr,
-					PredictIf:  literalUndecidedBoolExpr,
+					Predict:    literalUndecidedBoolExpr,
 				},
 				types.Predict{
 					AnnulledIf: literalUndecidedBoolExpr,
@@ -126,7 +126,7 @@ func TestNewPredRunner(t *testing.T) {
 				types.PrePredict{
 					AnnulledIf: literalFalseBoolExpr,
 					WrongIf:    literalTrueBoolExpr,
-					PredictIf:  literalUndecidedBoolExpr,
+					Predict:    literalUndecidedBoolExpr,
 				},
 				types.Predict{
 					AnnulledIf: literalUndecidedBoolExpr,

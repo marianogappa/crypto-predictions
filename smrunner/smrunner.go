@@ -42,7 +42,15 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 	var result = SMRunnerResult{Predictions: map[string]types.Prediction{}, Errors: []error{}}
 
 	// Get ongoing predictions from storage
-	predictions, err := r.store.GetPredictions([]types.PredictionStateValue{types.ONGOING_PRE_PREDICTION, types.ONGOING_PREDICTION})
+	predictions, err := r.store.GetPredictions(
+		types.APIFilters{
+			PredictionStateValues: []string{
+				types.ONGOING_PRE_PREDICTION.String(),
+				types.ONGOING_PREDICTION.String(),
+			},
+		},
+		[]string{types.CREATED_AT_DESC.String()},
+	)
 	if err != nil {
 		result.Errors = append(result.Errors, err)
 		return result
@@ -50,7 +58,7 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 
 	// Create prediction runners from all ongoing predictions
 	activePredRunners := map[string]*PredRunner{}
-	for pk, prediction := range predictions {
+	for _, prediction := range predictions {
 		pred := prediction
 		predRunner, errs := NewPredRunner(&pred, r.market, nowTs)
 		for _, err := range errs {
@@ -61,7 +69,7 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 		if len(errs) > 0 {
 			continue
 		}
-		activePredRunners[pk] = predRunner
+		activePredRunners[prediction.UUID] = predRunner
 	}
 
 	// Continuously run prediction runners until there aren't any active ones

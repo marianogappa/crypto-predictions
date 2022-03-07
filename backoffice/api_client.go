@@ -13,18 +13,18 @@ import (
 )
 
 type response struct {
-	Status          int                         `json:"status"`
-	Message         string                      `json:"message,omitempty"`
-	InternalMessage string                      `json:"internalMessage,omitempty"`
-	ErrorCode       string                      `json:"errorCode,omitempty"`
-	Prediction      *json.RawMessage            `json:"prediction,omitempty"`
-	Predictions     *map[string]json.RawMessage `json:"predictions,omitempty"`
+	Status          int                `json:"status"`
+	Message         string             `json:"message,omitempty"`
+	InternalMessage string             `json:"internalMessage,omitempty"`
+	ErrorCode       string             `json:"errorCode,omitempty"`
+	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
+	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
 }
 
 func (r response) parse() parsedResponse {
 	var (
 		pred  *types.Prediction
-		preds *map[string]types.Prediction
+		preds *[]types.Prediction
 		pc    = compiler.NewPredictionCompiler()
 	)
 	if r.Prediction != nil {
@@ -32,10 +32,10 @@ func (r response) parse() parsedResponse {
 		pred = &p
 	}
 	if r.Predictions != nil {
-		preds = &map[string]types.Prediction{}
-		for key, rawPred := range *r.Predictions {
+		preds = &[]types.Prediction{}
+		for _, rawPred := range *r.Predictions {
 			p, _ := pc.Compile(rawPred)
-			(*preds)[key] = p
+			(*preds) = append((*preds), p)
 		}
 	}
 
@@ -55,7 +55,7 @@ type parsedResponse struct {
 	InternalMessage string
 	ErrorCode       string
 	Prediction      *types.Prediction
-	Predictions     *map[string]types.Prediction
+	Predictions     *[]types.Prediction
 }
 
 type APIClient struct {

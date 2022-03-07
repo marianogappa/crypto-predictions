@@ -185,6 +185,107 @@ func TestPredictEvaluate(t *testing.T) {
 			},
 			expected: ONGOING_PREDICTION,
 		},
+		// IgnoreUndecidedIfPredictIsDefined flag
+		{
+			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,Predict=FALSE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalFalseBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,Predict=TRUE) w/IgnoreUndecided flag evaluates to CORRECT",
+			expr: Predict{
+				WrongIf:                           literalFalseBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: CORRECT,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=FALSE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=TRUE) w/IgnoreUndecided flag evaluates to CORRECT",
+			expr: Predict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: CORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=TRUE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=FALSE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=TRUE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=TRUE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalFalseBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=FALSE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalFalseBoolExpr,
+				Predict:                           *literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=TRUE) w/IgnoreUndecided flag evaluates to INCORRECT",
+			expr: Predict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalFalseBoolExpr,
+				Predict:                           *literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {

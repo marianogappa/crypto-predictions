@@ -31,6 +31,7 @@ var (
 	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
 	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
 	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")
+	ErrUnknownAPIOrderBy                  = errors.New("unknown API order by")
 )
 
 type Operand struct {
@@ -191,4 +192,49 @@ type PredictionState struct {
 	LastTs int
 	Value  PredictionStateValue
 	// add state to provide evidence of alleged condition result
+}
+
+type APIFilters struct {
+	AuthorHandles         []string `json:"authorHandles"`
+	UUIDs                 []string `json:"uuiDs"`
+	PredictionStateValues []string `json:"predictionStateValues"`
+	PredictionStateStatus []string `json:"predictionStateStatus"`
+}
+
+type APIOrderBy int
+
+const (
+	CREATED_AT_DESC APIOrderBy = iota
+	CREATED_AT_ASC
+	POSTED_AT_DESC
+	POSTED_AT_ASC
+)
+
+func APIOrderByFromString(s string) (APIOrderBy, error) {
+	switch s {
+	case "CREATED_AT_DESC", "":
+		return CREATED_AT_DESC, nil
+	case "CREATED_AT_ASC":
+		return CREATED_AT_ASC, nil
+	case "POSTED_AT_DESC":
+		return POSTED_AT_DESC, nil
+	case "POSTED_AT_ASC":
+		return POSTED_AT_ASC, nil
+	default:
+		return 0, fmt.Errorf("%w: %v", ErrUnknownAPIOrderBy, s)
+	}
+}
+func (v APIOrderBy) String() string {
+	switch v {
+	case CREATED_AT_DESC:
+		return "CREATED_AT_DESC"
+	case CREATED_AT_ASC:
+		return "CREATED_AT_ASC"
+	case POSTED_AT_DESC:
+		return "POSTED_AT_DESC"
+	case POSTED_AT_ASC:
+		return "POSTED_AT_ASC"
+	default:
+		return ""
+	}
 }

@@ -592,7 +592,7 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
-			name: "Error mapping prePredict.predictIf: ErrBoolExprSyntaxError",
+			name: "Error mapping prePredict.predict: ErrBoolExprSyntaxError",
 			pred: `{
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
@@ -602,7 +602,7 @@ func TestCompile(t *testing.T) {
 					}
 				},
 				"prePredict": {
-					"predictIf": "???"
+					"predict": "???"
 				},
 				"predict": {
 					"predict": "main"
@@ -628,7 +628,7 @@ func TestCompile(t *testing.T) {
 				},
 				"prePredict": {
 					"wrongIf": "???",
-					"predictIf": "main"
+					"predict": "main"
 				},
 				"predict": {
 					"predict": "main"
@@ -655,7 +655,7 @@ func TestCompile(t *testing.T) {
 				"prePredict": {
 					"annulledIf": "???",
 					"wrongIf": "main",
-					"predictIf": "main"
+					"predict": "main"
 				},
 				"predict": {
 					"predict": "main"
@@ -670,7 +670,7 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
-			name: "Must have prePredict.predictIf if it has prePredict.wrongIf",
+			name: "Must have prePredict.predict if it has prePredict.wrongIf",
 			pred: `{
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
@@ -692,7 +692,7 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
-			name: "Must have prePredict.predictIf if it has prePredict.annulledIf",
+			name: "Must have prePredict.predict if it has prePredict.annulledIf",
 			pred: `{
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
@@ -792,7 +792,7 @@ func TestCompile(t *testing.T) {
 					}
 				},
 				"prePredict": {
-					"predictIf": "main"
+					"predict": "main"
 				},
 				"predict": {
 					"annulledIf": "main",
@@ -822,7 +822,7 @@ func TestCompile(t *testing.T) {
 					}
 				},
 				"prePredict": {
-					"predictIf": "main"
+					"predict": "main"
 				},
 				"predict": {
 					"annulledIf": "main",
@@ -843,7 +843,7 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
-			name: "Happy case",
+			name: "Happy case with all flags",
 			pred: `{
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
@@ -852,8 +852,14 @@ func TestCompile(t *testing.T) {
 						"toDuration": "2d"
 					}
 				},
+				"prePredict": {
+					"predict": "main",
+					"annulledIfPredictIsFalse": true,
+					"ignoreUndecidedIfPredictIsDefined": true
+				},
 				"predict": {
-					"predict": "main"
+					"predict": "main",
+					"ignoreUndecidedIfPredictIsDefined": true
 				}
 			}`,
 			postMetadataFetchErr: nil,
@@ -883,6 +889,25 @@ func TestCompile(t *testing.T) {
 						ToDuration: "2d",
 					},
 				},
+				PrePredict: types.PrePredict{
+					Predict: &types.BoolExpr{
+						Operator: types.LITERAL,
+						Operands: nil,
+						Literal: &types.Condition{
+							Name:     "main",
+							Operator: "<=",
+							Operands: []types.Operand{
+								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+							},
+							FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
+							ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
+							ToDuration: "2d",
+						},
+					},
+					AnnulledIfPredictIsFalse:          true,
+					IgnoreUndecidedIfPredictIsDefined: true,
+				},
 				Predict: types.Predict{
 					Predict: types.BoolExpr{
 						Operator: types.LITERAL,
@@ -899,6 +924,7 @@ func TestCompile(t *testing.T) {
 							ToDuration: "2d",
 						},
 					},
+					IgnoreUndecidedIfPredictIsDefined: true,
 				},
 			},
 		},
@@ -927,7 +953,7 @@ func TestCompile(t *testing.T) {
 				t.FailNow()
 			}
 			if ts.err == nil && !reflect.DeepEqual(actual, ts.expected) {
-				t.Logf("expected %v but got %v", ts.expected, actual)
+				t.Logf("expected %+v but got %+v", ts.expected, actual)
 				t.FailNow()
 			}
 		})

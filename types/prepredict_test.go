@@ -26,23 +26,23 @@ func TestPrePredictEvaluate(t *testing.T) {
 			expected: ONGOING_PREDICTION,
 		},
 		{
-			name: "Only PredictIf evaluates to ONGOING_PRE_PREDICTION",
+			name: "Only Predict evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
-				PredictIf: literalUndecidedBoolExpr,
+				Predict: literalUndecidedBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "Only PredictIf evaluates to ONGOING_PREDICTION",
+			name: "Only Predict evaluates to ONGOING_PREDICTION",
 			expr: PrePredict{
-				PredictIf: literalTrueBoolExpr,
+				Predict: literalTrueBoolExpr,
 			},
 			expected: ONGOING_PREDICTION,
 		},
 		{
-			name: "Only PredictIf evaluates to INCORRECT",
+			name: "Only Predict evaluates to INCORRECT",
 			expr: PrePredict{
-				PredictIf: literalFalseBoolExpr,
+				Predict: literalFalseBoolExpr,
 			},
 			expected: INCORRECT,
 		},
@@ -153,148 +153,253 @@ func TestPrePredictEvaluate(t *testing.T) {
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=TRUE,PredictIf=UNDECIDED) evaluates to ANNULLED",
+			name: "(WrongIf=TRUE,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=FALSE,PredictIf=UNDECIDED) evaluates to INCORRECT",
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=UNDECIDED) evaluates to INCORRECT",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: INCORRECT,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=TRUE,PredictIf=UNDECIDED) evaluates to ANNULLED",
+			name: "(WrongIf=FALSE,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=FALSE,PredictIf=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=FALSE,AnnulledIf=FALSE,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,PredictIf=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalUndecidedBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,PredictIf=UNDECIDED) evaluates to ANNULLED",
+			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalUndecidedBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,PredictIf=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,PredictIf=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr,
+				Predict:    literalUndecidedBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=TRUE,PredictIf=FALSE) evaluates to ANNULLED",
+			name: "(WrongIf=TRUE,AnnulledIf=TRUE,Predict=FALSE) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=FALSE,PredictIf=FALSE) evaluates to INCORRECT",
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=FALSE) evaluates to INCORRECT",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: INCORRECT,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=TRUE,PredictIf=FALSE) evaluates to ANNULLED",
+			name: "(WrongIf=FALSE,AnnulledIf=TRUE,Predict=FALSE) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=FALSE,PredictIf=FALSE) evaluates to INCORRECT",
+			name: "(WrongIf=FALSE,AnnulledIf=FALSE,Predict=FALSE) evaluates to INCORRECT",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: INCORRECT,
 		},
 		{
-			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,PredictIf=FALSE) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,Predict=FALSE) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalUndecidedBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: INCORRECT,
 		},
 		{
-			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,PredictIf=FALSE) evaluates to ANNULLED",
+			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,Predict=FALSE) evaluates to ANNULLED",
 			expr: PrePredict{
 				WrongIf:    literalUndecidedBoolExpr,
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: ANNULLED,
 		},
 		{
-			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,PredictIf=FALSE) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=FALSE,AnnulledIf=UNDECIDED,Predict=FALSE) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
 		},
 		{
-			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,PredictIf=FALSE) evaluates to ONGOING_PRE_PREDICTION",
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=FALSE) evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: ONGOING_PRE_PREDICTION,
+		},
+		// AnnulledIfPredictIsFalse flag
+		{
+			name: "(WrongIf=FALSE,AnnulledIf=FALSE,Predict=FALSE w/Annulled flag) evaluates to ANULLED",
+			expr: PrePredict{
+				WrongIf:                  literalFalseBoolExpr,
+				AnnulledIf:               literalFalseBoolExpr,
+				Predict:                  literalFalseBoolExpr,
+				AnnulledIfPredictIsFalse: true,
+			},
+			expected: ANNULLED,
+		},
+		{
+			name: "(WrongIf=FALSE,AnnulledIf=FALSE,Predict=TRUE w/Annulled flag) evaluates to ONGOING_PREDICTION",
+			expr: PrePredict{
+				WrongIf:                  literalFalseBoolExpr,
+				AnnulledIf:               literalFalseBoolExpr,
+				Predict:                  literalTrueBoolExpr,
+				AnnulledIfPredictIsFalse: true,
+			},
+			expected: ONGOING_PREDICTION,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=TRUE w/Annulled flag) evaluates to INCORRECT",
+			expr: PrePredict{
+				WrongIf:                  literalTrueBoolExpr,
+				AnnulledIf:               literalFalseBoolExpr,
+				Predict:                  literalTrueBoolExpr,
+				AnnulledIfPredictIsFalse: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=FALSE w/Annulled flag) evaluates to ONGOING_PRE_PREDICTION",
+			expr: PrePredict{
+				WrongIf:                  literalUndecidedBoolExpr,
+				AnnulledIf:               literalUndecidedBoolExpr,
+				Predict:                  literalFalseBoolExpr,
+				AnnulledIfPredictIsFalse: true,
+			},
+			expected: ONGOING_PRE_PREDICTION,
+		},
+		// IgnoreUndecidedIfPredictIsDefined flag
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=FALSE w/IgnoreUndecided flag) evaluates to INCORRECT",
+			expr: PrePredict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=TRUE w/IgnoreUndecided flag) evaluates to ONGOING_PREDICTION",
+			expr: PrePredict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: ONGOING_PREDICTION,
+		},
+		{
+			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=TRUE w/IgnoreUndecided flag) evaluates to INCORRECT",
+			expr: PrePredict{
+				WrongIf:                           literalTrueBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: INCORRECT,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,Predict=TRUE w/IgnoreUndecided flag) evaluates to ANNULLED",
+			expr: PrePredict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalTrueBoolExpr,
+				Predict:                           literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+			},
+			expected: ANNULLED,
+		},
+		// AnnulledIfPredictIsFalse flag && IgnoreUndecidedIfPredictIsDefined flag
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=FALSE w/IgnoreUndecided & Annulled flag) evaluates to ANNULLED",
+			expr: PrePredict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           literalFalseBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+				AnnulledIfPredictIsFalse:          true,
+			},
+			expected: ANNULLED,
+		},
+		{
+			name: "(WrongIf=UNDECIDED,AnnulledIf=UNDECIDED,Predict=TRUE w/IgnoreUndecided & Annulled flag) evaluates to ONGOING_PREDICTION",
+			expr: PrePredict{
+				WrongIf:                           literalUndecidedBoolExpr,
+				AnnulledIf:                        literalUndecidedBoolExpr,
+				Predict:                           literalTrueBoolExpr,
+				IgnoreUndecidedIfPredictIsDefined: true,
+				AnnulledIfPredictIsFalse:          true,
+			},
+			expected: ONGOING_PREDICTION,
 		},
 	}
 	for _, ts := range tss {
@@ -333,7 +438,7 @@ func TestPrePredictUndecidedConditions(t *testing.T) {
 			expr: PrePredict{
 				WrongIf:    literalUndecidedBoolExpr1,
 				AnnulledIf: literalUndecidedBoolExpr2,
-				PredictIf:  literalUndecidedBoolExpr3,
+				Predict:    literalUndecidedBoolExpr3,
 			},
 			expected: []*Condition{undecidedCond1, undecidedCond2, undecidedCond3},
 		},
@@ -342,7 +447,7 @@ func TestPrePredictUndecidedConditions(t *testing.T) {
 			expr: PrePredict{
 				WrongIf:    &BoolExpr{Operator: AND, Operands: []*BoolExpr{literalUndecidedBoolExpr1, literalUndecidedBoolExpr2}},
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalFalseBoolExpr,
+				Predict:    literalFalseBoolExpr,
 			},
 			expected: []*Condition{undecidedCond1, undecidedCond2},
 		},
@@ -351,7 +456,7 @@ func TestPrePredictUndecidedConditions(t *testing.T) {
 			expr: PrePredict{
 				WrongIf:    &BoolExpr{Operator: OR, Operands: []*BoolExpr{literalUndecidedBoolExpr1, literalUndecidedBoolExpr2}},
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr3,
+				Predict:    literalUndecidedBoolExpr3,
 			},
 			expected: []*Condition{undecidedCond1, undecidedCond2, undecidedCond3},
 		},
@@ -360,7 +465,7 @@ func TestPrePredictUndecidedConditions(t *testing.T) {
 			expr: PrePredict{
 				WrongIf:    &BoolExpr{Operator: NOT, Operands: []*BoolExpr{literalUndecidedBoolExpr1}},
 				AnnulledIf: literalTrueBoolExpr,
-				PredictIf:  literalUndecidedBoolExpr3,
+				Predict:    literalUndecidedBoolExpr3,
 			},
 			expected: []*Condition{undecidedCond1, undecidedCond3},
 		},
@@ -455,7 +560,7 @@ func TestPrePredictClearState(t *testing.T) {
 	pp := &PrePredict{
 		AnnulledIf: &annulledIf,
 		WrongIf:    &wrongIf,
-		PredictIf:  &predictIf,
+		Predict:    &predictIf,
 	}
 
 	pp.ClearState()
@@ -465,7 +570,7 @@ func TestPrePredictClearState(t *testing.T) {
 	if !reflect.DeepEqual(*pp.WrongIf, expected) {
 		t.Errorf("expected WrongIf state to be %v but was %v", expected, pp.WrongIf)
 	}
-	if !reflect.DeepEqual(*pp.PredictIf, expected) {
-		t.Errorf("expected PredictIf state to be %v but was %v", expected, pp.PredictIf)
+	if !reflect.DeepEqual(*pp.Predict, expected) {
+		t.Errorf("expected Predict state to be %v but was %v", expected, pp.Predict)
 	}
 }

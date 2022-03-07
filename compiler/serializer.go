@@ -118,14 +118,16 @@ func marshalPrePredict(pp types.PrePredict) (*prePredict, error) {
 	if err != nil {
 		return nil, err
 	}
-	predictIf, err := marshalBoolExpr(pp.PredictIf, 0)
+	predictIf, err := marshalBoolExpr(pp.Predict, 0)
 	if err != nil {
 		return nil, err
 	}
 	result := &prePredict{
-		WrongIf:    wrongIf,
-		AnnulledIf: annulledIf,
-		PredictIf:  predictIf,
+		WrongIf:                           wrongIf,
+		AnnulledIf:                        annulledIf,
+		Predict:                           predictIf,
+		AnnulledIfPredictIsFalse:          pp.AnnulledIfPredictIsFalse,
+		IgnoreUndecidedIfPredictIsDefined: pp.IgnoreUndecidedIfPredictIsDefined,
 	}
 	return result, nil
 }
@@ -144,9 +146,10 @@ func marshalPredict(p types.Predict) (predict, error) {
 		return predict{}, err
 	}
 	result := predict{
-		WrongIf:    wrongIf,
-		AnnulledIf: annulledIf,
-		Predict:    *predictIf,
+		WrongIf:                           wrongIf,
+		AnnulledIf:                        annulledIf,
+		Predict:                           *predictIf,
+		IgnoreUndecidedIfPredictIsDefined: p.IgnoreUndecidedIfPredictIsDefined,
 	}
 	return result, nil
 }

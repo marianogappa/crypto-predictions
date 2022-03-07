@@ -293,13 +293,16 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		}
 		p.PrePredict.AnnulledIf = b
 
-		b, err = mapBoolExpr(raw.PrePredict.PredictIf, p.Given)
+		b, err = mapBoolExpr(raw.PrePredict.Predict, p.Given)
 		if err != nil {
 			return p, err
 		}
-		p.PrePredict.PredictIf = b
+		p.PrePredict.Predict = b
 
-		if p.PrePredict.PredictIf == nil && (p.PrePredict.WrongIf != nil || p.PrePredict.AnnulledIf != nil) {
+		p.PrePredict.IgnoreUndecidedIfPredictIsDefined = raw.PrePredict.IgnoreUndecidedIfPredictIsDefined
+		p.PrePredict.AnnulledIfPredictIsFalse = raw.PrePredict.AnnulledIfPredictIsFalse
+
+		if p.PrePredict.Predict == nil && (p.PrePredict.WrongIf != nil || p.PrePredict.AnnulledIf != nil) {
 			return p, types.ErrMissingRequiredPrePredictPredictIf
 		}
 	}
@@ -325,6 +328,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		return p, err
 	}
 	p.Predict.Predict = *b
+	p.Predict.IgnoreUndecidedIfPredictIsDefined = raw.Predict.IgnoreUndecidedIfPredictIsDefined
 
 	status, err := types.ConditionStatusFromString(raw.PredictionState.Status)
 	if err != nil {

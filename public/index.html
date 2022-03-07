@@ -119,12 +119,12 @@
                 <div class="predictionAuthor resp-table-cell">
                     {{.predictionAuthor}}
                 </div>
-                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus " UNSTARTED")}}{{print "red"
+                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus "UNSTARTED")}}{{print "red"
                     }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
                     }}{{end}}">
                     {{.predictionStatus}}
                 </div>
-                <div class="predictionValue resp-table-cell {{if(eq .predictionValue " INCORRECT")}}{{print "red"
+                <div class="predictionValue resp-table-cell {{if(eq .predictionValue "INCORRECT")}}{{print "red"
                     }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
                     {{.predictionValue}}
                 </div>

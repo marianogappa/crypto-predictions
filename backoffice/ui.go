@@ -81,7 +81,7 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data["GetPredictionsErrCode"] = res.ErrorCode
 	data["GetPredictionsInternalMessage"] = res.InternalMessage
 
-	preds := map[string]types.Prediction{}
+	preds := []types.Prediction{}
 	if res.Predictions != nil {
 		preds = *res.Predictions
 	}

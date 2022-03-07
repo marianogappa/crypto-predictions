@@ -31,15 +31,18 @@ type condition struct {
 }
 
 type prePredict struct {
-	WrongIf    *string `json:"wrongIf,omitempty"`
-	AnnulledIf *string `json:"annulledIf,omitempty"`
-	PredictIf  *string `json:"predictIf,omitempty"`
+	WrongIf                           *string `json:"wrongIf,omitempty"`
+	AnnulledIf                        *string `json:"annulledIf,omitempty"`
+	Predict                           *string `json:"predict,omitempty"`
+	AnnulledIfPredictIsFalse          bool    `json:"annulledIfPredictIsFalse,omitempty"`
+	IgnoreUndecidedIfPredictIsDefined bool    `json:"ignoreUndecidedIfPredictIsDefined,omitempty"`
 }
 
 type predict struct {
-	WrongIf    *string `json:"wrongIf,omitempty"`
-	AnnulledIf *string `json:"annulledIf,omitempty"`
-	Predict    string  `json:"predict,omitempty"`
+	WrongIf                           *string `json:"wrongIf,omitempty"`
+	AnnulledIf                        *string `json:"annulledIf,omitempty"`
+	Predict                           string  `json:"predict,omitempty"`
+	IgnoreUndecidedIfPredictIsDefined bool    `json:"ignoreUndecidedIfPredictIsDefined,omitempty"`
 }
 
 type prediction struct {

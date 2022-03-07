@@ -79,15 +79,15 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type response struct {
-	Status          int                         `json:"status"`
-	Message         string                      `json:"message,omitempty"`
-	InternalMessage string                      `json:"internalMessage,omitempty"`
-	ErrorCode       string                      `json:"errorCode,omitempty"`
-	Prediction      *json.RawMessage            `json:"prediction,omitempty"`
-	Predictions     *map[string]json.RawMessage `json:"predictions,omitempty"`
+	Status          int                `json:"status"`
+	Message         string             `json:"message,omitempty"`
+	InternalMessage string             `json:"internalMessage,omitempty"`
+	ErrorCode       string             `json:"errorCode,omitempty"`
+	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
+	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
 }
 
-func respond(w http.ResponseWriter, pred *json.RawMessage, preds *map[string]json.RawMessage, err error) {
+func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMessage, err error) {
 	if err == nil {
 		doRespond(w, response{Message: "", Prediction: pred, Predictions: preds, Status: 200})
 		return
@@ -109,14 +109,27 @@ func doRespond(w http.ResponseWriter, r response) {
 	enc.Encode(r)
 }
 
+type getBody struct {
+	Filters  types.APIFilters `json:"filters"`
+	OrderBys []string         `json:"orderBys"`
+}
+
 func (a *API) getHandler(w http.ResponseWriter, r *http.Request) {
-	preds, err := a.store.GetPredictions([]types.PredictionStateValue{
-		types.ONGOING_PRE_PREDICTION,
-		types.ONGOING_PREDICTION,
-		types.ANNULLED,
-		types.INCORRECT,
-		types.CORRECT,
-	})
+	bs, err := io.ReadAll(r.Body)
+	if err != nil {
+		respond(w, nil, nil, err)
+		return
+	}
+	defer r.Body.Close()
+
+	var params getBody
+	_ = json.Unmarshal(bs, &params)
+
+	preds, err := a.store.GetPredictions(
+		params.Filters,
+		params.OrderBys,
+	)
+
 	if err != nil {
 		respond(w, nil, nil, err)
 		return
@@ -124,11 +137,11 @@ func (a *API) getHandler(w http.ResponseWriter, r *http.Request) {
 
 	ps := compiler.NewPredictionSerializer()
 
-	raws := map[string]json.RawMessage{}
-	for key, pred := range preds {
+	raws := []json.RawMessage{}
+	for _, pred := range preds {
 		bs, _ := ps.Serialize(&pred)
 		raw := json.RawMessage(bs)
-		raws[key] = raw
+		raws = append(raws, raw)
 	}
 
 	respond(w, nil, &raws, nil)
