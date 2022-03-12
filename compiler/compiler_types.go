@@ -49,6 +49,7 @@ type prediction struct {
 	UUID            string               `json:"uuid"`
 	Version         string               `json:"version"`
 	CreatedAt       common.ISO8601       `json:"createdAt"`
+	Reporter        string               `json:"reporter"`
 	PostAuthor      string               `json:"postAuthor"`
 	PostedAt        common.ISO8601       `json:"postedAt"`
 	PostUrl         string               `json:"postUrl"`

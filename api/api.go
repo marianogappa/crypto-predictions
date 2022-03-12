@@ -3,97 +3,76 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"log"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/market"
-	"github.com/marianogappa/predictions/smrunner"
+	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type API struct {
-	mkt     market.Market
-	store   statestorage.StateStorage
-	NowFunc func() time.Time
+	mux      *http.ServeMux
+	mkt      market.IMarket
+	store    statestorage.StateStorage
+	mFetcher metadatafetcher.MetadataFetcher
+	NowFunc  func() time.Time
 }
 
-func NewAPI(mkt market.Market, store statestorage.StateStorage) *API {
-	return &API{mkt: mkt, store: store, NowFunc: time.Now}
+func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher) *API {
+	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/new", a.newHandler)
+	mux.HandleFunc("/get", a.getHandler)
+	a.mux = mux
+
+	return a
 }
 
-func (a *API) MustBlockinglyServe(port int) {
-	http.HandleFunc("/new", a.newHandler)
-	http.HandleFunc("/get", a.getHandler)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
-}
+func (a *API) MustBlockinglyListenAndServe(apiURL string) {
+	// If url starts with https?://, remove that part for the listener address
+	rawUrlParts := strings.Split(apiURL, "//")
+	listenUrl := rawUrlParts[len(rawUrlParts)-1]
 
-func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
-	bs, err := io.ReadAll(r.Body)
+	l, err := a.Listen(listenUrl)
 	if err != nil {
-		respond(w, nil, nil, err)
-		return
+		log.Fatal(err)
 	}
-	defer r.Body.Close()
-
-	pc := compiler.NewPredictionCompiler()
-	pred, err := pc.Compile(bs)
+	err = a.BlockinglyServe(l)
 	if err != nil {
-		respond(w, nil, nil, err)
-		return
+		log.Fatal(err)
 	}
-
-	// If the state is empty, run one tick to see if the prediction is decided at start time. If so, it's invalid.
-	if pred.State == (types.PredictionState{}) {
-		predRunner, errs := smrunner.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
-		if len(errs) == 0 {
-			predRunnerErrs := predRunner.Run()
-			for _, err := range predRunnerErrs {
-				if errors.Is(err, common.ErrInvalidMarketPair) {
-					respond(w, nil, nil, common.ErrInvalidMarketPair)
-					return
-				}
-			}
-			if pred.Evaluate().IsFinal() {
-				respond(w, nil, nil, types.ErrPredictionFinishedAtStartTime)
-				return
-			}
-		}
-	}
-
-	err = a.store.UpsertPredictions(map[string]types.Prediction{"unused": pred})
-	if err != nil {
-		respond(w, nil, nil, err)
-		return
-	}
-
-	bs, _ = compiler.NewPredictionSerializer().Serialize(&pred)
-	raw := json.RawMessage(bs)
-
-	respond(w, &raw, nil, err)
 }
 
-type response struct {
+func (a *API) Listen(url string) (net.Listener, error) {
+	return net.Listen("tcp", url)
+}
+
+func (a *API) BlockinglyServe(l net.Listener) error {
+	return http.Serve(l, a.mux)
+}
+
+type APIResponse struct {
 	Status          int                `json:"status"`
 	Message         string             `json:"message,omitempty"`
 	InternalMessage string             `json:"internalMessage,omitempty"`
 	ErrorCode       string             `json:"errorCode,omitempty"`
 	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
 	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
+	Stored          *bool
 }
 
-func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMessage, err error) {
+func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMessage, stored *bool, err error) {
 	if err == nil {
-		doRespond(w, response{Message: "", Prediction: pred, Predictions: preds, Status: 200})
+		doRespond(w, APIResponse{Message: "", Prediction: pred, Predictions: preds, Stored: stored, Status: 200})
 		return
 	}
 
-	r := response{Message: "Unknown internal error.", Status: 500, InternalMessage: err.Error()}
+	r := APIResponse{Message: "Unknown internal error.", Status: 500, InternalMessage: err.Error()}
 	for maybeErr, maybeResp := range errToResponse {
 		if errors.Is(err, maybeErr) {
 			r = maybeResp
@@ -103,46 +82,10 @@ func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMess
 	doRespond(w, r)
 }
 
-func doRespond(w http.ResponseWriter, r response) {
+func doRespond(w http.ResponseWriter, r APIResponse) {
+	log.Printf("API.doRespond: responding request: %+v\n", r)
+
 	w.WriteHeader(r.Status)
 	enc := json.NewEncoder(w)
 	enc.Encode(r)
-}
-
-type getBody struct {
-	Filters  types.APIFilters `json:"filters"`
-	OrderBys []string         `json:"orderBys"`
-}
-
-func (a *API) getHandler(w http.ResponseWriter, r *http.Request) {
-	bs, err := io.ReadAll(r.Body)
-	if err != nil {
-		respond(w, nil, nil, err)
-		return
-	}
-	defer r.Body.Close()
-
-	var params getBody
-	_ = json.Unmarshal(bs, &params)
-
-	preds, err := a.store.GetPredictions(
-		params.Filters,
-		params.OrderBys,
-	)
-
-	if err != nil {
-		respond(w, nil, nil, err)
-		return
-	}
-
-	ps := compiler.NewPredictionSerializer()
-
-	raws := []json.RawMessage{}
-	for _, pred := range preds {
-		bs, _ := ps.Serialize(&pred)
-		raw := json.RawMessage(bs)
-		raws = append(raws, raw)
-	}
-
-	respond(w, nil, &raws, nil)
 }

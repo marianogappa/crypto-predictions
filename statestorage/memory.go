@@ -3,31 +3,49 @@ package statestorage
 import "github.com/marianogappa/predictions/types"
 
 type MemoryStateStorage struct {
-	predictions map[string]types.Prediction
+	Predictions map[string]types.Prediction
 }
 
 func NewMemoryStateStorage() MemoryStateStorage {
-	return MemoryStateStorage{predictions: map[string]types.Prediction{}}
+	return MemoryStateStorage{Predictions: map[string]types.Prediction{}}
 }
 
-func (s MemoryStateStorage) GetPredictions(css []types.PredictionStateValue) (map[string]types.Prediction, error) {
-	csMap := map[types.PredictionStateValue]struct{}{}
-	for _, cs := range css {
-		csMap[cs] = struct{}{}
+func sliceToMap(ss []string) map[string]struct{} {
+	m := map[string]struct{}{}
+	for _, s := range ss {
+		m[s] = struct{}{}
 	}
+	return m
+}
 
-	res := map[string]types.Prediction{}
-	for k, v := range s.predictions {
-		if _, ok := csMap[v.State.Value]; ok {
-			res[k] = v
+func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []string) ([]types.Prediction, error) {
+	authors := sliceToMap(filters.AuthorHandles)
+	stateStatuses := sliceToMap(filters.PredictionStateStatus)
+	stateValues := sliceToMap(filters.PredictionStateValues)
+	uuids := sliceToMap(filters.UUIDs)
+
+	res := []types.Prediction{}
+	for _, v := range s.Predictions {
+		if _, ok := authors[v.PostAuthor]; !ok && len(authors) > 0 {
+			continue
 		}
+		if _, ok := stateStatuses[v.State.Status.String()]; !ok && len(stateStatuses) > 0 {
+			continue
+		}
+		if _, ok := stateValues[v.State.Value.String()]; !ok && len(stateValues) > 0 {
+			continue
+		}
+		if _, ok := uuids[v.UUID]; !ok && len(uuids) > 0 {
+			continue
+		}
+		res = append(res, v)
 	}
 	return res, nil
 }
 
 func (s MemoryStateStorage) UpsertPredictions(ps map[string]types.Prediction) error {
 	for _, prediction := range ps {
-		s.predictions[prediction.PostUrl] = prediction
+		s.Predictions[prediction.PostUrl] = prediction
 	}
 	return nil
 }

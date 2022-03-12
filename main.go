@@ -11,6 +11,7 @@ import (
 	"github.com/marianogappa/predictions/api"
 	"github.com/marianogappa/predictions/backoffice"
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/smrunner"
 	"github.com/marianogappa/predictions/statestorage"
 )
@@ -23,10 +24,19 @@ var (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	if os.Getenv("PREDICTIONS_TWITTER_BEARER_TOKEN") == "" || os.Getenv("PREDICTIONS_YOUTUBE_API_KEY") == "" {
+		log.Fatal(
+			`Please set the PREDICTIONS_TWITTER_BEARER_TOKEN && PREDICTIONS_YOUTUBE_API_KEY envs; I can't ` +
+				`create predictions properly otherwise. If you're not planning to create predictions, just set them ` +
+				`to any value.`,
+		)
+	}
+
 	var (
 		postgresDBStorage = statestorage.MustNewPostgresDBStateStorage()
 		market            = market.NewMarket()
-		api               = api.NewAPI(market, postgresDBStorage)
+		metadataFetcher   = metadatafetcher.NewMetadataFetcher()
+		api               = api.NewAPI(market, postgresDBStorage, *metadataFetcher)
 		backgroundRunner  = smrunner.NewSMRunner(market, postgresDBStorage)
 		backOffice        = backoffice.NewBackOfficeUI(files)
 
@@ -36,7 +46,7 @@ func main() {
 		backgroundRunnerDuration = envOrDur("PREDICTIONS_BACKGROUND_RUNNER_DURATION", 10*time.Second)
 	)
 
-	go api.MustBlockinglyServe(apiPort)
+	go api.MustBlockinglyListenAndServe(apiUrl)
 	go backOffice.MustBlockinglyServe(backOfficePort, apiUrl)
 	go backgroundRunner.BlockinglyRunEvery(backgroundRunnerDuration)
 

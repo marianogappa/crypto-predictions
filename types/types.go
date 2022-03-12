@@ -25,6 +25,7 @@ var (
 	ErrErrorMarginRatioAbove30            = errors.New("error margin ratio above 30%% is not allowed")
 	ErrInvalidJSON                        = errors.New("invalid JSON")
 	ErrEmptyPostURL                       = errors.New("postUrl cannot be empty")
+	ErrEmptyReporter                      = errors.New("reporter cannot be empty")
 	ErrEmptyPostAuthor                    = errors.New("postAuthor cannot be empty")
 	ErrEmptyPostedAt                      = errors.New("postedAt cannot be empty")
 	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
@@ -196,7 +197,7 @@ type PredictionState struct {
 
 type APIFilters struct {
 	AuthorHandles         []string `json:"authorHandles"`
-	UUIDs                 []string `json:"uuiDs"`
+	UUIDs                 []string `json:"uuids"`
 	PredictionStateValues []string `json:"predictionStateValues"`
 	PredictionStateStatus []string `json:"predictionStateStatus"`
 }

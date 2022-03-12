@@ -219,8 +219,8 @@ type PredictionCompiler struct {
 	timeNow         func() time.Time
 }
 
-func NewPredictionCompiler() PredictionCompiler {
-	return PredictionCompiler{metadataFetcher: metadatafetcher.NewMetadataFetcher(), timeNow: time.Now}
+func NewPredictionCompiler(fetcher *metadatafetcher.MetadataFetcher, timeNow func() time.Time) PredictionCompiler {
+	return PredictionCompiler{metadataFetcher: fetcher, timeNow: timeNow}
 }
 
 func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, error) {
@@ -233,11 +233,15 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		return p, fmt.Errorf("%w: %v", types.ErrInvalidJSON, err)
 	}
 
+	if raw.Reporter == "" {
+		return p, types.ErrEmptyReporter
+	}
+
 	if raw.PostUrl == "" {
 		return p, types.ErrEmptyPostURL
 	}
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
-	if raw.PostAuthor == "" || raw.PostedAt == "" {
+	if c.metadataFetcher != nil && raw.PostAuthor == "" || raw.PostedAt == "" {
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
 		log.Printf("result of fetching metadata for %v: err %v data %v\n", raw.PostUrl, err, metadata)
 		if err == nil {
@@ -257,11 +261,12 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	if raw.Version == "" {
 		raw.Version = "1.0.0"
 	}
-	if raw.CreatedAt == "" {
+	if c.timeNow != nil && raw.CreatedAt == "" {
 		raw.CreatedAt = common.ISO8601(c.timeNow().Format(time.RFC3339))
 	}
 
 	p.UUID = raw.UUID
+	p.Reporter = raw.Reporter
 	p.PostAuthor = raw.PostAuthor
 	p.CreatedAt = raw.CreatedAt
 	p.PostUrl = raw.PostUrl

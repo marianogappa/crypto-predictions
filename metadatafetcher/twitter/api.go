@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/marianogappa/signal-checker/common"
@@ -22,9 +23,9 @@ func NewTwitter(apiURL string) Twitter {
 		apiURL = "https://api.twitter.com/2"
 	}
 	return Twitter{
-		apiKey:      "QdmLenpIKLH28DYY1jc1VPLQc",
-		apiSecret:   "Ag8rw5sZfQUgXOCYIYydWDDoBGZDXogDL64Md9yuw7uwJQ9oVH",
-		bearerToken: "AAAAAAAAAAAAAAAAAAAAABavZQEAAAAAF5aVr9QJGBBpmQ0SaSvzMvalLoc%3D3Atd8zTPdeuq1VVK7nRaKg08EDwh03Aao9VlPTJrPP5CgrKAoG",
+		apiKey:      os.Getenv("PREDICTIONS_TWITTER_API_KEY"),
+		apiSecret:   os.Getenv("PREDICTIONS_TWITTER_API_SECRET"),
+		bearerToken: os.Getenv("PREDICTIONS_TWITTER_BEARER_TOKEN"),
 		apiURL:      apiURL,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 
@@ -19,13 +20,15 @@ type response struct {
 	ErrorCode       string             `json:"errorCode,omitempty"`
 	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
 	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
+	Stored          *bool              `json:"stored,omitempty"`
 }
 
 func (r response) parse() parsedResponse {
 	var (
-		pred  *types.Prediction
-		preds *[]types.Prediction
-		pc    = compiler.NewPredictionCompiler()
+		pred   *types.Prediction
+		preds  *[]types.Prediction
+		stored *bool
+		pc     = compiler.NewPredictionCompiler(nil, nil)
 	)
 	if r.Prediction != nil {
 		p, _ := pc.Compile(*r.Prediction)
@@ -46,6 +49,7 @@ func (r response) parse() parsedResponse {
 		ErrorCode:       r.ErrorCode,
 		Prediction:      pred,
 		Predictions:     preds,
+		Stored:          stored,
 	}
 }
 
@@ -56,6 +60,7 @@ type parsedResponse struct {
 	ErrorCode       string
 	Prediction      *types.Prediction
 	Predictions     *[]types.Prediction
+	Stored          *bool
 }
 
 type APIClient struct {
@@ -66,8 +71,19 @@ func NewAPIClient(apiURL string) APIClient {
 	return APIClient{apiURL}
 }
 
-func (c APIClient) New(pred []byte) parsedResponse {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%v/new", c.apiURL), bytes.NewBuffer(pred))
+type newBody struct {
+	Prediction json.RawMessage `json:"prediction"`
+	Store      bool            `json:"store"`
+}
+
+func (c APIClient) New(pred []byte, store bool) parsedResponse {
+	body := newBody{pred, store}
+	bs, err := json.Marshal(body)
+	if err != nil {
+		log.Println(err)
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%v/new", c.apiURL), bytes.NewBuffer(bs))
 	if err != nil {
 		return response{
 			Status:          500,
@@ -115,8 +131,22 @@ func (c APIClient) New(pred []byte) parsedResponse {
 	return res.parse()
 }
 
-func (c APIClient) Get() parsedResponse {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%v/get", c.apiURL), nil)
+type getFilters struct {
+	UUIDs          []string
+	authors        []string
+	rawStatuses    []string
+	rawStateValues []string
+}
+
+type getBody struct {
+	Filters  types.APIFilters `json:"filters"`
+	OrderBys []string         `json:"orderBys"`
+}
+
+func (c APIClient) Get(body getBody) parsedResponse {
+	bs, _ := json.Marshal(body)
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%v/get", c.apiURL), bytes.NewBuffer(bs))
 	if err != nil {
 		return response{
 			Status:          500,

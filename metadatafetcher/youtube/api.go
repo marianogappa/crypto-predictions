@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func NewYoutube(apiURL string) Youtube {
 	}
 
 	return Youtube{
-		apiKey: "AIzaSyBGIaqdlYg4feSjj5DmmTIMTTRWuXEAcY4",
+		apiKey: os.Getenv("PREDICTIONS_YOUTUBE_API_KEY"),
 		apiURL: apiURL,
 	}
 }

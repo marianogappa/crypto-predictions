@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/market"
-	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
@@ -61,7 +60,7 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 					errs = append(errs, err)
 					return &result, errs
 				}
-				log.Printf("newPredRunner: created ticker for %v:%v:%v-%v at %v\n", operand.Type, operand.Provider, operand.BaseAsset, operand.QuoteAsset, ts)
+				// log.Printf("newPredRunner: created ticker for %v:%v:%v-%v at %v\n", operand.Type, operand.Provider, operand.BaseAsset, operand.QuoteAsset, ts)
 				result.tickers[condition.Name][operand.Str] = ticker
 			}
 		}
@@ -125,7 +124,7 @@ func (r *PredRunner) Run() []error {
 				r.isInactive = true
 				continue
 			}
-			log.Printf("For %v: read tick %v = %v\n", printer.NewPredictionPrettyPrinter(*r.prediction).Default(), time.Unix(int64(tick.Timestamp), 0).Format(time.RFC3339), tick.Value)
+			// log.Printf("For %v: read tick %v = %v\n", printer.NewPredictionPrettyPrinter(*r.prediction).Default(), time.Unix(int64(tick.Timestamp), 0).Format(time.RFC3339), tick.Value)
 			// Timestamps must match on these ticks! Otherwise we're comparing apples & oranges!
 			if timestamp == nil {
 				timestamp = &tick.Timestamp

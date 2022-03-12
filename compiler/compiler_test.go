@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"reflect"
 	"testing"
@@ -536,21 +537,27 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
+			name:     "Empty reporter",
+			pred:     `{"reporter": ""}`,
+			err:      types.ErrEmptyReporter,
+			expected: types.Prediction{},
+		},
+		{
 			name:     "Empty postUrl",
-			pred:     `{"postUrl": ""}`,
+			pred:     `{"reporter": "admin", "postUrl": ""}`,
 			err:      types.ErrEmptyPostURL,
 			expected: types.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns error",
-			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: errors.New("error for test"),
 			err:                  types.ErrEmptyPostAuthor,
 			expected:             types.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns postAuthor but not postedAt",
-			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
 				Author:        "CryptoCapo_",
@@ -561,7 +568,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			name:                 "Metadata fetcher returns postAuthor and invalid postedAt",
-			pred:                 `{"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
 				Author:        "CryptoCapo_",
@@ -573,6 +580,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping condition: no ToISO8601",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -594,6 +602,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping prePredict.predict: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -619,6 +628,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping prePredict.wrongIf: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -645,6 +655,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping prePredict.annulledIf: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -672,6 +683,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Must have prePredict.predict if it has prePredict.wrongIf",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -694,6 +706,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Must have prePredict.predict if it has prePredict.annulledIf",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -716,6 +729,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping predict.wrongIf: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -739,6 +753,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping predict.annulledIf: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -762,6 +777,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping predict.predict: ErrBoolExprSyntaxError",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -784,6 +800,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping prediction state: ErrUnknownConditionStatus",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -814,6 +831,7 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Error mapping prediction state: ErrUnknownPredictionStateValue",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
@@ -845,11 +863,13 @@ func TestCompile(t *testing.T) {
 		{
 			name: "Happy case with all flags",
 			pred: `{
+				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				"given": {
 					"main": {
 						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
-						"toDuration": "2d"
+						"toDuration": "2d",
+						"errorMarginRatio": 0.03
 					}
 				},
 				"prePredict": {
@@ -872,6 +892,7 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{
 				Version:    "1.0.0",
 				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
+				Reporter:   "admin",
 				PostAuthor: "CryptoCapo_",
 				PostText:   "",
 				PostedAt:   tpToISO("2020-01-02 00:00:00"),
@@ -884,9 +905,10 @@ func TestCompile(t *testing.T) {
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
 							{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
 						},
-						FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
-						ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
-						ToDuration: "2d",
+						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
+						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
+						ToDuration:       "2d",
+						ErrorMarginRatio: 0.03,
 					},
 				},
 				PrePredict: types.PrePredict{
@@ -900,9 +922,10 @@ func TestCompile(t *testing.T) {
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
 								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
 							},
-							FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
-							ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
-							ToDuration: "2d",
+							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
+							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
+							ToDuration:       "2d",
+							ErrorMarginRatio: 0.03,
 						},
 					},
 					AnnulledIfPredictIsFalse:          true,
@@ -919,9 +942,10 @@ func TestCompile(t *testing.T) {
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
 								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
 							},
-							FromTs:     int(tp("2020-01-02 00:00:00").Unix()),
-							ToTs:       int(tp("2020-01-04 00:00:00").Unix()),
-							ToDuration: "2d",
+							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
+							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
+							ToDuration:       "2d",
+							ErrorMarginRatio: 0.03,
 						},
 					},
 					IgnoreUndecidedIfPredictIsDefined: true,
@@ -931,7 +955,7 @@ func TestCompile(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
-			pc := NewPredictionCompiler()
+			pc := NewPredictionCompiler(metadatafetcher.NewMetadataFetcher(), nil)
 			pc.metadataFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
 				newTestMetadataFetcher(ts.postMetadata, ts.postMetadataFetchErr),
 			}
@@ -953,6 +977,7 @@ func TestCompile(t *testing.T) {
 				t.FailNow()
 			}
 			if ts.err == nil && !reflect.DeepEqual(actual, ts.expected) {
+				fmt.Println("actual", actual.Given["main"].ErrorMarginRatio)
 				t.Logf("expected %+v but got %+v", ts.expected, actual)
 				t.FailNow()
 			}

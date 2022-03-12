@@ -12,7 +12,7 @@ import (
 
 type SMRunner struct {
 	store  statestorage.StateStorage
-	market market.Market
+	market market.IMarket
 }
 
 type SMRunnerResult struct {
@@ -20,7 +20,7 @@ type SMRunnerResult struct {
 	Predictions map[string]types.Prediction
 }
 
-func NewSMRunner(market market.Market, store statestorage.StateStorage) *SMRunner {
+func NewSMRunner(market market.IMarket, store statestorage.StateStorage) *SMRunner {
 	return &SMRunner{store: store, market: market}
 }
 

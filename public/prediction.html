@@ -28,14 +28,14 @@
 
         #resp-table-header {
             display: table-header-group;
-            /* background-color: rgb(223, 222, 222); */
+            background-color: rgb(223, 222, 222);
             font-weight: bold;
-            font-size: 16px;
+            font-size: 25px;
         }
 
         .table-header-cell {
             display: table-cell;
-            padding: 5px;
+            padding: 10px;
             text-align: justify;
             border-bottom: 1px solid black;
         }
@@ -50,8 +50,7 @@
 
         .resp-table-cell {
             display: table-cell;
-            padding: 5px;
-            border-bottom: 1px solid #ddd;
+            padding: 10px;
         }
 
         #resp-table {
@@ -74,48 +73,37 @@
             font-weight: bolder;
         }
 
-        a,
-        a:visited {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
         textarea {
             width: 996px;
             height: 388px;
-        }
-
-        .createPrediction,
-        .clearFilters {
-            padding-right: 10px;
-        }
-
-        .topLinks {
-            margin-bottom: 20px;
         }
     </style>
 </head>
 
 <body>
-    {{if .GetPredictionsErr}}
-    <h1>Get Predictions error</h1>
-    <div>{{.GetPredictionsErr}}</div>
-    <div>{{.GetPredictionsStatus}}</div>
-    <div>{{.GetPredictionsErrCode}}</div>
-    <div>{{.GetPredictionsInternalMessage}}</div>
+    {{ if (eq .predictionUrlType "TWITTER") }}
+    <blockquote class="twitter-tweet">
+        <a href="{{.predictionUrl}}"></a>
+    </blockquote>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    {{else if (eq .predictionUrlType "YOUTUBE") }}
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/{{.predictionUrlId}}"
+        title="YouTube video player" frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
     {{end}}
-    <div class="topLinks">
-        <a href="/add" class="createPrediction">[Create prediction]</a>
-        <a href="/" class="clearFilters">[Clear filters]</a>
-    </div>
+
+    {{if .Err}}
+    <h1>Error creating prediction</h1>
+    <div>{{.Err}}</div>
+    <div>{{.Status}}</div>
+    <div>{{.ErrCode}}</div>
+    <div>{{.InternalMessage}}</div>
+    {{else}}
     <div id="resp-table">
         <div id="resp-table-header">
             <div class="table-header-cell">
-                External
+                Url
             </div>
             <div class="table-header-cell">
                 Prediction
@@ -131,30 +119,31 @@
             </div>
         </div>
         <div id="resp-table-body">
-            {{range .Predictions}}
             <div class="prediction resp-table-row">
                 <div class="predictionUrl resp-table-cell">
-                    <a href="{{.predictionUrl}}" target="_blank">[See]</a>
+                    <a href="{{.predictionUrl}}">{{.predictionUrl}}</a>
                 </div>
                 <div class="predictionText resp-table-cell">
-                    <a href="/prediction?uuid={{.predictionUUID}}">{{.predictionText}}</a>
+                    {{.predictionText}}
                 </div>
                 <div class="predictionAuthor resp-table-cell">
-                    <a href="/?authors={{.predictionAuthor}}">{{.predictionAuthor}}</a>
+                    {{.predictionAuthor}}
                 </div>
-                <div class='predictionStatus resp-table-cell {{if(eq .predictionStatus "UNSTARTED")}}{{print "red"
+                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus " UNSTARTED" )}}{{print "red"
                     }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
-                    }}{{end}}'>
-                    <a href="/?statuses={{.predictionStatus}}">{{.predictionStatus}}</a>
+                    }}{{end}}">
+                    {{.predictionStatus}}
                 </div>
-                <div
-                    class='predictionValue resp-table-cell {{if(eq .predictionValue "INCORRECT")}}{{print "red"
-                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}'>
-                    <a href="/?stateValues={{.predictionValue}}">{{.predictionValue}}</a>
+                <div class="predictionValue resp-table-cell {{if(eq .predictionValue " INCORRECT" )}}{{print "red"
+                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+                    {{.predictionValue}}
                 </div>
             </div>
-            {{end}}
         </div>
+    </div>
+    {{end}}
+    <div>
+        <a href="/">Back</a>
     </div>
 </body>
 

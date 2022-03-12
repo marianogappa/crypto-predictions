@@ -41,6 +41,6 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 	case types.NOT:
 		return fmt.Sprintf("%vNOT %v%v", prefix, operands[0], postfix)
 	default:
-		return printCondition(*e.Literal)
+		return printCondition(*e.Literal, true)
 	}
 }

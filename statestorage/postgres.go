@@ -185,7 +185,6 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 	orderBy := buildOrderBy(orderBys)
 
 	sql := fmt.Sprintf("SELECT uuid, blob FROM predictions WHERE %v ORDER BY %v", where, orderBy)
-	log.Println(sql)
 
 	// TODO filter
 	rows, err := s.db.Query(sql, args...)
@@ -204,7 +203,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 			log.Printf("error reading predictions fields from db, with error: %v\n", err)
 		}
 		var pred types.Prediction
-		if pred, err = compiler.NewPredictionCompiler().Compile(clBlob); err != nil {
+		if pred, err = compiler.NewPredictionCompiler(nil, nil).Compile(clBlob); err != nil {
 			log.Printf("read corrupted prediction from db, with error: %v\n", err)
 			continue
 		}

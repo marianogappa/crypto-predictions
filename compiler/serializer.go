@@ -30,6 +30,7 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
+		Reporter:        p.Reporter,
 		PostAuthor:      p.PostAuthor,
 		PostedAt:        p.PostedAt,
 		PostUrl:         p.PostUrl,
@@ -51,11 +52,12 @@ func marshalGiven(given map[string]*types.Condition) map[string]condition {
 	result := map[string]condition{}
 	for key, cond := range given {
 		c := condition{
-			Condition:   marshalInnerCondition(cond),
-			FromISO8601: common.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
-			ToISO8601:   common.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
-			ToDuration:  cond.ToDuration,
-			Assumed:     cond.Assumed,
+			Condition:        marshalInnerCondition(cond),
+			FromISO8601:      common.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
+			ToISO8601:        common.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
+			ToDuration:       cond.ToDuration,
+			Assumed:          cond.Assumed,
+			ErrorMarginRatio: cond.ErrorMarginRatio,
 			State: conditionState{
 				Status:    cond.State.Status.String(),
 				LastTs:    cond.State.LastTs,

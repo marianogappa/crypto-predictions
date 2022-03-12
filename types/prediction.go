@@ -16,6 +16,7 @@ type Prediction struct {
 	PrePredict PrePredict
 	Predict    Predict
 	State      PredictionState
+	Reporter   string
 }
 
 func (p *Prediction) Evaluate() PredictionStateValue {
