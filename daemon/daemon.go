@@ -1,4 +1,4 @@
-package smrunner
+package daemon
 
 import (
 	"errors"
@@ -6,29 +6,30 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 )
 
-type SMRunner struct {
+type Daemon struct {
 	store  statestorage.StateStorage
 	market market.IMarket
 }
 
-type SMRunnerResult struct {
+type DaemonResult struct {
 	Errors      []error
 	Predictions map[string]types.Prediction
 }
 
-func NewSMRunner(market market.IMarket, store statestorage.StateStorage) *SMRunner {
-	return &SMRunner{store: store, market: market}
+func NewDaemon(market market.IMarket, store statestorage.StateStorage) *Daemon {
+	return &Daemon{store: store, market: market}
 }
 
-func (r *SMRunner) BlockinglyRunEvery(dur time.Duration) SMRunnerResult {
+func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
 	for {
 		result := r.Run(int(time.Now().Unix()))
 		if len(result.Errors) > 0 {
-			log.Println("State Machine runner finished with errors:")
+			log.Println("Daemon run finished with errors:")
 			for i, err := range result.Errors {
 				log.Printf("%v) %v", i+1, err.Error())
 			}
@@ -38,8 +39,8 @@ func (r *SMRunner) BlockinglyRunEvery(dur time.Duration) SMRunnerResult {
 	}
 }
 
-func (r *SMRunner) Run(nowTs int) SMRunnerResult {
-	var result = SMRunnerResult{Predictions: map[string]types.Prediction{}, Errors: []error{}}
+func (r *Daemon) Run(nowTs int) DaemonResult {
+	var result = DaemonResult{Predictions: map[string]types.Prediction{}, Errors: []error{}}
 
 	// Get ongoing predictions from storage
 	predictions, err := r.store.GetPredictions(
@@ -74,7 +75,7 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 
 	// Continuously run prediction runners until there aren't any active ones
 	for len(activePredRunners) > 0 {
-		log.Printf("SMRunner.Run: %v active prediction runners\n", len(activePredRunners))
+		log.Printf("Daemon.Run: %v active prediction runners\n", len(activePredRunners))
 		for pk, predRunner := range activePredRunners {
 			errs := predRunner.Run()
 			if len(errs) > 0 {
@@ -84,6 +85,13 @@ func (r *SMRunner) Run(nowTs int) SMRunnerResult {
 				result.Predictions[pk] = *predRunner.prediction
 				delete(activePredRunners, pk)
 			}
+		}
+	}
+
+	for _, inactivePrediction := range result.Predictions {
+		if inactivePrediction.Evaluate().IsFinal() {
+			description := printer.NewPredictionPrettyPrinter(inactivePrediction).Default()
+			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, inactivePrediction.State.Value)
 		}
 	}
 

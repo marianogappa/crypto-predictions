@@ -10,9 +10,9 @@ import (
 
 	"github.com/marianogappa/predictions/api"
 	"github.com/marianogappa/predictions/backoffice"
+	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
-	"github.com/marianogappa/predictions/smrunner"
 	"github.com/marianogappa/predictions/statestorage"
 )
 
@@ -37,7 +37,7 @@ func main() {
 		market            = market.NewMarket()
 		metadataFetcher   = metadatafetcher.NewMetadataFetcher()
 		api               = api.NewAPI(market, postgresDBStorage, *metadataFetcher)
-		backgroundRunner  = smrunner.NewSMRunner(market, postgresDBStorage)
+		backgroundRunner  = daemon.NewDaemon(market, postgresDBStorage)
 		backOffice        = backoffice.NewBackOfficeUI(files)
 
 		apiPort                  = envOrInt("PREDICTIONS_API_PORT", 2345)

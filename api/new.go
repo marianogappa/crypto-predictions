@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/marianogappa/predictions/compiler"
-	"github.com/marianogappa/predictions/smrunner"
+	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
 )
@@ -45,7 +45,7 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If the state is empty, run one tick to see if the prediction is decided at start time. If so, it's invalid.
 	if pred.State == (types.PredictionState{}) {
-		predRunner, errs := smrunner.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
+		predRunner, errs := daemon.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
 		if len(errs) == 0 {
 			predRunnerErrs := predRunner.Run()
 			for _, err := range predRunnerErrs {

@@ -1,4 +1,4 @@
-package smrunner
+package daemon
 
 import (
 	"fmt"

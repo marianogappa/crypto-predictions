@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/smrunner"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 	"github.com/marianogappa/signal-checker/common"
@@ -24,7 +24,7 @@ func TestAPI(t *testing.T) {
 	tss := []apiTest{
 		{
 			name: "get base case: get all predictions, when there's nothing",
-			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *smrunner.SMRunner, mFetcher *metadatafetcher.MetadataFetcher) {
+			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
 				apiResp, err := makeGetRequest(`{}`, url)
 				requireEquals(t, err, nil)
 				requireEquals(t, apiResp.Status, 200)
@@ -33,7 +33,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			name: "get base case: send an invalid json",
-			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *smrunner.SMRunner, mFetcher *metadatafetcher.MetadataFetcher) {
+			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
 				apiResp, err := makeGetRequest(`invalid`, url)
 				requireEquals(t, err, nil)
 				requireEquals(t, apiResp.Status, 400)
@@ -42,7 +42,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			name: "new base case: invalid json",
-			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *smrunner.SMRunner, mFetcher *metadatafetcher.MetadataFetcher) {
+			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
 				apiResp, err := makeNewRequest(`invalid`, url)
 				requireEquals(t, err, nil)
 				requireEquals(t, apiResp.Status, 400)
@@ -51,7 +51,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			name: "new happy case",
-			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *smrunner.SMRunner, mFetcher *metadatafetcher.MetadataFetcher) {
+			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
 				apiResp, err := makeNewRequest(`
 					{
 						"prediction": {
@@ -105,7 +105,7 @@ func TestAPI(t *testing.T) {
 			}
 			url := l.Addr().String()
 			go a.BlockinglyServe(l)
-			daemon := smrunner.NewSMRunner(testMarket, memoryStateStorage)
+			daemon := daemon.NewDaemon(testMarket, memoryStateStorage)
 
 			ts.test(t, url, memoryStateStorage, testMarket, daemon, mFetcher)
 		})
@@ -119,7 +119,7 @@ func tpToISO(s string) common.ISO8601 {
 
 type apiTest struct {
 	name string
-	test func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *smrunner.SMRunner, mFetcher *metadatafetcher.MetadataFetcher)
+	test func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher)
 }
 
 func makeGetRequest(reqBody string, url string) (APIResponse, error) {
