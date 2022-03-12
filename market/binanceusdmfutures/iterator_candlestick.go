@@ -2,7 +2,6 @@ package binanceusdmfutures
 
 import (
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type binanceCandlestickIterator struct {
@@ -38,7 +37,7 @@ func (it *binanceCandlestickIterator) next() (types.Candlestick, error) {
 	}
 	it.candlesticks = klinesResult.candlesticks
 	if len(it.candlesticks) == 0 {
-		return types.Candlestick{}, common.ErrOutOfCandlesticks
+		return types.Candlestick{}, types.ErrOutOfCandlesticks
 	}
 	// Some exchanges return earlier candlesticks to the requested time. Prune them.
 	// Note that this may remove all items, but this does not necessarily mean we are out of candlesticks.

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 var (
@@ -40,7 +39,7 @@ var (
 		types.ErrMissingRequiredPrePredictPredictIf: {Status: 400, ErrorCode: "ErrMissingRequiredPrePredictPredictIf", Message: "pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause"},
 		types.ErrBoolExprSyntaxError:                {Status: 400, ErrorCode: "ErrBoolExprSyntaxError", Message: "syntax error in bool expression"},
 		types.ErrPredictionFinishedAtStartTime:      {Status: 400, ErrorCode: "ErrPredictionFinishedAtStartTime", Message: "prediction is finished at start time"},
-		common.ErrInvalidMarketPair:                 {Status: 400, ErrorCode: "ErrInvalidMarketPair", Message: "market pair does not exist on exchange"},
+		types.ErrInvalidMarketPair:                  {Status: 400, ErrorCode: "ErrInvalidMarketPair", Message: "market pair does not exist on exchange"},
 		ErrInvalidRequestBody:                       {Status: 400, ErrorCode: "ErrInvalidRequestBody", Message: "invalid request body"},
 		ErrInvalidRequestJSON:                       {Status: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
 		ErrStorageErrorRetrievingPredictions:        {Status: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},

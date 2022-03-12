@@ -11,7 +11,6 @@ import (
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type newBody struct {
@@ -49,8 +48,8 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 		if len(errs) == 0 {
 			predRunnerErrs := predRunner.Run()
 			for _, err := range predRunnerErrs {
-				if errors.Is(err, common.ErrInvalidMarketPair) {
-					respond(w, nil, nil, pBool(false), common.ErrInvalidMarketPair)
+				if errors.Is(err, types.ErrInvalidMarketPair) {
+					respond(w, nil, nil, pBool(false), types.ErrInvalidMarketPair)
 					return
 				}
 			}

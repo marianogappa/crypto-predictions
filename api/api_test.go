@@ -17,7 +17,6 @@ import (
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 func TestAPI(t *testing.T) {
@@ -192,7 +191,7 @@ func newTestMarket(ticks map[string]types.Tick) *testMarket {
 
 func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
 	if _, ok := m.ticks[operand.Str]; !ok {
-		return nil, common.ErrInvalidMarketPair
+		return nil, types.ErrInvalidMarketPair
 	}
 	return newTestTickIterator(m.ticks[operand.Str]), nil
 }
