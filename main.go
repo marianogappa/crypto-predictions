@@ -19,7 +19,8 @@ import (
 
 var (
 	//go:embed public/*
-	files          embed.FS
+	files embed.FS
+
 	flagAPI        = flag.Bool("api", false, "only run API")
 	flagBackOffice = flag.Bool("backoffice", false, "only run Back Office")
 	flagDaemon     = flag.Bool("daemon", false, "only run Daemon")

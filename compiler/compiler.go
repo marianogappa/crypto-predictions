@@ -239,13 +239,19 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	if raw.PostUrl == "" {
 		return p, types.ErrEmptyPostURL
 	}
+
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
-	if c.metadataFetcher != nil && raw.PostAuthor == "" || raw.PostedAt == "" {
+	if c.metadataFetcher != nil && (raw.PostAuthor == "" || raw.PostedAt == "") {
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
-		log.Printf("result of fetching metadata for %v: err %v data %v\n", raw.PostUrl, err, metadata)
 		if err == nil {
-			raw.PostAuthor = metadata.Author
-			raw.PostedAt = metadata.PostCreatedAt
+			if raw.PostAuthor == "" {
+				raw.PostAuthor = metadata.Author
+			}
+			if raw.PostedAt == "" {
+				raw.PostedAt = metadata.PostCreatedAt
+			}
+		} else {
+			log.Printf("PredictionCompiler.Compile: ignoring matadataFecher error: %v\n", err)
 		}
 	}
 	if raw.PostAuthor == "" {
@@ -327,6 +333,9 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		p.Predict.AnnulledIf = b
 	}
 
+	if raw.Predict.Predict == "" {
+		return p, types.ErrEmptyPredict
+	}
 	b, err = mapBoolExpr(&raw.Predict.Predict, p.Given)
 	if err != nil {
 		return p, err

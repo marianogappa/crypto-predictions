@@ -10,6 +10,7 @@ import (
 	"github.com/marianogappa/predictions/metadatafetcher"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func tp(s string) time.Time {
@@ -576,6 +577,15 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
+			name: "Empty main predict",
+			pred: `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			err: types.ErrEmptyPredict,
+		},
+		{
 			name: "Error mapping condition: no ToISO8601",
 			pred: `{
 				"reporter": "admin",
@@ -859,25 +869,83 @@ func TestCompile(t *testing.T) {
 			expected: types.Prediction{},
 		},
 		{
-			name: "Happy case with all flags",
+			name: "Does not overwrite author & created at with metadata, when fields are set",
 			pred: `{
 				"reporter": "admin",
 				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"postAuthor": "NOT CryptoCapo!",
+				"postedAt": "2022-02-09T10:25:26.000Z",
 				"given": {
 					"main": {
 						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
-						"toDuration": "2d",
-						"errorMarginRatio": 0.03
+						"toDuration": "2d"
 					}
 				},
-				"prePredict": {
-					"predict": "main",
-					"annulledIfPredictIsFalse": true,
-					"ignoreUndecidedIfPredictIsDefined": true
+				"predict": {
+					"predict": "main"
+				}
+			}`,
+			postMetadataFetchErr: nil,
+			postMetadata: mfTypes.PostMetadata{
+				Author:        "CryptoCapo_",
+				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
+			},
+			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
+			err:     nil,
+			expected: types.Prediction{
+				Version:    "1.0.0",
+				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
+				Reporter:   "admin",
+				PostAuthor: "NOT CryptoCapo!",
+				PostText:   "",
+				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
+				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				Given: map[string]*types.Condition{
+					"main": {
+						Name:     "main",
+						Operator: "<=",
+						Operands: []types.Operand{
+							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+						},
+						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
+						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
+						ToDuration: "2d",
+					},
+				},
+				Predict: types.Predict{
+					Predict: types.BoolExpr{
+						Operator: types.LITERAL,
+						Operands: nil,
+						Literal: &types.Condition{
+							Name:     "main",
+							Operator: "<=",
+							Operands: []types.Operand{
+								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+							},
+							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
+							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
+							ToDuration: "2d",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Overwrites author but not created at with metadata, when created at is set",
+			pred: `{
+				"reporter": "admin",
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				"postedAt": "2022-02-09T10:25:26.000Z",
+				"given": {
+					"main": {
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.845",
+						"toDuration": "2d"
+					}
 				},
 				"predict": {
-					"predict": "main",
-					"ignoreUndecidedIfPredictIsDefined": true
+					"predict": "main"
 				}
 			}`,
 			postMetadataFetchErr: nil,
@@ -893,7 +961,7 @@ func TestCompile(t *testing.T) {
 				Reporter:   "admin",
 				PostAuthor: "CryptoCapo_",
 				PostText:   "",
-				PostedAt:   tpToISO("2020-01-02 00:00:00"),
+				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
 				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				Given: map[string]*types.Condition{
 					"main": {
@@ -903,31 +971,10 @@ func TestCompile(t *testing.T) {
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
 							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 						},
-						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
-						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
-						ToDuration:       "2d",
-						ErrorMarginRatio: 0.03,
+						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
+						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
+						ToDuration: "2d",
 					},
-				},
-				PrePredict: types.PrePredict{
-					Predict: &types.BoolExpr{
-						Operator: types.LITERAL,
-						Operands: nil,
-						Literal: &types.Condition{
-							Name:     "main",
-							Operator: "<=",
-							Operands: []types.Operand{
-								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
-							},
-							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
-							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
-							ToDuration:       "2d",
-							ErrorMarginRatio: 0.03,
-						},
-					},
-					AnnulledIfPredictIsFalse:          true,
-					IgnoreUndecidedIfPredictIsDefined: true,
 				},
 				Predict: types.Predict{
 					Predict: types.BoolExpr{
@@ -940,13 +987,11 @@ func TestCompile(t *testing.T) {
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
 								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 							},
-							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
-							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
-							ToDuration:       "2d",
-							ErrorMarginRatio: 0.03,
+							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
+							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
+							ToDuration: "2d",
 						},
 					},
-					IgnoreUndecidedIfPredictIsDefined: true,
 				},
 			},
 		},
@@ -974,9 +1019,8 @@ func TestCompile(t *testing.T) {
 				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
 				t.FailNow()
 			}
-			if ts.err == nil && !reflect.DeepEqual(actual, ts.expected) {
-				t.Logf("expected %+v but got %+v", ts.expected, actual)
-				t.FailNow()
+			if ts.err == nil {
+				require.Equal(t, ts.expected, actual)
 			}
 		})
 	}

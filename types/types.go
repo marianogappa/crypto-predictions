@@ -29,6 +29,7 @@ var (
 	ErrEmptyPostAuthor                    = errors.New("postAuthor cannot be empty")
 	ErrEmptyPostedAt                      = errors.New("postedAt cannot be empty")
 	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
+	ErrEmptyPredict                       = errors.New("main predict clause cannot be empty")
 	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
 	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
 	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")

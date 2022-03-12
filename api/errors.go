@@ -36,6 +36,7 @@ var (
 		types.ErrEmptyPostAuthor:                    {Status: 400, ErrorCode: "ErrEmptyPostAuthor", Message: "postAuthor cannot be empty"},
 		types.ErrEmptyPostedAt:                      {Status: 400, ErrorCode: "ErrEmptyPostedAt", Message: "postedAt cannot be empty"},
 		types.ErrInvalidPostedAt:                    {Status: 400, ErrorCode: "ErrInvalidPostedAt", Message: "postedAt must be a valid ISO8601 timestamp"},
+		types.ErrEmptyPredict:                       {Status: 400, ErrorCode: "ErrEmptyPredict", Message: "main predict clause cannot be empty"},
 		types.ErrMissingRequiredPrePredictPredictIf: {Status: 400, ErrorCode: "ErrMissingRequiredPrePredictPredictIf", Message: "pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause"},
 		types.ErrBoolExprSyntaxError:                {Status: 400, ErrorCode: "ErrBoolExprSyntaxError", Message: "syntax error in bool expression"},
 		types.ErrPredictionFinishedAtStartTime:      {Status: 400, ErrorCode: "ErrPredictionFinishedAtStartTime", Message: "prediction is finished at start time"},
