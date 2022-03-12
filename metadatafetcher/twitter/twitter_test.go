@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/signal-checker/common"
+	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
+	"github.com/marianogappa/predictions/types"
 )
 
 func TestTwitterHappyCase(t *testing.T) {
@@ -32,14 +32,14 @@ func TestTwitterHappyCase(t *testing.T) {
 		t.FailNow()
 	}
 
-	expected := types.PostMetadata{
+	expected := mfTypes.PostMetadata{
 		Author:        "CryptoCapo_",
 		AuthorURL:     "https://twitter.com/CryptoCapo_",
 		AuthorImgUrl:  "",
 		PostTitle:     "sample tweet content",
 		PostText:      "sample tweet content",
-		PostCreatedAt: common.ISO8601("2022-02-09T10:25:26.000Z"),
-		PostType:      types.TWITTER,
+		PostCreatedAt: types.ISO8601("2022-02-09T10:25:26.000Z"),
+		PostType:      mfTypes.TWITTER,
 	}
 
 	if !reflect.DeepEqual(pm, expected) {

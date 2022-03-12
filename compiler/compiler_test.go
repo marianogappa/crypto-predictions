@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"reflect"
 	"testing"
@@ -11,7 +10,6 @@ import (
 	"github.com/marianogappa/predictions/metadatafetcher"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 func tp(s string) time.Time {
@@ -19,9 +17,9 @@ func tp(s string) time.Time {
 	return t
 }
 
-func tpToISO(s string) common.ISO8601 {
+func tpToISO(s string) types.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return common.ISO8601(t.Format(time.RFC3339))
+	return types.ISO8601(t.Format(time.RFC3339))
 }
 
 func TestParseDuration(t *testing.T) {
@@ -224,7 +222,7 @@ func TestMapFromTs(t *testing.T) {
 	tss := []struct {
 		name     string
 		cond     condition
-		postedAt common.ISO8601
+		postedAt types.ISO8601
 		err      error
 		expected int
 	}{
@@ -344,7 +342,7 @@ func TestMapCondition(t *testing.T) {
 		name     string
 		cond     condition
 		condName string
-		postedAt common.ISO8601
+		postedAt types.ISO8601
 		err      error
 		expected types.Condition
 	}{
@@ -561,7 +559,7 @@ func TestCompile(t *testing.T) {
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
 				Author:        "CryptoCapo_",
-				PostCreatedAt: common.ISO8601(""),
+				PostCreatedAt: types.ISO8601(""),
 			},
 			err:      types.ErrEmptyPostedAt,
 			expected: types.Prediction{},
@@ -572,7 +570,7 @@ func TestCompile(t *testing.T) {
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
 				Author:        "CryptoCapo_",
-				PostCreatedAt: common.ISO8601("INVALID!!!"),
+				PostCreatedAt: types.ISO8601("INVALID!!!"),
 			},
 			err:      types.ErrInvalidPostedAt,
 			expected: types.Prediction{},
@@ -903,7 +901,7 @@ func TestCompile(t *testing.T) {
 						Operator: "<=",
 						Operands: []types.Operand{
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -920,7 +918,7 @@ func TestCompile(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -940,7 +938,7 @@ func TestCompile(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -977,7 +975,6 @@ func TestCompile(t *testing.T) {
 				t.FailNow()
 			}
 			if ts.err == nil && !reflect.DeepEqual(actual, ts.expected) {
-				fmt.Println("actual", actual.Given["main"].ErrorMarginRatio)
 				t.Logf("expected %+v but got %+v", ts.expected, actual)
 				t.FailNow()
 			}

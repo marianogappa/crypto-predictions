@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 func TestNewPredRunner(t *testing.T) {
@@ -268,7 +267,7 @@ func mapOperand(v string) (types.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+		return types.Operand{Type: types.NUMBER, Number: types.JsonFloat64(f), Str: v}, nil
 	}
 	strVariable := `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
 	rxVariable := regexp.MustCompile(fmt.Sprintf("^%v$", strVariable))
@@ -294,10 +293,10 @@ func newPredictionWith(prePredict types.PrePredict, predict types.Predict) types
 	return types.Prediction{
 		UUID:       "ed47db4d-cc0b-4c3c-af18-e6fcbff82338",
 		Version:    "1.0.0",
-		CreatedAt:  common.ISO8601("2022-02-27 15:14:00"),
+		CreatedAt:  types.ISO8601("2022-02-27 15:14:00"),
 		PostAuthor: "JohnDoe",
 		PostText:   "Test prediction!",
-		PostedAt:   common.ISO8601("2022-02-27 15:14:00"),
+		PostedAt:   types.ISO8601("2022-02-27 15:14:00"),
 		PostUrl:    "https://twitter.com/trader1sz/status/1494458312238247950",
 		Given:      map[string]*types.Condition{},
 		PrePredict: prePredict,
@@ -310,8 +309,8 @@ func tp(s string) time.Time {
 	return t
 }
 
-func tpToISO(s string) common.ISO8601 {
-	return common.ISO8601(tp(s).Format(time.RFC3339))
+func tpToISO(s string) types.ISO8601 {
+	return types.ISO8601(tp(s).Format(time.RFC3339))
 }
 
 func tInt(s string) int {
@@ -320,14 +319,14 @@ func tInt(s string) int {
 
 type marketCall struct {
 	operand types.Operand
-	ts      common.ISO8601
+	ts      types.ISO8601
 }
 
 type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, ts common.ISO8601) (types.TickIterator, error) {
+func (m *testMarket) GetTickIterator(operand types.Operand, ts types.ISO8601) (types.TickIterator, error) {
 	m.calls = append(m.calls, marketCall{operand, ts})
 	return testTickIterator{}, nil
 }

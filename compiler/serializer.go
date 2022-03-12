@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type PredictionSerializer struct {
@@ -53,8 +52,8 @@ func marshalGiven(given map[string]*types.Condition) map[string]condition {
 	for key, cond := range given {
 		c := condition{
 			Condition:        marshalInnerCondition(cond),
-			FromISO8601:      common.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
-			ToISO8601:        common.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
+			FromISO8601:      types.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
+			ToISO8601:        types.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
 			ToDuration:       cond.ToDuration,
 			Assumed:          cond.Assumed,
 			ErrorMarginRatio: cond.ErrorMarginRatio,

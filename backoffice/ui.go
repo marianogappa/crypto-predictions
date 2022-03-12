@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"sort"
 	"strings"
+	"syscall"
 	"text/template"
 
 	"github.com/marianogappa/predictions/printer"
@@ -128,7 +130,9 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data["Predictions"] = pDatas
 
 	if err := t.Execute(w, data); err != nil {
-		log.Fatal(err)
+		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -151,7 +155,6 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	if res.Predictions != nil && len(*res.Predictions) == 1 {
 		pred := (*res.Predictions)[0]
 		data["prediction"] = predictionToMap(pred)
-		fmt.Println(data["prediction"])
 	}
 
 	data["GetPredictionsErr"] = res.Message

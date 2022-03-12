@@ -3,8 +3,8 @@ package types
 import (
 	"errors"
 	"fmt"
-
-	"github.com/marianogappa/signal-checker/common"
+	"math"
+	"time"
 )
 
 var (
@@ -33,6 +33,14 @@ var (
 	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
 	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")
 	ErrUnknownAPIOrderBy                  = errors.New("unknown API order by")
+
+	ErrOutOfCandlesticks  = errors.New("exchange ran out of candlesticks")
+	ErrOutOfTrades        = errors.New("exchange ran out of trades")
+	ErrInvalidMarketPair  = errors.New("market pair does not exist on exchange")
+	ErrRateLimit          = errors.New("exchange asked us to enhance our calm")
+	ErrInvalidExchange    = errors.New("the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'")
+	ErrBaseAssetRequired  = errors.New("base asset is required (e.g. BTC)")
+	ErrQuoteAssetRequired = errors.New("quote asset is required (e.g. USDT)")
 )
 
 type Operand struct {
@@ -40,7 +48,7 @@ type Operand struct {
 	Provider   string
 	QuoteAsset string
 	BaseAsset  string
-	Number     common.JsonFloat64
+	Number     JsonFloat64
 	Str        string
 }
 
@@ -237,5 +245,81 @@ func (v APIOrderBy) String() string {
 		return "POSTED_AT_ASC"
 	default:
 		return ""
+	}
+}
+
+type JsonFloat64 float64
+
+func (jf JsonFloat64) MarshalJSON() ([]byte, error) {
+	f := float64(jf)
+	if math.IsInf(f, 0) || math.IsNaN(f) {
+		return nil, errors.New("unsupported value")
+	}
+	bs := []byte(fmt.Sprintf("%.12f", f))
+	var i int
+	for i = len(bs) - 1; i >= 0; i-- {
+		if bs[i] == '0' {
+			continue
+		}
+		if bs[i] == '.' {
+			return bs[:i], nil
+		}
+		break
+	}
+	return bs[:i+1], nil
+}
+
+type ISO8601 string
+
+func (t ISO8601) Time() (time.Time, error) {
+	return time.Parse(time.RFC3339, string(t))
+}
+
+func (t ISO8601) Seconds() (int, error) {
+	tm, err := t.Time()
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert %v to seconds because %v", string(t), err.Error())
+	}
+	return int(tm.Unix()), nil
+}
+
+func (t ISO8601) Millis() (int, error) {
+	tm, err := t.Seconds()
+	if err != nil {
+		return 0, err
+	}
+	return tm * 100, nil
+}
+
+// Candlestick is the generic struct for candlestick data for all supported exchanges.
+type Candlestick struct {
+	// Timestamp is the UNIX timestamp (i.e. seconds since UTC Epoch) at which the candlestick started.
+	Timestamp int `json:"t"`
+
+	// OpenPrice is the price at which the candlestick opened.
+	OpenPrice JsonFloat64 `json:"o"`
+
+	// ClosePrice is the price at which the candlestick closed.
+	ClosePrice JsonFloat64 `json:"c"`
+
+	// LowestPrice is the lowest price reached during the candlestick duration.
+	LowestPrice JsonFloat64 `json:"l"`
+
+	// HighestPrice is the highest price reached during the candlestick duration.
+	HighestPrice JsonFloat64 `json:"h"`
+
+	// Volume is the traded volume in base asset during this candlestick.
+	Volume JsonFloat64 `json:"v"`
+
+	// NumberOfTrades is the total number of filled order book orders in this candlestick.
+	NumberOfTrades int `json:"n,omitempty"`
+}
+
+// ToTicks converts a Candlestick to two Ticks. Lowest value is put first, because since there's no way to tell
+// which one happened first, this library chooses to be pessimistic.
+func (c Candlestick) ToTicks() []Tick {
+	return []Tick{
+		{Timestamp: c.Timestamp, Value: c.LowestPrice},
+		{Timestamp: c.Timestamp, Value: c.HighestPrice},
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 func printCondition(c types.Condition, ignoreFromTs bool) string {
@@ -58,7 +57,7 @@ func parseOperand(op types.Operand) string {
 	return fmt.Sprintf("%v/%v%v", op.BaseAsset, op.QuoteAsset, suffix)
 }
 
-func parseNumber(num common.JsonFloat64) string {
+func parseNumber(num types.JsonFloat64) string {
 	if num/1000.0 > 1 && int(num)%1000 == 0.0 {
 		return fmt.Sprintf("%vk", num/1000.0)
 	}

@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/marianogappa/signal-checker/common"
 )
 
 var (
@@ -31,7 +29,7 @@ func mapOperand(v string) (Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return Operand{Type: NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+		return Operand{Type: NUMBER, Number: JsonFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {

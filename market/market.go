@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/marianogappa/predictions/market/binance"
+	"github.com/marianogappa/predictions/market/binanceusdmfutures"
+	"github.com/marianogappa/predictions/market/coinbase"
+	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/predictions/market/ftx"
+	"github.com/marianogappa/predictions/market/kraken"
+	"github.com/marianogappa/predictions/market/kucoin"
 	"github.com/marianogappa/predictions/market/messari"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/binance"
-	"github.com/marianogappa/signal-checker/binanceusdmfutures"
-	"github.com/marianogappa/signal-checker/coinbase"
-	"github.com/marianogappa/signal-checker/common"
-	"github.com/marianogappa/signal-checker/ftx"
-	"github.com/marianogappa/signal-checker/kraken"
-	"github.com/marianogappa/signal-checker/kucoin"
 )
 
 type IMarket interface {
-	GetTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error)
+	GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error)
 }
 
 type Market struct{}
@@ -43,7 +43,7 @@ func NewMarket() Market {
 	return Market{}
 }
 
-func (m Market) GetTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error) {
+func (m Market) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
 	switch operand.Type {
 	case types.COIN:
 		return m.getCoinTickIterator(operand, initialISO8601)
@@ -57,7 +57,7 @@ func (m Market) GetTickIterator(operand types.Operand, initialISO8601 common.ISO
 	}
 }
 
-func (m Market) getCoinTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error) {
+func (m Market) getCoinTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
 	if _, ok := supportedVariableProviders[operand.Provider]; !ok {
 		return nil, fmt.Errorf("the '%v' provider is not supported for %v:%v-%v", operand.Provider, operand.Provider, operand.BaseAsset, operand.QuoteAsset)
 	}
@@ -65,7 +65,7 @@ func (m Market) getCoinTickIterator(operand types.Operand, initialISO8601 common
 	return newTickFromCandleIterator(exchange.BuildCandlestickIterator(operand.BaseAsset, operand.QuoteAsset, initialISO8601).Next), nil
 }
 
-func (m Market) getMarketcapTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error) {
+func (m Market) getMarketcapTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
 	if operand.BaseAsset == "" {
 		return nil, errEmptyBaseAsset
 	}

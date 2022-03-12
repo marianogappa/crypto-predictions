@@ -2,17 +2,16 @@ package market
 
 import (
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type TickFromCandleIterator struct {
-	f            func() (common.Candlestick, error)
+	f            func() (types.Candlestick, error)
 	ticks        []types.Tick
 	lastTick     types.Tick
 	isOutOfTicks bool
 }
 
-func newTickFromCandleIterator(f func() (common.Candlestick, error)) *TickFromCandleIterator {
+func newTickFromCandleIterator(f func() (types.Candlestick, error)) *TickFromCandleIterator {
 	return &TickFromCandleIterator{f: f}
 }
 
@@ -28,13 +27,13 @@ func (it *TickFromCandleIterator) Next() (types.Tick, error) {
 	}
 	candlestick, err := it.f()
 	if err != nil {
-		if err == common.ErrOutOfCandlesticks {
+		if err == types.ErrOutOfCandlesticks {
 			it.isOutOfTicks = true
 			err = types.ErrOutOfTicks
 		}
 		return it.lastTick, err
 	}
-	it.ticks = append(it.ticks, commonTicksToTypeTicks(candlestick.ToTicks())...)
+	it.ticks = append(it.ticks, candlestick.ToTicks()...)
 	next, err := it.Next()
 	if err == types.ErrOutOfTicks {
 		it.isOutOfTicks = true
@@ -44,15 +43,4 @@ func (it *TickFromCandleIterator) Next() (types.Tick, error) {
 
 func (it *TickFromCandleIterator) IsOutOfTicks() bool {
 	return it.isOutOfTicks
-}
-
-func commonTicksToTypeTicks(ts []common.Tick) []types.Tick {
-	res := []types.Tick{}
-	for _, t := range ts {
-		res = append(res, types.Tick{
-			Timestamp: t.Timestamp,
-			Value:     t.Price,
-		})
-	}
-	return res
 }

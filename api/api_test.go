@@ -112,9 +112,9 @@ func TestAPI(t *testing.T) {
 	}
 }
 
-func tpToISO(s string) common.ISO8601 {
+func tpToISO(s string) types.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return common.ISO8601(t.Format(time.RFC3339))
+	return types.ISO8601(t.Format(time.RFC3339))
 }
 
 type apiTest struct {
@@ -190,7 +190,7 @@ func newTestMarket(ticks map[string]types.Tick) *testMarket {
 	return &testMarket{}
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 common.ISO8601) (types.TickIterator, error) {
+func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
 	if _, ok := m.ticks[operand.Str]; !ok {
 		return nil, common.ErrInvalidMarketPair
 	}

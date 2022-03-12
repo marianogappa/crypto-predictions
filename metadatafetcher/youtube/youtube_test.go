@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/signal-checker/common"
+	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
+	"github.com/marianogappa/predictions/types"
 )
 
 func TestYoutubeHappyCase(t *testing.T) {
@@ -31,14 +31,14 @@ func TestYoutubeHappyCase(t *testing.T) {
 		t.FailNow()
 	}
 
-	expected := types.PostMetadata{
+	expected := mfTypes.PostMetadata{
 		Author:        "Guardian News",
 		AuthorURL:     "https://www.youtube.com/c/UCIRYBXDze5krPDzAEOxFGVA",
 		AuthorImgUrl:  "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg",
 		PostTitle:     "Dozens of diplomats walk out during Russian foreign minister's UN speech",
 		PostText:      "Dozens of diplomats walked out of a speech by the Russian foreign minister",
-		PostCreatedAt: common.ISO8601("2022-03-01T16:28:50Z"),
-		PostType:      types.YOUTUBE,
+		PostCreatedAt: types.ISO8601("2022-03-01T16:28:50Z"),
+		PostType:      mfTypes.YOUTUBE,
 	}
 
 	if !reflect.DeepEqual(pm, expected) {

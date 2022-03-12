@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type responseStatus struct {
@@ -67,7 +66,7 @@ func (r response) toTicks() ([]types.Tick, error) {
 		if !ok {
 			return ticks, fmt.Errorf("tick %v has non-float price! Invalid syntax from messari", i)
 		}
-		tick.Value = common.JsonFloat64(price)
+		tick.Value = types.JsonFloat64(price)
 		ticks[i] = tick
 	}
 

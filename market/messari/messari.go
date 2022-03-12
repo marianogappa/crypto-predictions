@@ -1,8 +1,6 @@
 package messari
 
-import (
-	"github.com/marianogappa/signal-checker/common"
-)
+import "github.com/marianogappa/predictions/types"
 
 type Messari struct {
 	apiURL string
@@ -18,6 +16,6 @@ func (m *Messari) SetDebug(debug bool) {
 	m.debug = debug
 }
 
-func (m Messari) BuildTickIterator(asset, metricID string, initialISO8601 common.ISO8601) *messariTickIterator {
+func (m Messari) BuildTickIterator(asset, metricID string, initialISO8601 types.ISO8601) *messariTickIterator {
 	return m.newTickIterator(asset, metricID, initialISO8601)
 }

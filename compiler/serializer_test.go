@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 func TestSerialize(t *testing.T) {
@@ -32,7 +31,7 @@ func TestSerialize(t *testing.T) {
 						Operator: "<=",
 						Operands: []types.Operand{
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -49,7 +48,7 @@ func TestSerialize(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -69,7 +68,7 @@ func TestSerialize(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: common.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),

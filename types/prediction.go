@@ -1,16 +1,12 @@
 package types
 
-import (
-	"github.com/marianogappa/signal-checker/common"
-)
-
 type Prediction struct {
 	UUID       string
 	Version    string
-	CreatedAt  common.ISO8601
+	CreatedAt  ISO8601
 	PostAuthor string
 	PostText   string
-	PostedAt   common.ISO8601
+	PostedAt   ISO8601
 	PostUrl    string
 	Given      map[string]*Condition
 	PrePredict PrePredict

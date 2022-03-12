@@ -8,7 +8,6 @@ import (
 
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type PredRunner struct {
@@ -54,7 +53,7 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 		result.tickers[condition.Name] = map[string]types.TickIterator{}
 		for _, operand := range condition.Operands {
 			if operand.Type == types.COIN || operand.Type == types.MARKETCAP {
-				ts := common.ISO8601(time.Unix(int64(startTs), 0).Format(time.RFC3339))
+				ts := types.ISO8601(time.Unix(int64(startTs), 0).Format(time.RFC3339))
 				ticker, err := m.GetTickIterator(operand, ts)
 				if err != nil {
 					errs = append(errs, err)

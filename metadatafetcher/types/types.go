@@ -3,7 +3,7 @@ package types
 import (
 	"errors"
 
-	"github.com/marianogappa/signal-checker/common"
+	"github.com/marianogappa/predictions/types"
 )
 
 type PostType int
@@ -24,6 +24,6 @@ type PostMetadata struct {
 	AuthorImgUrl  string
 	PostTitle     string
 	PostText      string
-	PostCreatedAt common.ISO8601
+	PostCreatedAt types.ISO8601
 	PostType      PostType
 }

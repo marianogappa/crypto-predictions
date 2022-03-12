@@ -11,7 +11,6 @@ import (
 
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 var (
@@ -38,7 +37,7 @@ func mapOperand(v string) (types.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: common.JsonFloat64(f), Str: v}, nil
+		return types.Operand{Type: types.NUMBER, Number: types.JsonFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {
@@ -104,7 +103,7 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 	return 0, fmt.Errorf("%w: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", types.ErrInvalidDuration, dur)
 }
 
-func mapFromTs(c condition, postedAt common.ISO8601) (int, error) {
+func mapFromTs(c condition, postedAt types.ISO8601) (int, error) {
 	s, err := c.FromISO8601.Seconds()
 	if err == nil {
 		return s, nil
@@ -134,7 +133,7 @@ func mapToTs(c condition, fromTs int) (int, error) {
 	return int(fromTime.Add(duration).Unix()), nil
 }
 
-func mapCondition(c condition, name string, postedAt common.ISO8601) (types.Condition, error) {
+func mapCondition(c condition, name string, postedAt types.ISO8601) (types.Condition, error) {
 	var (
 		operator    string
 		strOperands []string
@@ -262,7 +261,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		raw.Version = "1.0.0"
 	}
 	if c.timeNow != nil && raw.CreatedAt == "" {
-		raw.CreatedAt = common.ISO8601(c.timeNow().Format(time.RFC3339))
+		raw.CreatedAt = types.ISO8601(c.timeNow().Format(time.RFC3339))
 	}
 
 	p.UUID = raw.UUID

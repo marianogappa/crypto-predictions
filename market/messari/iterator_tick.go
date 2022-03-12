@@ -2,7 +2,6 @@ package messari
 
 import (
 	"github.com/marianogappa/predictions/types"
-	"github.com/marianogappa/signal-checker/common"
 )
 
 type messariTickIterator struct {
@@ -14,7 +13,7 @@ type messariTickIterator struct {
 	isOutOfTicks      bool
 }
 
-func (m Messari) newTickIterator(asset, metricID string, initialISO8601 common.ISO8601) *messariTickIterator {
+func (m Messari) newTickIterator(asset, metricID string, initialISO8601 types.ISO8601) *messariTickIterator {
 	// N.B. already validated
 	initial, _ := initialISO8601.Time()
 	initialSeconds := int(initial.Unix())

@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/marianogappa/signal-checker/common"
+	"github.com/marianogappa/predictions/types"
 )
 
 type Twitter struct {
@@ -33,7 +33,7 @@ func NewTwitter(apiURL string) Twitter {
 type Tweet struct {
 	TweetText      string
 	TweetID        string
-	TweetCreatedAt common.ISO8601
+	TweetCreatedAt types.ISO8601
 	UserID         string
 	UserName       string
 	UserHandle     string
@@ -62,7 +62,7 @@ type response struct {
 }
 
 func (r response) toTweet() (Tweet, error) {
-	_, err := common.ISO8601(r.Data.CreatedAt).Time()
+	_, err := types.ISO8601(r.Data.CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, err
 	}
@@ -72,7 +72,7 @@ func (r response) toTweet() (Tweet, error) {
 	return Tweet{
 		TweetText:      r.Data.Text,
 		TweetID:        r.Data.ID,
-		TweetCreatedAt: common.ISO8601(r.Data.CreatedAt),
+		TweetCreatedAt: types.ISO8601(r.Data.CreatedAt),
 		UserID:         r.Includes.Users[0].ID,
 		UserName:       r.Includes.Users[0].Name,
 		UserHandle:     r.Includes.Users[0].Username,
