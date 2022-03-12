@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"text/template"
@@ -151,29 +150,8 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	data := make(map[string]interface{})
 	if res.Predictions != nil && len(*res.Predictions) == 1 {
 		pred := (*res.Predictions)[0]
-
-		urlType := "UNKNOWN"
-		u, err := url.Parse(pred.PostUrl)
-		if err == nil {
-			hostname := u.Hostname()
-			fmt.Println("hostname", hostname)
-			switch {
-			case strings.Contains(hostname, "youtube"):
-				urlType = "YOUTUBE"
-				data["predictionUrlId"] = u.Query().Get("v")
-			case strings.Contains(hostname, "twitter"):
-				urlType = "TWITTER"
-			}
-		}
-
-		data["predictionCreatedAt"] = string(pred.CreatedAt)
-		data["predictionUUID"] = pred.UUID
-		data["predictionUrl"] = pred.PostUrl
-		data["predictionUrlType"] = urlType
-		data["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
-		data["predictionAuthor"] = pred.PostAuthor
-		data["predictionStatus"] = pred.State.Status.String()
-		data["predictionValue"] = pred.State.Value.String()
+		data["prediction"] = predictionToMap(pred)
+		fmt.Println(data["prediction"])
 	}
 
 	data["GetPredictionsErr"] = res.Message

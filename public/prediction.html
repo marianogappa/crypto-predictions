@@ -21,41 +21,10 @@
         .predictionTextTitle,
         .predictionAuthorTitle,
         .predictionStatusTitle,
-        .predictionValueTitle {
+        .predictionValueTitle,
+        h3 {
             font-weight: bolder;
-            margin-top: 10px;
-        }
-
-        #resp-table-header {
-            display: table-header-group;
-            background-color: rgb(223, 222, 222);
-            font-weight: bold;
-            font-size: 25px;
-        }
-
-        .table-header-cell {
-            display: table-cell;
-            padding: 10px;
-            text-align: justify;
-            border-bottom: 1px solid black;
-        }
-
-        #resp-table-body {
-            display: table-row-group;
-        }
-
-        .resp-table-row {
-            display: table-row;
-        }
-
-        .resp-table-cell {
-            display: table-cell;
-            padding: 10px;
-        }
-
-        #resp-table {
-            width: 100%;
-            display: table;
+            margin-bottom: 1px;
         }
 
         .green {
@@ -77,72 +46,73 @@
             width: 996px;
             height: 388px;
         }
+
+        .bottomLinks {
+            padding-top: 20px;
+        }
     </style>
 </head>
 
 <body>
-    {{ if (eq .predictionUrlType "TWITTER") }}
+    {{if .GetPredictionsErr}}
+
+    <h3>Error getting prediction</h3>
+    <div>{{.GetPredictionsErr}}</div>
+    <div>{{.GetPredictionsStatus}}</div>
+    <div>{{.GetPredictionsErrCode}}</div>
+    <div>{{.GetPredictionsInternalMessage}}</div>
+
+    {{else}}
+
+    <h3>Status</h3>
+    <span class="predictionStatus {{if(eq .prediction.State.Status " UNSTARTED" )}}{{print "red" }}{{else if(eq
+        .prediction.Status "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+        {{.prediction.State.Status}}
+    </span>,
+    <span class="predictionValue {{if(eq .prediction.State.Value " INCORRECT" )}}{{print "red" }}{{else if(eq
+        .prediction.Value "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+        {{.prediction.State.Value}}
+    </span>
+
+    <h3>Original Post</h3>
+    {{ if (eq .prediction.URLType "TWITTER") }}
     <blockquote class="twitter-tweet">
-        <a href="{{.predictionUrl}}"></a>
+        <a href="{{.prediction.PostUrl}}"></a>
     </blockquote>
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-    {{else if (eq .predictionUrlType "YOUTUBE") }}
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/{{.predictionUrlId}}"
+    {{else if (eq .prediction.URLType "YOUTUBE") }}
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/{{.prediction.URLSiteSpecificId}}"
         title="YouTube video player" frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen></iframe>
     {{end}}
 
-    {{if .Err}}
-    <h1>Error creating prediction</h1>
-    <div>{{.Err}}</div>
-    <div>{{.Status}}</div>
-    <div>{{.ErrCode}}</div>
-    <div>{{.InternalMessage}}</div>
-    {{else}}
-    <div id="resp-table">
-        <div id="resp-table-header">
-            <div class="table-header-cell">
-                Url
-            </div>
-            <div class="table-header-cell">
-                Prediction
-            </div>
-            <div class="table-header-cell">
-                Author
-            </div>
-            <div class="table-header-cell">
-                Status
-            </div>
-            <div class="table-header-cell">
-                Result
-            </div>
-        </div>
-        <div id="resp-table-body">
-            <div class="prediction resp-table-row">
-                <div class="predictionUrl resp-table-cell">
-                    <a href="{{.predictionUrl}}">{{.predictionUrl}}</a>
-                </div>
-                <div class="predictionText resp-table-cell">
-                    {{.predictionText}}
-                </div>
-                <div class="predictionAuthor resp-table-cell">
-                    {{.predictionAuthor}}
-                </div>
-                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus " UNSTARTED" )}}{{print "red"
-                    }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
-                    }}{{end}}">
-                    {{.predictionStatus}}
-                </div>
-                <div class="predictionValue resp-table-cell {{if(eq .predictionValue " INCORRECT" )}}{{print "red"
-                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
-                    {{.predictionValue}}
-                </div>
-            </div>
-        </div>
+    <div><a href="{{.prediction.PostUrl}}" target="_blank">[See]</a></div>
+
+    <h3>Computed as</h3>
+    <div class="predictionText">
+        {{.prediction.PrettyPrint}}
     </div>
+
+    <h3>Last Checked Market Status</h3>
+    <div class="">
+        {{range .prediction.Given}}
+        {{range $key, $value := .State.LastTicks}}
+        <div>{{$key}}: {{.Value}} (last checked on {{.Timestamp}})</div>
+        {{end}}
+        {{.prediction.PostAuthor}}
+        {{end}}
+    </div>
+
+    <h3>Reported by</h3>
+    <div class="predictionReporter">
+        {{.prediction.Reporter}}
+    </div>
+
     {{end}}
-    <div>
+
+
+    <div class="bottomLinks">
         <a href="/">Back</a>
     </div>
 </body>

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/signal-checker/common"
@@ -207,5 +208,12 @@ func TestNewTwitter(t *testing.T) {
 	y := NewTwitter("")
 	if y.apiURL != "https://api.twitter.com/2" {
 		t.Errorf("invalid production API URL %v", y.apiURL)
+	}
+}
+
+func TestRefreshCookie(t *testing.T) {
+	refreshTime := time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)
+	if time.Now().After(refreshTime) {
+		t.Errorf("Time to refresh the Twitter Cookie!")
 	}
 }
