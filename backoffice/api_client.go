@@ -27,7 +27,7 @@ func (r response) parse() parsedResponse {
 	var (
 		pred   *types.Prediction
 		preds  *[]types.Prediction
-		stored *bool
+		stored = r.Stored
 		pc     = compiler.NewPredictionCompiler(nil, nil)
 	)
 	if r.Prediction != nil {

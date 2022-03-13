@@ -201,20 +201,11 @@ func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 			data["Stored"] = *resp.Stored
 		}
 
-		pDatas := []map[string]string{}
-
 		if resp.Status == 200 {
 			pred := *resp.Prediction
-			pData := map[string]string{}
-			pData["predictionUrl"] = pred.PostUrl
-			pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
-			pData["predictionAuthor"] = pred.PostAuthor
-			pData["predictionStatus"] = pred.State.Status.String()
-			pData["predictionValue"] = pred.State.Value.String()
-			pDatas = append(pDatas, pData)
+			data["prediction"] = predictionToMap(pred)
+			data["predictionStr"] = rawString
 		}
-
-		data["Predictions"] = pDatas
 	}
 
 	if err := t.Execute(w, data); err != nil {

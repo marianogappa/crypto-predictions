@@ -54,7 +54,6 @@ func NewPostgresDBStateStorage() (PostgresDBStateStorage, error) {
 }
 
 type pgUpsertManyBuilder struct {
-	i           int
 	columnNames []string
 	values      []interface{}
 	rowCount    int
@@ -214,16 +213,16 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 	return result, nil
 }
 
-func (s PostgresDBStateStorage) UpsertPredictions(ps map[string]types.Prediction) error {
+func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.Prediction, error) {
 	if len(ps) == 0 {
-		return nil
+		return ps, nil
 	}
 	builder := newPGUpsertManyBuilder([]string{"uuid", "blob", "created_at", "posted_at"}, "predictions", "uuid")
-	for _, p := range ps {
+	for i, p := range ps {
 		if p.UUID == "" {
-			p.UUID = uuid.NewString()
+			ps[i].UUID = uuid.NewString()
 		}
-		blob, err := compiler.NewPredictionSerializer().Serialize(&p)
+		blob, err := compiler.NewPredictionSerializer().Serialize(p)
 		if err != nil {
 			log.Printf("Failed to marshal prediction, with error: %v\n", err)
 		}
@@ -231,5 +230,5 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps map[string]types.Prediction
 	}
 	sql, args := builder.build()
 	_, err := s.db.Exec(sql, args...)
-	return err
+	return ps, err
 }

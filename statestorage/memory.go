@@ -1,6 +1,9 @@
 package statestorage
 
-import "github.com/marianogappa/predictions/types"
+import (
+	"github.com/google/uuid"
+	"github.com/marianogappa/predictions/types"
+)
 
 type MemoryStateStorage struct {
 	Predictions map[string]types.Prediction
@@ -43,9 +46,12 @@ func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []
 	return res, nil
 }
 
-func (s MemoryStateStorage) UpsertPredictions(ps map[string]types.Prediction) error {
-	for _, prediction := range ps {
-		s.Predictions[prediction.PostUrl] = prediction
+func (s MemoryStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.Prediction, error) {
+	for i, prediction := range ps {
+		if prediction.UUID == "" {
+			ps[i].UUID = uuid.NewString()
+		}
+		s.Predictions[prediction.PostUrl] = *prediction
 	}
-	return nil
+	return ps, nil
 }

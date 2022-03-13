@@ -18,7 +18,7 @@ type Daemon struct {
 
 type DaemonResult struct {
 	Errors      []error
-	Predictions map[string]types.Prediction
+	Predictions []*types.Prediction
 }
 
 func NewDaemon(market market.IMarket, store statestorage.StateStorage) *Daemon {
@@ -40,7 +40,7 @@ func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
 }
 
 func (r *Daemon) Run(nowTs int) DaemonResult {
-	var result = DaemonResult{Predictions: map[string]types.Prediction{}, Errors: []error{}}
+	var result = DaemonResult{Predictions: []*types.Prediction{}, Errors: []error{}}
 
 	// Get ongoing predictions from storage
 	predictions, err := r.store.GetPredictions(
@@ -82,7 +82,7 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 				result.Errors = append(result.Errors, errs...)
 			}
 			if predRunner.isInactive {
-				result.Predictions[pk] = *predRunner.prediction
+				result.Predictions = append(result.Predictions, predRunner.prediction)
 				delete(activePredRunners, pk)
 			}
 		}
@@ -90,13 +90,13 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 
 	for _, inactivePrediction := range result.Predictions {
 		if inactivePrediction.Evaluate().IsFinal() {
-			description := printer.NewPredictionPrettyPrinter(inactivePrediction).Default()
+			description := printer.NewPredictionPrettyPrinter(*inactivePrediction).Default()
 			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, inactivePrediction.State.Value)
 		}
 	}
 
 	// Upsert state with changed predictions
-	err = r.store.UpsertPredictions(result.Predictions)
+	_, err = r.store.UpsertPredictions(result.Predictions)
 	if err != nil {
 		result.Errors = append(result.Errors, err)
 		return result

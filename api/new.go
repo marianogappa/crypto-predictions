@@ -61,7 +61,8 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if newBody.Store {
-		err = a.store.UpsertPredictions(map[string]types.Prediction{"unused": pred})
+		// N.B. as per interface, UpsertPredictions may add UUIDs in-place on predictions
+		_, err = a.store.UpsertPredictions([]*types.Prediction{&pred})
 		if err != nil {
 			respond(w, nil, nil, pBool(false), fmt.Errorf("%w: %v", ErrStorageErrorStoringPrediction, err))
 			return

@@ -26,38 +26,6 @@
             margin-top: 10px;
         }
 
-        #resp-table-header {
-            display: table-header-group;
-            background-color: rgb(223, 222, 222);
-            font-weight: bold;
-            font-size: 25px;
-        }
-
-        .table-header-cell {
-            display: table-cell;
-            padding: 10px;
-            text-align: justify;
-            border-bottom: 1px solid black;
-        }
-
-        #resp-table-body {
-            display: table-row-group;
-        }
-
-        .resp-table-row {
-            display: table-row;
-        }
-
-        .resp-table-cell {
-            display: table-cell;
-            padding: 10px;
-        }
-
-        #resp-table {
-            width: 100%;
-            display: table;
-        }
-
         .green {
             color: green;
             font-weight: bolder;
@@ -77,80 +45,295 @@
             width: 996px;
             height: 388px;
         }
+
+        button {
+            padding: 10px;
+            margin-bottom: 10px;
+            font-weight: bolder;
+        }
+
+        .inputWrapper {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .inputLeft {
+            padding-right: 10px;
+        }
+
+        .inputRight {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .predictionWrapper {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .predictionWrapperLeft {
+            padding-right: 10px;
+            flex-grow: 1;
+        }
+
+        .predictionWrapperRight {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .dryRunWrapper {
+            border: 2px dashed gray;
+            border-radius: 20px;
+            margin-right: 20px;
+            padding: 20px;
+            padding-top: 0px;
+            background-color: #eee;
+        }
+
+        h3 {
+            padding-bottom: 0px;
+            margin-bottom: 0px;
+        }
+
+        a {
+            padding-top: 20px;
+        }
+
+        input {
+            margin: 10px;
+            padding: 10px;
+        }
+
+        #submitPrediction {
+            background-color: #F00;
+            color: white;
+            border: 2px solid black;
+            font-weight: bolder;
+        }
     </style>
 </head>
 
 <body>
     {{if .Err}}
-    <h1>Error creating prediction</h1>
+    <h1>❌ Error creating prediction</h1>
     <div>{{.Err}}</div>
     <div>{{.Status}}</div>
     <div>{{.ErrCode}}</div>
     <div>{{.InternalMessage}}</div>
     {{end}}
-    {{if .Predictions}}
-    <h1>Created Predictions</h1>
+    {{if .prediction}}
     {{if .Stored}}
-    <h2>Successfully stored!</h2>
+    <h2>✅ Successfully stored!</h2>
+    <a href="/prediction?uuid={{.prediction.UUID}}">[See]</a>
     {{else}}
-    <h2>(Dry-run)</h2>
-    {{end}}
-    <div id="resp-table">
-        <div id="resp-table-header">
-            <div class="table-header-cell">
-                Url
-            </div>
-            <div class="table-header-cell">
-                Prediction
-            </div>
-            <div class="table-header-cell">
-                Author
-            </div>
-            <div class="table-header-cell">
-                Status
-            </div>
-            <div class="table-header-cell">
-                Result
-            </div>
-        </div>
-        <div id="resp-table-body">
-            {{range .Predictions}}
-            <div class="prediction resp-table-row">
-                <div class="predictionUrl resp-table-cell">
-                    <a href="{{.predictionUrl}}">{{.predictionUrl}}</a>
+    <h2>Dry-run</h2>
+    <div class="dryRunWrapper">
+        <div class="predictionWrapper">
+            <div class="predictionWrapperLeft">
+                <h3>{{if .Stored}}Status{{else}}Status would be{{end}}</h3>
+                <span class="predictionStatus {{if(eq .prediction.State.Status " UNSTARTED" )}}{{print "red" }}{{else
+                    if(eq .prediction.Status "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+                    {{.prediction.State.Status}}
+                </span>,
+                <span class="predictionValue {{if(eq .prediction.State.Value " INCORRECT" )}}{{print "red" }}{{else
+                    if(eq .prediction.Value "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+                    {{.prediction.State.Value}}
+                </span>
+
+                <h3>{{if .Stored}}Started at{{else}}Would start at{{end}}</h3>
+                <div class="predictionText">
+                    {{.prediction.PostedAt}}
                 </div>
-                <div class="predictionText resp-table-cell">
-                    {{.predictionText}}
+
+                <h3>Computed as</h3>
+                <div class="predictionText">
+                    {{.prediction.PrettyPrint}}
                 </div>
-                <div class="predictionAuthor resp-table-cell">
-                    {{.predictionAuthor}}
+
+                <h3>{{if .Stored}}Initial Market Status{{else}}Initial Market Status would be{{end}}</h3>
+                <div class="">
+                    {{range .prediction.Given}}
+                    {{range $key, $value := .State.LastTicks}}
+                    <div>{{$key}}: {{.Value}} (checked on {{.Timestamp}})</div>
+                    {{end}}
+                    {{.prediction.PostAuthor}}
+                    {{end}}
                 </div>
-                <div class="predictionStatus resp-table-cell {{if(eq .predictionStatus " UNSTARTED")}}{{print "red"
-                    }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
-                    }}{{end}}">
-                    {{.predictionStatus}}
-                </div>
-                <div class="predictionValue resp-table-cell {{if(eq .predictionValue " INCORRECT")}}{{print "red"
-                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
-                    {{.predictionValue}}
+
+                <h3>Reported by</h3>
+                <div class="predictionReporter">
+                    {{.prediction.Reporter}}
                 </div>
             </div>
-            {{end}}
+            <div class="predictionWrapperRight">
+                <h3>Original Post</h3>
+                {{ if (eq .prediction.URLType "TWITTER") }}
+                <blockquote class="twitter-tweet">
+                    <a href="{{.prediction.PostUrl}}"></a>
+                </blockquote>
+                <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                {{else if (eq .prediction.URLType "YOUTUBE") }}
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/{{.prediction.URLSiteSpecificId}}"
+                    title="YouTube video player" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+                {{end}}
+
+                <div><a href="{{.prediction.PostUrl}}" target="_blank">[See]</a></div>
+            </div>
         </div>
     </div>
     {{end}}
+    {{end}}
+    <h1>Create Prediction</h1>
+    <div class="inputWrapper">
+        <div class="inputLeft">
+            <form action="/add">
+                <textarea id="prediction_input"
+                    name="prediction_input">{{if .predictionStr}}{{.predictionStr}}{{end}}</textarea>
+                <br />
+                <input type="checkbox" unchecked id="store" name="store" onclick="changeSubmitLabel()" />
+                <label for="store">Store</label>
+                <br />
+                <input type="submit" id="submitPrediction" value="DRY RUN!">
+            </form>
+        </div>
+        <div class="inputRight">
+            <button class="example" onclick="setInput('example1')">Example
+                "Coin >= X in Y days"</button>
+            <button class="example" onclick="setInput('example2')">Example
+                "Coin will reach X invalidated if goes below Y"</button>
+            <button class="example" onclick="setInput('example3')">Example
+                If Coin stays below X, it will go down to Y</button>
+            <button class="example" onclick="setInput('example4')">Example
+                "Coin will range between X and Y"</button>
+            <button class="example" onclick="setInput('example5')">Example
+                "The flippening will happen"</button>
+        </div>
+    </div>
     <div>
         <a href="/">Back</a>
     </div>
-    <form action="/add">
-        <h1>Add Prediction</h1>
-        <textarea id="prediction_input" name="prediction_input"></textarea>
-        <br />
-        <input type="checkbox" unchecked id="store" name="store" />
-        <label for="store">Store</label>
-        <br />
-        <input type="submit" value="Create!"></button>
-    </form>
+
+    <script>
+        function changeSubmitLabel() {
+            if (document.querySelector('#store').checked) {
+                document.querySelector('#submitPrediction').value = 'CREATE!';
+            } else {
+                document.querySelector('#submitPrediction').value = 'DRY RUN!';
+            }
+        }
+        function setInput(which) {
+            let text = '';
+            switch (which) {
+                case 'example1':
+                    text = `{
+  "postUrl": "https://twitter.com/CryptoCapo_/status/1499475622988595206",
+  "reporter": "admin",
+  "given": {
+    "a": {
+      "condition": "COIN:BINANCE:BTC-USDT <= 30000",
+      "toDuration": "3m",
+      "errorMarginRatio": 0.03
+    }
+  },
+  "predict": {
+    "predict": "a"
+  }
+}
+`;
+                    break;
+                case 'example2':
+                    text = `{
+  "postUrl": "https://www.youtube.com/watch?v=JWVrWmuSHic&t=88",
+  "reporter": "admin",
+  "given": {
+    "main": {
+      "condition": "COIN:BINANCE:BTC-USDT >= 100000",
+      "toDuration": "eoy",
+      "errorMarginRatio": 0.03
+    },
+    "a": {
+      "condition": "COIN:BINANCE:BTC-USDT <= 30000",
+      "toDuration": "eoy",
+      "errorMarginRatio": 0.03
+    }
+  },
+  "predict": {
+    "predict": "main",
+    "annulledIf": "a",
+    "ignoreUndecidedIfPredictIsDefined": true
+  }
+}`;
+                    break;
+                case 'example3':
+                    text = `{
+  "postUrl": "https://www.youtube.com/watch?v=HMSFJtZ-KRs&t=119s",
+  "reporter": "admin",
+  "given": {
+    "main": {
+      "condition": "COIN:BINANCE:BTC-USDT <= 36000",
+      "toDuration": "3d",
+      "errorMarginRatio": 0.03
+    },
+    "a": {
+      "condition": "COIN:BINANCE:BTC-USDT <= 41000",
+      "toDuration": "1d"
+    }
+  },
+  "prePredict": {
+    "predict": "a",
+    "annulledIfPredictIsFalse": true
+  },
+  "predict": {
+    "predict": "main"
+  }
+}`;
+                    break;
+                case 'example4':
+                    text = `{
+  "postUrl": "https://twitter.com/CryptoCapo_/status/1487070592541077506",
+  "reporter": "admin",
+  "given": {
+    "a": {
+      "condition": "COIN:BINANCE:BTC-USDT BETWEEN 28000 AND 30000",
+      "toDuration": "2w"
+    },
+    "b": {
+      "condition": "COIN:BINANCE:BTC-USDT < 28000",
+      "toDuration": "2w"
+    },
+    "c": {
+      "condition": "COIN:BINANCE:BTC-USDT > 30000",
+      "toDuration": "2w"
+    }
+  },
+  "predict": {
+    "predict": "a",
+    "wrongIf": "b or c"
+  }
+}`;
+                    break;
+                case 'example5':
+                    text = `{
+  "postUrl": "https://twitter.com/Nicholas_Merten/status/1467462765958807556",
+  "reporter": "admin",
+  "given": {
+    "main": {
+      "condition": "MARKETCAP:MESSARI:ETH > MARKETCAP:MESSARI:BTC",
+      "toISO8601": "2023-01-01T00:00:00Z"
+    }
+  },
+  "predict": {
+    "predict": "main"
+  }
+}`;
+                    break;
+            }
+            document.querySelector('#prediction_input').value = text;
+        }
+    </script>
 </body>
 
 </html>

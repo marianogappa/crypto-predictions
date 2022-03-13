@@ -25,13 +25,16 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 		}
 	}
 
+	postedAtTime, _ := p.PostedAt.Time()
+	postedAt := postedAtTime.Format(time.RFC850)
+
 	m := map[string]interface{}{
 		"UUID":              p.UUID,
 		"Version":           p.Version,
 		"CreatedAt":         p.CreatedAt,
 		"PostAuthor":        p.PostAuthor,
 		"PostText":          p.PostText,
-		"PostedAt":          p.PostedAt,
+		"PostedAt":          postedAt,
 		"PostUrl":           p.PostUrl,
 		"Given":             mapifyGiven(p.Given),
 		"PrePredict":        mapifyPrePredict(p.PrePredict),
