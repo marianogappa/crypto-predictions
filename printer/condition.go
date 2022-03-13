@@ -87,6 +87,12 @@ func parseDuration(dur string, fromTime time.Time) string {
 	if dur == "eonw" {
 		return "by end of next week"
 	}
+	if dur == "eod" {
+		return "by end of day"
+	}
+	if dur == "eond" {
+		return "by end of next day"
+	}
 	matches := rxDurationMonths.FindStringSubmatch(dur)
 	if len(matches) == 2 {
 		num, _ := strconv.Atoi(matches[1])
