@@ -1,6 +1,6 @@
 # crypto-predictions
 
-Crypto Predictions is an engine for tracking crypto-related predictions across social media posts.
+Crypto Predictions is a state machine-based engine for tracking crypto-related predictions across social media posts.
 
 https://user-images.githubusercontent.com/1078546/158062428-09e54090-a627-4a3b-9948-41411f1b7191.mp4
 
