@@ -163,7 +163,9 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	data["GetPredictionsInternalMessage"] = res.InternalMessage
 
 	if err := t.Execute(w, data); err != nil {
-		log.Fatal(err)
+		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -209,7 +211,9 @@ func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := t.Execute(w, data); err != nil {
-		log.Fatal(err)
+		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
+			log.Fatal(err)
+		}
 	}
 }
 
