@@ -81,6 +81,11 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 		nextYear := time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC)
 		return nextYear.Sub(fromTime), nil
 	}
+	if dur == "eod" {
+		year, month, day := fromTime.Date()
+		nextYear := time.Date(year, month, day+1, 0, 0, 0, 0, time.UTC)
+		return nextYear.Sub(fromTime), nil
+	}
 	if dur == "eom" {
 		year, month, _ := fromTime.Date()
 		nextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
@@ -95,6 +100,11 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 		year, month, _ := fromTime.Date()
 		nextMonth := time.Date(year, month+2, 1, 0, 0, 0, 0, time.UTC)
 		return nextMonth.Sub(fromTime), nil
+	}
+	if dur == "eond" {
+		year, month, day := fromTime.Date()
+		nextYear := time.Date(year, month, day+2, 0, 0, 0, 0, time.UTC)
+		return nextYear.Sub(fromTime), nil
 	}
 	matches := rxDurationMonths.FindStringSubmatch(dur)
 	if len(matches) == 2 {

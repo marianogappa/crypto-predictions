@@ -48,6 +48,20 @@ func TestParseDuration(t *testing.T) {
 			expected: 1 * time.Second,
 		},
 		{
+			name:     "EOD works",
+			dur:      "eod",
+			fromTime: tp("2020-12-01 23:59:59"),
+			err:      nil,
+			expected: 1 * time.Second,
+		},
+		{
+			name:     "EOND works",
+			dur:      "eond",
+			fromTime: tp("2020-12-01 23:59:59"),
+			err:      nil,
+			expected: 1*time.Second + 24*time.Hour,
+		},
+		{
 			name:     "EOM works",
 			dur:      "eom",
 			fromTime: tp("2020-12-11 00:00:00"),
