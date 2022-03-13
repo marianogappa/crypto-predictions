@@ -15,3 +15,10 @@ CREATE TABLE predictions (
 CREATE INDEX predictions_blob_idx ON predictions USING GIN (blob jsonb_ops);
 CREATE INDEX predictions_created_at_idx ON predictions(created_at timestamp_ops);
 CREATE INDEX predictions_posted_at_idx ON predictions(posted_at timestamp_ops);
+
+CREATE TABLE prediction_state_value_change (
+    prediction_uuid uuid NOT NULL,
+    state_value text NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    PRIMARY KEY(prediction_uuid, state_value)
+);

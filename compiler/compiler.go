@@ -77,8 +77,24 @@ func mapOperands(ss []string) ([]types.Operand, error) {
 func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 	dur = strings.ToLower(dur)
 	if dur == "eoy" {
-		t, _ := time.Parse("2006", fmt.Sprintf("%v", fromTime.Year()+1))
-		return t.Sub(fromTime), nil
+		year, _, _ := fromTime.Date()
+		nextYear := time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+		return nextYear.Sub(fromTime), nil
+	}
+	if dur == "eom" {
+		year, month, _ := fromTime.Date()
+		nextMonth := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
+		return nextMonth.Sub(fromTime), nil
+	}
+	if dur == "eony" {
+		year, _, _ := fromTime.Date()
+		nextYear := time.Date(year+2, 1, 1, 0, 0, 0, 0, time.UTC)
+		return nextYear.Sub(fromTime), nil
+	}
+	if dur == "eonm" {
+		year, month, _ := fromTime.Date()
+		nextMonth := time.Date(year, month+2, 1, 0, 0, 0, 0, time.UTC)
+		return nextMonth.Sub(fromTime), nil
 	}
 	matches := rxDurationMonths.FindStringSubmatch(dur)
 	if len(matches) == 2 {

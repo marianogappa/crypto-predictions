@@ -6,11 +6,15 @@ import (
 )
 
 type MemoryStateStorage struct {
-	Predictions map[string]types.Prediction
+	Predictions                 map[string]types.Prediction
+	PredictionStateValueChanges map[string]types.PredictionStateValueChange
 }
 
 func NewMemoryStateStorage() MemoryStateStorage {
-	return MemoryStateStorage{Predictions: map[string]types.Prediction{}}
+	return MemoryStateStorage{
+		Predictions:                 map[string]types.Prediction{},
+		PredictionStateValueChanges: map[string]types.PredictionStateValueChange{},
+	}
 }
 
 func sliceToMap(ss []string) map[string]struct{} {
@@ -54,4 +58,9 @@ func (s MemoryStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.
 		s.Predictions[prediction.PostUrl] = *prediction
 	}
 	return ps, nil
+}
+
+func (s MemoryStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
+	s.PredictionStateValueChanges[c.PK()] = c
+	return nil
 }

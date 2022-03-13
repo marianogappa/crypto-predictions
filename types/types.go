@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -323,4 +325,27 @@ func (c Candlestick) ToTicks() []Tick {
 		{Timestamp: c.Timestamp, Value: c.LowestPrice},
 		{Timestamp: c.Timestamp, Value: c.HighestPrice},
 	}
+}
+
+type PredictionStateValueChange struct {
+	PredictionUUID string
+	StateValue     string
+	CreatedAt      ISO8601
+}
+
+func (p PredictionStateValueChange) PK() string {
+	return fmt.Sprintf("%v|%v", p.PredictionUUID, p.StateValue)
+}
+
+func (p PredictionStateValueChange) Validate() error {
+	if _, err := p.CreatedAt.Time(); err != nil {
+		return errors.New("CreatedAt is an invalid ISO8601")
+	}
+	if _, err := PredictionStateValueFromString(p.StateValue); err != nil {
+		return err
+	}
+	if _, err := uuid.Parse(p.PredictionUUID); err != nil {
+		return err
+	}
+	return nil
 }

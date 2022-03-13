@@ -90,6 +90,11 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 
 	for _, inactivePrediction := range result.Predictions {
 		if inactivePrediction.Evaluate().IsFinal() {
+			r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+				PredictionUUID: inactivePrediction.UUID,
+				StateValue:     inactivePrediction.State.Value.String(),
+				CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
+			})
 			description := printer.NewPredictionPrettyPrinter(*inactivePrediction).Default()
 			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, inactivePrediction.State.Value)
 		}

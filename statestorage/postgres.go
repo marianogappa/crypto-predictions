@@ -232,3 +232,14 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 	_, err := s.db.Exec(sql, args...)
 	return ps, err
 }
+
+func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
+	_, err := s.db.Exec(`
+		INSERT INTO prediction_state_value_change
+		(prediction_uuid, state_value, created_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (%v) DO UPDATE SET created_at = EXCLUDED.created_at
+		`, c.PredictionUUID, c.StateValue, c.CreatedAt)
+
+	return err
+}
