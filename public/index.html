@@ -96,6 +96,19 @@
 
         .topLinks {
             margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+        .topLinks a {
+            background-color: #2e9d00;
+            padding: 10px;
+            color: white;
+            border: 2px solid black;
+            font-weight: bolder;
+        }
+
+        .topLinks a:hover {
+            text-decoration: none;
         }
     </style>
 </head>
@@ -109,8 +122,8 @@
     <div>{{.GetPredictionsInternalMessage}}</div>
     {{end}}
     <div class="topLinks">
-        <a href="/add" class="createPrediction">[Create prediction]</a>
-        <a href="/" class="clearFilters">[Clear filters]</a>
+        <a href="/add" class="createPrediction">CREATE PREDICTION</a>
+        <a href="/" class="clearFilters">CLEAR FILTERS</a>
     </div>
     <div id="resp-table">
         <div id="resp-table-header">

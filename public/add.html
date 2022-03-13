@@ -191,7 +191,7 @@
         <div class="inputLeft">
             <form action="/add">
                 <textarea id="prediction_input"
-                    name="prediction_input">{{if .predictionStr}}{{.predictionStr}}{{end}}</textarea>
+                    name="prediction_input">{{if .predictionStr}}{{if .Stored}}{{else}}{{.predictionStr}}{{end}}{{end}}</textarea>
                 <br />
                 <input type="checkbox" unchecked id="store" name="store" onclick="changeSubmitLabel()" />
                 <label for="store">Store</label>
