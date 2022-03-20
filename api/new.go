@@ -46,7 +46,7 @@ func (a *API) newHandler(w http.ResponseWriter, r *http.Request) {
 	if pred.State == (types.PredictionState{}) {
 		predRunner, errs := daemon.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
 		if len(errs) == 0 {
-			predRunnerErrs := predRunner.Run()
+			predRunnerErrs := predRunner.Run(true)
 			for _, err := range predRunnerErrs {
 				if errors.Is(err, types.ErrInvalidMarketPair) {
 					respond(w, nil, nil, pBool(false), types.ErrInvalidMarketPair)

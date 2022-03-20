@@ -76,7 +76,7 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 
 	// log.Printf("Daemon.Run: %v active prediction runners\n", len(predRunners))
 	for _, predRunner := range predRunners {
-		if errs := predRunner.Run(); len(errs) > 0 {
+		if errs := predRunner.Run(false); len(errs) > 0 {
 			for _, err := range errs {
 				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", predRunner.prediction.UUID, err))
 			}

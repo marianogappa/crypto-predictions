@@ -129,11 +129,7 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	data["Predictions"] = pDatas
 
-	if err := t.Execute(w, data); err != nil {
-		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
-			log.Fatal(err)
-		}
-	}
+	t.Execute(w, data)
 }
 
 func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) {

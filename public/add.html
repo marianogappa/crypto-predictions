@@ -111,10 +111,14 @@
             border: 2px solid black;
             font-weight: bolder;
         }
+
+        .footer {
+            margin-top: 20px;
+        }
     </style>
 </head>
 
-<body>
+<body onload="init()">
     {{if .Err}}
     <h1>❌ Error creating prediction</h1>
     <div>{{.Err}}</div>
@@ -205,18 +209,28 @@
             <button class="example" onclick="setInput('example2')">Example
                 "Coin will reach X invalidated if goes below Y"</button>
             <button class="example" onclick="setInput('example3')">Example
-                If Coin stays below X, it will go down to Y</button>
+                "If Coin stays below X, it will go down to Y"</button>
             <button class="example" onclick="setInput('example4')">Example
                 "Coin will range between X and Y"</button>
             <button class="example" onclick="setInput('example5')">Example
                 "The flippening will happen"</button>
+            <button class="example" onclick="setInput('example6')">Example
+                "Coin will go above X before it goes below Y"</button>
         </div>
     </div>
-    <div>
+    <div class="footer">
         <a href="/">Back</a>
     </div>
 
     <script>
+        function init() {
+            const params = new Proxy(new URLSearchParams(window.location.search), {
+                get: (searchParams, prop) => searchParams.get(prop),
+            });
+            if (params.prediction_input) {
+                document.querySelector('#prediction_input').value = params.prediction_input;
+            }
+        }
         function changeSubmitLabel() {
             if (document.querySelector('#store').checked) {
                 document.querySelector('#submitPrediction').value = 'CREATE!';
@@ -327,6 +341,27 @@
   },
   "predict": {
     "predict": "main"
+  }
+}`;
+                    break;
+                case 'example6':
+                    text = `{
+  "postUrl": "https://twitter.com/Trader_XO/status/1503690856125145092",
+  "reporter": "admin",
+  "given": {
+    "a": {
+      "condition": "COIN:BINANCE:BTC-USDT >= 47000",
+      "toDuration": "eoy",
+      "errorMarginRatio": 0.03
+    },
+    "b": {
+      "condition": "COIN:BINANCE:BTC-USDT <= 30000",
+      "toDuration": "eoy",
+      "errorMarginRatio": 0.03
+    }
+  },
+  "predict": {
+    "predict": "a and (not b)"
   }
 }`;
                     break;

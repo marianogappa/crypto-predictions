@@ -121,6 +121,9 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 
 	if resp.StatusCode != http.StatusOK {
 		err := fmt.Errorf("kucoin returned %v status code", resp.StatusCode)
+		if resp.StatusCode == 429 {
+			err = types.ErrRateLimit
+		}
 		return klinesResult{httpStatus: resp.StatusCode, err: err}, err
 	}
 

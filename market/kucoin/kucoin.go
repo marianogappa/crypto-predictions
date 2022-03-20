@@ -1,7 +1,6 @@
 package kucoin
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/marianogappa/predictions/market/common"
@@ -22,8 +21,6 @@ func (k *Kucoin) overrideAPIURL(apiURL string) {
 }
 
 func (k *Kucoin) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
-	fmt.Printf("Kucoin making request for %v\n", time.Unix(int64(startTimeTs), 0).Format(time.RFC3339))
-
 	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
 	if err != nil {
 		if res.kucoinErrorCode == "400100" && res.kucoinErrorMessage == "This pair is not provided at present" {

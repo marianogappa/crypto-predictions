@@ -50,7 +50,7 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 	return &result, errs
 }
 
-func (r *PredRunner) Run() []error {
+func (r *PredRunner) Run(once bool) []error {
 	var (
 		errs            = []error{}
 		stuckConditions = map[string]struct{}{}
@@ -64,6 +64,9 @@ func (r *PredRunner) Run() []error {
 					errs = append(errs, err)
 				}
 			}
+		}
+		if once {
+			return errs
 		}
 		conds = r.actionableNonStuckUndecidedConditions(stuckConditions)
 	}

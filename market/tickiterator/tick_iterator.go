@@ -54,7 +54,7 @@ func (t *TickIteratorImpl) Next() (types.Tick, error) {
 	}
 
 	// If we reach here, before asking the exchange, let's see if it's too early to have new values.
-	if t.nextTime().After(t.timeNowFunc().Add(-t.tickProvider.GetPatience())) {
+	if t.nextTime().After(t.timeNowFunc().Add(-t.tickProvider.GetPatience() - time.Duration(t.tickDurationSecs())*time.Second)) {
 		return types.Tick{}, types.ErrNoNewTicksYet
 	}
 

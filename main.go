@@ -83,7 +83,7 @@ func main() {
 		apiPort        = envOrInt("PREDICTIONS_API_PORT", 2345)
 		apiUrl         = envOrStr("PREDICTIONS_API_URL", fmt.Sprintf("http://localhost:%v", apiPort))
 		backOfficePort = envOrInt("PREDICTIONS_BACKOFFICE_PORT", 1234)
-		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 10*time.Second)
+		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 60*time.Second)
 	)
 
 	// Run all components.

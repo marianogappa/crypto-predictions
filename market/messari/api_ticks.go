@@ -82,10 +82,13 @@ type metricsResult struct {
 }
 
 func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metricsResult, error) {
-	log.Println("Running time-series request against Messari API for asset...", asset)
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vassets/%v/metrics/%v/time-series", b.apiURL, asset, metricID), nil)
 
 	after := time.Unix(int64(startTimeMillis/1000), 0).Format("2006-01-02")
+
+	if b.debug {
+		log.Printf("Running time-series request against Messari API for asset %v after %v...\n", asset, after)
+	}
 
 	q := req.URL.Query()
 	q.Add("after", after)
