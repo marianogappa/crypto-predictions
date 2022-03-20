@@ -43,3 +43,22 @@ func (p *Prediction) ClearState() {
 	p.PrePredict.ClearState()
 	p.Predict.ClearState()
 }
+
+func (p *Prediction) UndecidedConditions() []*Condition {
+	var undecidedConditions []*Condition
+	undecidedConditions = append(undecidedConditions, p.PrePredict.UndecidedConditions()...)
+	undecidedConditions = append(undecidedConditions, p.Predict.UndecidedConditions()...)
+	return undecidedConditions
+}
+
+// ActionableUndecidedConditions are undecided conditions that should be evolved now, as opposed to conditions that
+// are undecided, but need to wait for other conditions to be decided first.
+func (p *Prediction) ActionableUndecidedConditions() []*Condition {
+	switch p.Evaluate() {
+	case ONGOING_PRE_PREDICTION:
+		return p.PrePredict.UndecidedConditions()
+	case ONGOING_PREDICTION:
+		return p.Predict.UndecidedConditions()
+	}
+	return []*Condition{}
+}

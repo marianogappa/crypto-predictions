@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -819,4 +821,41 @@ func TestConditionClearState(t *testing.T) {
 	if !reflect.DeepEqual(c.State, expected) {
 		t.Errorf("expected state to be %v but was %v", expected, c.State)
 	}
+}
+
+func TestConditionNonNumberOperands(t *testing.T) {
+	expected := []Operand{
+		{
+			Type:       COIN,
+			Provider:   "BINANCE",
+			BaseAsset:  "BTC",
+			QuoteAsset: "USDT",
+		},
+		{
+			Type:      MARKETCAP,
+			Provider:  "MESSARI",
+			BaseAsset: "BTC",
+		},
+	}
+
+	c := &Condition{
+		Operands: []Operand{
+			{
+				Type:       COIN,
+				Provider:   "BINANCE",
+				BaseAsset:  "BTC",
+				QuoteAsset: "USDT",
+			},
+			{
+				Type:      MARKETCAP,
+				Provider:  "MESSARI",
+				BaseAsset: "BTC",
+			},
+			{
+				Type:   NUMBER,
+				Number: 3.1415,
+			},
+		},
+	}
+	require.Equal(t, expected, c.NonNumberOperands())
 }

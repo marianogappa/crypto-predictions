@@ -189,7 +189,7 @@ func newTestMarket(ticks map[string]types.Tick) *testMarket {
 	return &testMarket{}
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601) (types.TickIterator, error) {
+func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error) {
 	if _, ok := m.ticks[operand.Str]; !ok {
 		return nil, types.ErrInvalidMarketPair
 	}
@@ -200,7 +200,7 @@ type testTickIterator struct {
 	ticks []types.Tick
 }
 
-func newTestTickIterator(ticks []types.Tick) *testTickIterator {
+func newTestTickIterator(ticks []types.Tick) types.TickIterator {
 	return &testTickIterator{ticks}
 }
 

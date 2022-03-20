@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -432,8 +433,7 @@ func TestKlinesInvalidUrl(t *testing.T) {
 
 	b := NewBinance()
 	b.overrideAPIURL("invalid url")
-	ci := b.BuildCandlestickIterator("BTC", "USDT", "2021-07-04T14:14:18+00:00")
-	_, err := ci.Next()
+	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
 	}
@@ -447,8 +447,7 @@ func TestKlinesErrReadingResponseBody(t *testing.T) {
 
 	b := NewBinance()
 	b.overrideAPIURL(ts.URL + "/")
-	ci := b.BuildCandlestickIterator("BTC", "USDT", "2021-07-04T14:14:18+00:00")
-	_, err := ci.Next()
+	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
 	}
@@ -462,8 +461,7 @@ func TestKlinesErrorResponse(t *testing.T) {
 
 	b := NewBinance()
 	b.overrideAPIURL(ts.URL + "/")
-	ci := b.BuildCandlestickIterator("BTC", "USDT", "2021-07-04T14:14:18+00:00")
-	_, err := ci.Next()
+	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
 	}
@@ -476,8 +474,7 @@ func TestKlinesInvalidJSONResponse(t *testing.T) {
 
 	b := NewBinance()
 	b.overrideAPIURL(ts.URL + "/")
-	ci := b.BuildCandlestickIterator("BTC", "USDT", "2021-07-04T14:14:18+00:00")
-	_, err := ci.Next()
+	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
 	}
@@ -506,8 +503,7 @@ func TestKlinesInvalidFloatsInJSONResponse(t *testing.T) {
 
 	b := NewBinance()
 	b.overrideAPIURL(ts.URL + "/")
-	ci := b.BuildCandlestickIterator("BTC", "USDT", "2021-07-04T14:14:18+00:00")
-	_, err := ci.Next()
+	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")
 	}
@@ -516,3 +512,22 @@ func TestKlinesInvalidFloatsInJSONResponse(t *testing.T) {
 func f(fl float64) types.JsonFloat64 {
 	return types.JsonFloat64(fl)
 }
+
+func tp(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
+}
+
+func tInt(s string) int {
+	return int(tp(s).Unix())
+}
+
+var (
+	opBTCUSDT = types.Operand{
+		Type:       types.COIN,
+		Provider:   "BINANCE",
+		BaseAsset:  "BTC",
+		QuoteAsset: "USDT",
+		Str:        "BINANCE:BTC:USDT",
+	}
+)

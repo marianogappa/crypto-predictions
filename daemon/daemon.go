@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -58,47 +59,44 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 	}
 
 	// Create prediction runners from all ongoing predictions
-	activePredRunners := map[string]*PredRunner{}
+	predRunners := []*PredRunner{}
 	for _, prediction := range predictions {
 		pred := prediction
 		predRunner, errs := NewPredRunner(&pred, r.market, nowTs)
 		for _, err := range errs {
 			if !errors.Is(err, errPredictionAtFinalStateAtCreation) {
-				result.Errors = append(result.Errors, err)
+				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", pred.UUID, err))
 			}
 		}
 		if len(errs) > 0 {
 			continue
 		}
-		activePredRunners[prediction.UUID] = predRunner
+		predRunners = append(predRunners, predRunner)
 	}
 
-	// Continuously run prediction runners until there aren't any active ones
-	for len(activePredRunners) > 0 {
-		log.Printf("Daemon.Run: %v active prediction runners\n", len(activePredRunners))
-		for pk, predRunner := range activePredRunners {
-			errs := predRunner.Run()
-			if len(errs) > 0 {
-				result.Errors = append(result.Errors, errs...)
-			}
-			if predRunner.isInactive {
-				result.Predictions = append(result.Predictions, predRunner.prediction)
-				delete(activePredRunners, pk)
+	// log.Printf("Daemon.Run: %v active prediction runners\n", len(predRunners))
+	for _, predRunner := range predRunners {
+		if errs := predRunner.Run(); len(errs) > 0 {
+			for _, err := range errs {
+				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", predRunner.prediction.UUID, err))
 			}
 		}
+		result.Predictions = append(result.Predictions, predRunner.prediction)
 	}
 
-	for _, inactivePrediction := range result.Predictions {
-		if inactivePrediction.Evaluate().IsFinal() {
+	for _, prediction := range result.Predictions {
+		if prediction.Evaluate().IsFinal() {
 			r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
-				PredictionUUID: inactivePrediction.UUID,
-				StateValue:     inactivePrediction.State.Value.String(),
+				PredictionUUID: prediction.UUID,
+				StateValue:     prediction.State.Value.String(),
 				CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
 			})
-			description := printer.NewPredictionPrettyPrinter(*inactivePrediction).Default()
-			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, inactivePrediction.State.Value)
+			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
+			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 		}
 	}
+
+	log.Printf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(market.Market).CalculateCacheHitRatio())
 
 	// Upsert state with changed predictions
 	_, err = r.store.UpsertPredictions(result.Predictions)

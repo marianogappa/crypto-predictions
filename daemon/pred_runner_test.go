@@ -178,10 +178,10 @@ func TestNewPredRunner(t *testing.T) {
 				}),
 			nowTs:       tInt("2022-02-28 16:20:00"),
 			isError:     false,
-			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 16:21:00")}},
+			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
 		},
 		{
-			name: "Undecided prediction should not make a call, because it would start in the future",
+			name: "Undecided prediction should make a call in the future, which is fine because it should return ErrNoNewTicksYet",
 			prediction: newPredictionWith(
 				types.PrePredict{},
 				types.Predict{
@@ -198,7 +198,7 @@ func TestNewPredRunner(t *testing.T) {
 				}),
 			nowTs:       tInt("2022-02-27 15:00:00"), // Earlier than when the tick iterator starts
 			isError:     false,
-			marketCalls: nil,
+			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
 		},
 		{
 			name: "Undecided prediction should make a call with start time in the future, in the next day (MARKETCAP)",
@@ -218,10 +218,10 @@ func TestNewPredRunner(t *testing.T) {
 				}),
 			nowTs:       tInt("2022-03-01 16:20:00"),
 			isError:     false,
-			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-28 16:20:00")}},
+			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
 		},
 		{
-			name: "Undecided prediction should NOT make a call because it's a MARKETCAP type, and it's lastTs is yesterday, so today according to nowTs won't have MESSARI data yet",
+			name: "Undecided MARKETCAP type prediction should make a call regardless of it being in the future",
 			prediction: newPredictionWith(
 				types.PrePredict{},
 				types.Predict{
@@ -238,7 +238,7 @@ func TestNewPredRunner(t *testing.T) {
 				}),
 			nowTs:       tInt("2022-02-27 19:20:00"),
 			isError:     false,
-			marketCalls: nil,
+			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-26 16:20:00"), startFromNext: true}},
 		},
 	}
 	for _, ts := range tss {
@@ -318,16 +318,17 @@ func tInt(s string) int {
 }
 
 type marketCall struct {
-	operand types.Operand
-	ts      types.ISO8601
+	operand       types.Operand
+	ts            types.ISO8601
+	startFromNext bool
 }
 
 type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, ts types.ISO8601) (types.TickIterator, error) {
-	m.calls = append(m.calls, marketCall{operand, ts})
+func (m *testMarket) GetTickIterator(operand types.Operand, ts types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+	m.calls = append(m.calls, marketCall{operand, ts, startFromNext})
 	return testTickIterator{}, nil
 }
 

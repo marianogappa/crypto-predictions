@@ -37,13 +37,22 @@ var (
 	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")
 	ErrUnknownAPIOrderBy                  = errors.New("unknown API order by")
 
+	ErrOutOfTicks         = errors.New("out of ticks")
 	ErrOutOfCandlesticks  = errors.New("exchange ran out of candlesticks")
 	ErrOutOfTrades        = errors.New("exchange ran out of trades")
-	ErrInvalidMarketPair  = errors.New("market pair does not exist on exchange")
+	ErrInvalidMarketPair  = errors.New("market pair or asset does not exist on exchange")
 	ErrRateLimit          = errors.New("exchange asked us to enhance our calm")
 	ErrInvalidExchange    = errors.New("the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'")
 	ErrBaseAssetRequired  = errors.New("base asset is required (e.g. BTC)")
 	ErrQuoteAssetRequired = errors.New("quote asset is required (e.g. USDT)")
+
+	// From TickIterator
+	ErrNoNewTicksYet                 = errors.New("no new ticks yet")
+	ErrExchangeReturnedNoTicks       = errors.New("exchange returned no ticks")
+	ErrExchangeReturnedOutOfSyncTick = errors.New("exchange returned out of sync tick")
+
+	// From PatchTickHoles
+	ErrOutOfSyncTimestampPatchingHoles = errors.New("out of sync timestamp found patching holes")
 )
 
 type Operand struct {
@@ -348,4 +357,12 @@ func (p PredictionStateValueChange) Validate() error {
 		return err
 	}
 	return nil
+}
+
+type Tick struct {
+	Timestamp int         `json:"t"`
+	Value     JsonFloat64 `json:"v"`
+}
+type TickIterator interface {
+	Next() (Tick, error)
 }

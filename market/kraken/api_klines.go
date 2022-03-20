@@ -216,7 +216,7 @@ func (k Kraken) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 			httpStatus:         500,
 			krakenErrorMessage: fmt.Sprintf("%v", maybeResponse.Error),
 			err:                fmt.Errorf("kraken returned errors: %v", maybeResponse.Error),
-		}, err
+		}, fmt.Errorf("kraken returned errors: %v", maybeResponse.Error)
 	}
 
 	candlesticks, err := maybeResponse.toCandlesticks()
@@ -228,6 +228,13 @@ func (k Kraken) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 		}, wrappedErr
 	}
 
+	if len(candlesticks) > 0 {
+		// N.B. https://docs.kraken.com/rest/#operation/getOHLCData
+		// the last entry in the OHLC array is for the current, not-yet-committed frame and will always be present,
+		// regardless of the value of since.
+		candlesticks = candlesticks[:len(candlesticks)-1]
+	}
+
 	nextSince, err := maybeResponse.getNextSince()
 	if err != nil {
 		wrappedErr := fmt.Errorf("error unmarshalling nextSince from successful response data from Kraken: %v", err)
@@ -237,7 +244,9 @@ func (k Kraken) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 		}, wrappedErr
 	}
 
-	log.Printf("Kraken candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+	if k.debug {
+		log.Printf("Kraken candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+	}
 
 	return klinesResult{
 		candlesticks: candlesticks,

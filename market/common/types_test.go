@@ -6,8 +6,10 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJsonFloat64(t *testing.T) {
@@ -100,4 +102,86 @@ func TestCandlestickToTicks(t *testing.T) {
 
 func f(fl float64) types.JsonFloat64 {
 	return types.JsonFloat64(fl)
+}
+
+func TestPatchTickHoles(t *testing.T) {
+	tss := []struct {
+		name     string
+		ticks    []types.Tick
+		startTs  int
+		durSecs  int
+		expected []types.Tick
+	}{
+		{
+			name:     "Base case",
+			ticks:    []types.Tick{},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{},
+		},
+		{
+			name:     "Does not need to do anything",
+			ticks:    []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+		},
+		{
+			name:     "Removes older entries returned",
+			ticks:    []types.Tick{{Timestamp: 60, Value: 2}, {Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+		},
+		{
+			name:     "Removes older entries returned, leaving nothing",
+			ticks:    []types.Tick{{Timestamp: 60, Value: 2}},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{},
+		},
+		{
+			name:     "Needs to add an initial tick",
+			ticks:    []types.Tick{{Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: 120, Value: 2}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+		},
+		{
+			name:     "Needs to add an initial tick, as well as in the middle",
+			ticks:    []types.Tick{{Timestamp: 180, Value: 2}, {Timestamp: 360, Value: 3}},
+			startTs:  120,
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: 120, Value: 2}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}, {Timestamp: 300, Value: 3}, {Timestamp: 360, Value: 3}},
+		},
+		{
+			name:     "Adjusts start time to zero seconds",
+			ticks:    []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
+			startTs:  tInt("2020-01-02 00:02:58"),
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
+		},
+		{
+			name:     "Adjusts start time to zero seconds rounding up",
+			ticks:    []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
+			startTs:  tInt("2020-01-02 00:03:02"),
+			durSecs:  60,
+			expected: []types.Tick{{Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			actual := PatchTickHoles(ts.ticks, ts.startTs, ts.durSecs)
+			require.Equal(t, ts.expected, actual)
+		})
+	}
+}
+
+func tp(s string) time.Time {
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return t
+}
+
+func tInt(s string) int {
+	return int(tp(s).Unix())
 }

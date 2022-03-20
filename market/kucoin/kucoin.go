@@ -1,6 +1,9 @@
 package kucoin
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
@@ -18,10 +21,27 @@ func (k *Kucoin) overrideAPIURL(apiURL string) {
 	k.apiURL = apiURL
 }
 
-func (b *Kucoin) SetDebug(debug bool) {
-	b.debug = debug
+func (k *Kucoin) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+	fmt.Printf("Kucoin making request for %v\n", time.Unix(int64(startTimeTs), 0).Format(time.RFC3339))
+
+	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
+	if err != nil {
+		if res.kucoinErrorCode == "400100" && res.kucoinErrorMessage == "This pair is not provided at present" {
+			return nil, types.ErrInvalidMarketPair
+		}
+		return nil, err
+	}
+
+	// Reverse slice, because Coinbase returns candlesticks in descending order
+	for i, j := 0, len(res.candlesticks)-1; i < j; i, j = i+1, j-1 {
+		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
+	}
+
+	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
 }
 
-func (k Kucoin) BuildCandlestickIterator(baseAsset, quoteAsset string, initialISO8601 types.ISO8601) *common.CandlestickIterator {
-	return common.NewCandlestickIterator(k.newCandlestickIterator(baseAsset, quoteAsset, initialISO8601).next)
+func (k *Kucoin) GetPatience() time.Duration { return 0 * time.Second }
+
+func (k *Kucoin) SetDebug(debug bool) {
+	k.debug = debug
 }

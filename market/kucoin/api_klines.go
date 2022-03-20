@@ -107,6 +107,7 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 	q.Add("symbol", symbol)
 	q.Add("type", "1min")
 	q.Add("startAt", fmt.Sprintf("%v", startTimeSecs))
+	q.Add("endAt", fmt.Sprintf("%v", startTimeSecs+1500*60))
 
 	req.URL.RawQuery = q.Encode()
 

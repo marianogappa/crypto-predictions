@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -159,8 +160,7 @@ func TestTicksInvalidUrl(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL("invalid url")
-	ti := b.BuildTickIterator("BTC", "mcap.out", "2021-07-04T14:14:18+00:00")
-	_, err := ti.Next()
+	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
 	}
@@ -175,8 +175,7 @@ func TestTicksErrReadingResponseBody(t *testing.T) {
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
 	b.SetDebug(true)
-	ti := b.BuildTickIterator("BTC", "mcap.out", "2021-07-04T14:14:18+00:00")
-	_, err := ti.Next()
+	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
 	}
@@ -190,8 +189,7 @@ func TestTicksErrorResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	ti := b.BuildTickIterator("BTC", "mcap.out", "2021-07-04T14:14:18+00:00")
-	_, err := ti.Next()
+	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
 	}
@@ -204,8 +202,7 @@ func TestTicksInvalidJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	ti := b.BuildTickIterator("BTC", "mcap.out", "2021-07-04T14:14:18+00:00")
-	_, err := ti.Next()
+	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
 	}
@@ -224,9 +221,26 @@ func TestTicksInvalidFloatsInJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	ti := b.BuildTickIterator("BTC", "mcap.out", "2021-07-04T14:14:18+00:00")
-	_, err := ti.Next()
+	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")
 	}
 }
+
+func tp(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
+}
+
+func tInt(s string) int {
+	return int(tp(s).Unix())
+}
+
+var (
+	opBTC = types.Operand{
+		Type:      types.COIN,
+		Provider:  "MESSARI",
+		BaseAsset: "BTC",
+		Str:       "MESSARI:BTC:",
+	}
+)

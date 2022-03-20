@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Condition struct {
@@ -66,8 +67,10 @@ func (c *Condition) Run(ticks map[string]Tick) error {
 	}
 
 	// If the last timestamp in the state is newer than the current one, there's a problem with the supplied ticks!
-	if timestamp < c.State.LastTs {
-		return errOlderTickTimestampSupplied
+	received := time.Unix(int64(timestamp), 0).Format(time.RFC3339)
+	last := time.Unix(int64(c.State.LastTs), 0).Format(time.RFC3339)
+	if timestamp <= c.State.LastTs {
+		return fmt.Errorf("%w: for cond %v received %v but last is %v", errOlderTickTimestampSupplied, c.Name, received, last)
 	}
 
 	// If the supplied ticks are older than when the condition begins, then ignore these ticks.
@@ -126,4 +129,15 @@ func (c Condition) Evaluate() ConditionStateValue {
 
 func (c *Condition) ClearState() {
 	c.State = ConditionState{}
+}
+
+func (c *Condition) NonNumberOperands() []Operand {
+	ops := []Operand{}
+	for _, op := range c.Operands {
+		if op.Type == NUMBER {
+			continue
+		}
+		ops = append(ops, op)
+	}
+	return ops
 }

@@ -1,6 +1,8 @@
 package ftx
 
 import (
+	"time"
+
 	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
@@ -18,10 +20,16 @@ func (f *FTX) overrideAPIURL(apiURL string) {
 	f.apiURL = apiURL
 }
 
-func (b *FTX) SetDebug(debug bool) {
-	b.debug = debug
+func (f *FTX) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+	res, err := f.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
+	if err != nil {
+		return nil, err
+	}
+	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
 }
 
-func (f FTX) BuildCandlestickIterator(baseAsset, quoteAsset string, initialISO8601 types.ISO8601) *common.CandlestickIterator {
-	return common.NewCandlestickIterator(f.newCandlestickIterator(baseAsset, quoteAsset, initialISO8601).next)
+func (f *FTX) GetPatience() time.Duration { return 0 * time.Second }
+
+func (f *FTX) SetDebug(debug bool) {
+	f.debug = debug
 }
