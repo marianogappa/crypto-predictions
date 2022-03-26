@@ -19,11 +19,22 @@ var (
 )
 
 type PostMetadata struct {
-	Author        string
-	AuthorURL     string
-	AuthorImgUrl  string
-	PostTitle     string
-	PostText      string
-	PostCreatedAt types.ISO8601
-	PostType      PostType
+	Author             PostAuthor
+	PostTitle          string
+	PostText           string
+	PostCreatedAt      types.ISO8601
+	PostType           PostType
+	ThumbnailImgSmall  string
+	ThumbnailImgMedium string
+}
+
+type PostAuthor struct {
+	URL               string
+	AuthorImgSmall    string
+	AuthorImgMedium   string
+	AuthorName        string
+	AuthorHandle      string
+	AuthorDescription string
+	IsVerified        bool // Youtube API currently does not return this field so it's always false
+	FollowerCount     int
 }

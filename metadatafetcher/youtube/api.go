@@ -1,20 +1,12 @@
 package youtube
 
-/*
-curl \
- 'https://youtube.googleapis.com/youtube/v3/videos?part=contentDetails%2Cid%2CliveStreamingDetails%2Clocalizations%2Cplayer%2CrecordingDetails%2Csnippet%2Cstatistics%2Cstatus%2CtopicDetails&id=ozgGPWnVLkY&key=AIzaSyBGIaqdlYg4feSjj5DmmTIMTTRWuXEAcY4' \
-  --header 'Accept: application/json' \
-  --compressed
-*/
-
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
 	"os"
-	"time"
+	"strconv"
+
+	"github.com/marianogappa/predictions/request"
+	"github.com/marianogappa/predictions/types"
 )
 
 type Youtube struct {
@@ -37,14 +29,16 @@ type Video struct {
 	VideoTitle           string
 	VideoDescription     string
 	VideoID              string
-	PublishedAt          string
-	ChannelURL           string
+	PublishedAt          types.ISO8601
+	ChannelID            string
 	ChannelTitle         string
 	ThumbnailDefaultURL  string
 	ThumbnailMediumURL   string
 	ThumbnailHighURL     string
 	ThumbnailStandardURL string
 	ThumbnailMaxresURL   string
+
+	err error
 }
 
 type responseSnippetThumbnailsThumbnail struct {
@@ -61,7 +55,7 @@ type responseSnippetThumbnails struct {
 }
 
 type responseSnippet struct {
-	PublishedAt  string                    `json:"publishedAt"`
+	PublishedAt  types.ISO8601             `json:"publishedAt"`
 	ChannelId    string                    `json:"channelId"`
 	Title        string                    `json:"title"`
 	Description  string                    `json:"description"`
@@ -72,16 +66,22 @@ type responseItems struct {
 	Snippet responseSnippet `json:"snippet"`
 }
 
-type response struct {
+type videosResponse struct {
 	Items []responseItems `json:"items"`
 }
 
-func (r response) toVideo() (Video, error) {
+func videosResponseToVideo(r videosResponse) (Video, error) {
 	if len(r.Items) != 1 {
 		return Video{}, fmt.Errorf("expected len(Items) == 1, but was %v", len(r.Items))
 	}
+
+	_, err := r.Items[0].Snippet.PublishedAt.Time()
+	if err != nil {
+		return Video{}, fmt.Errorf("could not parse %v into valid time, with error: %v", r.Items[0].Snippet.PublishedAt, err)
+	}
+
 	return Video{
-		ChannelURL:           fmt.Sprintf("https://www.youtube.com/c/%v", r.Items[0].Snippet.ChannelId),
+		ChannelID:            r.Items[0].Snippet.ChannelId,
 		PublishedAt:          r.Items[0].Snippet.PublishedAt,
 		ChannelTitle:         r.Items[0].Snippet.ChannelTitle,
 		VideoTitle:           r.Items[0].Snippet.Title,
@@ -94,36 +94,110 @@ func (r response) toVideo() (Video, error) {
 	}, nil
 }
 
+func parseVideoError(err error) Video {
+	return Video{err: err}
+}
+
 func (t Youtube) GetVideoByID(id string) (Video, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%v/videos?part=snippet&id=%v&key=%v", t.apiURL, id, t.apiKey), nil)
+	req := request.Request[videosResponse, Video]{
+		BaseUrl:       t.apiURL,
+		Path:          fmt.Sprintf("videos?part=snippet&id=%v&key=%v", id, t.apiKey),
+		Headers:       map[string]string{"Accept": "application/json"},
+		ParseResponse: videosResponseToVideo,
+		ParseError:    parseVideoError,
+	}
 
-	req.Header.Add("Accept", "application/json")
+	video := request.MakeRequest(req)
+	if video.err != nil {
+		return video, video.err
+	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	return video, nil
+}
 
-	resp, err := client.Do(req)
+type Channel struct {
+	ID                  string
+	URL                 string
+	PublishedAt         types.ISO8601
+	Title               string
+	Description         string
+	ThumbnailDefaultURL string
+	ThumbnailMediumURL  string
+	ThumbnailHighURL    string
+	SubscriberCount     int
+
+	err error
+}
+
+func channelsResponseToChannel(r channelsResponse) (Channel, error) {
+	if len(r.Items) != 1 {
+		return Channel{}, fmt.Errorf("expected 1 item in youtube's API response but got %v", len(r.Items))
+	}
+	if _, err := r.Items[0].Snippet.PublishedAt.Time(); err != nil {
+		return Channel{}, fmt.Errorf("expected valid ISO8601 timestamp from youtube's API response but got %v", r.Items[0].Snippet.PublishedAt)
+	}
+	subscriberCount, err := strconv.Atoi(r.Items[0].Statistics.SubscriberCount)
 	if err != nil {
-		return Video{}, err
-	}
-	defer resp.Body.Close()
-
-	byts, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		err := fmt.Errorf("twitter returned broken body response! Was: %v", string(byts))
-		return Video{}, err
+		return Channel{}, fmt.Errorf("expected a numeric subscriber count but got %v", r.Items[0].Statistics.SubscriberCount)
 	}
 
-	res := response{}
-	if err := json.Unmarshal(byts, &res); err != nil {
-		err2 := fmt.Errorf("twitter returned invalid JSON response! Response was: %v. Error is: %v", string(byts), err)
-		return Video{}, err2
-	}
-	log.Println("tweet", string(byts), "response", res)
+	return Channel{
+		ID:                  r.Items[0].ID,
+		URL:                 fmt.Sprintf("https://youtube.com/channel/%v", r.Items[0].ID),
+		PublishedAt:         r.Items[0].Snippet.PublishedAt,
+		Title:               r.Items[0].Snippet.Title,
+		Description:         r.Items[0].Snippet.Description,
+		ThumbnailDefaultURL: r.Items[0].Snippet.Thumbnails.Default.URL,
+		ThumbnailMediumURL:  r.Items[0].Snippet.Thumbnails.Medium.URL,
+		ThumbnailHighURL:    r.Items[0].Snippet.Thumbnails.High.URL,
+		SubscriberCount:     subscriberCount,
+	}, nil
+}
 
-	v, err := res.toVideo()
-	if err != nil {
-		return v, err
+type channelsResponseItem struct {
+	ID         string                     `json:"id"`
+	Snippet    channelsResponseSnippet    `json:"snippet"`
+	Statistics channelsResponseStatistics `json:"statistics"`
+}
+
+type channelsResponseStatistics struct {
+	SubscriberCount string `json:"subscriberCount"`
+}
+
+type channelsResponseSnippet struct {
+	Title       string                            `json:"title"`
+	Description string                            `json:"description"`
+	PublishedAt types.ISO8601                     `json:"publishedAt"`
+	Thumbnails  channelsResponseSnippetThumbnails `json:"thumbnails"`
+}
+
+type channelsResponseSnippetThumbnails struct {
+	Default responseSnippetThumbnailsThumbnail `json:"default"`
+	Medium  responseSnippetThumbnailsThumbnail `json:"medium"`
+	High    responseSnippetThumbnailsThumbnail `json:"high"`
+}
+
+type channelsResponse struct {
+	Items []channelsResponseItem `json:"items"`
+}
+
+func parseChannelError(err error) Channel {
+	return Channel{err: err}
+}
+
+func (t Youtube) GetChannelByID(id string) (Channel, error) {
+	req := request.Request[channelsResponse, Channel]{
+		BaseUrl:       t.apiURL,
+		Path:          fmt.Sprintf("channels?part=snippet,statistics&id=%v&key=%v", id, t.apiKey),
+		Headers:       map[string]string{"Accept": "application/json"},
+		ParseResponse: channelsResponseToChannel,
+		ParseError:    parseChannelError,
 	}
 
-	return v, nil
+	channel := request.MakeRequest(req)
+	if channel.err != nil {
+		return channel, channel.err
+	}
+
+	return channel, nil
 }

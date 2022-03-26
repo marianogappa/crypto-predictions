@@ -271,7 +271,10 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
 		if err == nil {
 			if raw.PostAuthor == "" {
-				raw.PostAuthor = metadata.Author
+				raw.PostAuthor = metadata.Author.AuthorHandle
+			}
+			if raw.PostAuthor == "" {
+				raw.PostAuthor = metadata.Author.AuthorName
 			}
 			if raw.PostedAt == "" {
 				raw.PostedAt = metadata.PostCreatedAt

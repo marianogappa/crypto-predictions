@@ -1,13 +1,10 @@
 package twitter
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"time"
 
+	"github.com/marianogappa/predictions/request"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -37,6 +34,12 @@ type Tweet struct {
 	UserID         string
 	UserName       string
 	UserHandle     string
+	ProfileImgUrl  string
+	UserCreatedAt  types.ISO8601
+	FollowersCount int
+	Verified       bool
+
+	err error
 }
 
 type responseData struct {
@@ -46,10 +49,19 @@ type responseData struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type responseIncludesUsersPublicMetrics struct {
+	FollowersCount int `json:"followers_count"`
+	TweetCount     int `json:"tweet_count"`
+}
+
 type responseIncludesUsers struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Username string `json:"username"`
+	ID            string                             `json:"id"`
+	Name          string                             `json:"name"`
+	Username      string                             `json:"username"`
+	Verified      bool                               `json:"verified"`
+	CreatedAt     types.ISO8601                      `json:"created_at"`
+	ProfileImgUrl string                             `json:"profile_image_url"`
+	PublicMetrics responseIncludesUsersPublicMetrics `json:"public_metrics"`
 }
 
 type responseIncludes struct {
@@ -61,13 +73,17 @@ type response struct {
 	Includes responseIncludes `json:"includes"`
 }
 
-func (r response) toTweet() (Tweet, error) {
+func responseToTweet(r response) (Tweet, error) {
 	_, err := types.ISO8601(r.Data.CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, err
 	}
 	if len(r.Includes.Users) < 1 {
 		return Tweet{}, fmt.Errorf("expecting len(r.Includes.Users) to be >= 1, but was %v", len(r.Includes.Users))
+	}
+	_, err = types.ISO8601(r.Includes.Users[0].CreatedAt).Time()
+	if err != nil {
+		return Tweet{}, err
 	}
 	return Tweet{
 		TweetText:      r.Data.Text,
@@ -76,38 +92,32 @@ func (r response) toTweet() (Tweet, error) {
 		UserID:         r.Includes.Users[0].ID,
 		UserName:       r.Includes.Users[0].Name,
 		UserHandle:     r.Includes.Users[0].Username,
+		UserCreatedAt:  types.ISO8601(r.Includes.Users[0].CreatedAt),
+		Verified:       r.Includes.Users[0].Verified,
+		ProfileImgUrl:  r.Includes.Users[0].ProfileImgUrl,
+		FollowersCount: r.Includes.Users[0].PublicMetrics.FollowersCount,
 	}, nil
 }
 
+func parseError(err error) Tweet {
+	return Tweet{err: err}
+}
+
 func (t Twitter) GetTweetByID(id string) (Tweet, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%v/tweets/%v?tweet.fields=created_at&expansions=author_id", t.apiURL, id), nil)
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.bearerToken))
-	req.Header.Add("Cookie", "guest_id=v1%3A164530605018760344; Path=/; Domain=.twitter.com; Secure; Expires=Wed, 22 Mar 2023 21:27:30 GMT;")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return Tweet{}, err
-	}
-	defer resp.Body.Close()
-
-	byts, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		err := fmt.Errorf("twitter returned broken body response! Was: %v", string(byts))
-		return Tweet{}, err
+	req := request.Request[response, Tweet]{
+		BaseUrl: t.apiURL,
+		Path:    fmt.Sprintf("tweets/%v?tweet.fields=created_at&user.fields=created_at,name,profile_image_url,public_metrics,verified,username&expansions=author_id,geo.place_id", id),
+		Headers: map[string]string{
+			"Authorization": fmt.Sprintf("Bearer %v", t.bearerToken),
+			"Cookie":        "guest_id=v1%3A164530605018760344; Path=/; Domain=.twitter.com; Secure; Expires=Wed, 22 Mar 2023 21:27:30 GMT;",
+		},
+		ParseResponse: responseToTweet,
+		ParseError:    parseError,
 	}
 
-	res := response{}
-	if err := json.Unmarshal(byts, &res); err != nil {
-		err2 := fmt.Errorf("twitter returned invalid JSON response! Response was: %v. Error is: %v", string(byts), err)
-		return Tweet{}, err2
-	}
-
-	tweet, err := res.toTweet()
-	if err != nil {
-		return tweet, err
+	tweet := request.MakeRequest(req)
+	if tweet.err != nil {
+		return tweet, tweet.err
 	}
 
 	return tweet, nil

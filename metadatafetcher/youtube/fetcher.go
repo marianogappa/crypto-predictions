@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 )
 
 type YoutubeMetadataFetcher struct {
@@ -34,25 +33,34 @@ func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, 
 		return mfTypes.PostMetadata{}, fmt.Errorf("invalid videoID for Youtube metadata fetching: %v", m["v"])
 	}
 
+	youtubeAPI := NewYoutube(f.apiURL)
+
 	videoID := vField[0]
-	video, err := NewYoutube(f.apiURL).GetVideoByID(videoID)
+	video, err := youtubeAPI.GetVideoByID(videoID)
 	if err != nil {
 		return mfTypes.PostMetadata{}, err
 	}
 
-	_, err = types.ISO8601(video.PublishedAt).Time()
+	channel, err := youtubeAPI.GetChannelByID(video.ChannelID)
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("could not parse %v into valid time, with error: %v", video.PublishedAt, err)
+		return mfTypes.PostMetadata{}, err
 	}
 
 	return mfTypes.PostMetadata{
-		Author:        video.ChannelTitle,
-		AuthorURL:     video.ChannelURL,
-		AuthorImgUrl:  video.ThumbnailDefaultURL,
-		PostTitle:     video.VideoTitle,
-		PostText:      video.VideoDescription,
-		PostCreatedAt: types.ISO8601(video.PublishedAt),
-		PostType:      mfTypes.YOUTUBE,
+		Author: mfTypes.PostAuthor{
+			URL:               channel.URL,
+			AuthorImgSmall:    channel.ThumbnailMediumURL,
+			AuthorImgMedium:   channel.ThumbnailHighURL,
+			AuthorName:        channel.Title,
+			AuthorDescription: channel.Description,
+			FollowerCount:     channel.SubscriberCount,
+		},
+		ThumbnailImgSmall:  video.ThumbnailDefaultURL,
+		ThumbnailImgMedium: video.ThumbnailMediumURL,
+		PostTitle:          video.VideoTitle,
+		PostText:           video.VideoDescription,
+		PostCreatedAt:      video.PublishedAt,
+		PostType:           mfTypes.YOUTUBE,
 	}, nil
 }
 

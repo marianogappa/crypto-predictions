@@ -4,16 +4,140 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"testing"
 
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestYoutubeHappyCase(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"kind": "youtube#videoListResponse", "etag": "qrtHuLMG8lB-t9VFyDBLxyT9UVQ", "items": [{"kind": "youtube#video", "etag": "07sXT3jsXQoEuvQTmAuOw_8Kr08", "id": "ozgGPWnVLkY", "snippet": {"publishedAt": "2022-03-01T16:28:50Z", "channelId": "UCIRYBXDze5krPDzAEOxFGVA", "title": "Dozens of diplomats walk out during Russian foreign minister's UN speech", "description": "Dozens of diplomats walked out of a speech by the Russian foreign minister", "thumbnails": {"default": {"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg", "width": 120, "height": 90 }, "medium": {"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/mqdefault.jpg", "width": 320, "height": 180 }, "high": {"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/hqdefault.jpg", "width": 480, "height": 360 }, "standard": {"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/sddefault.jpg", "width": 640, "height": 480 }, "maxres": {"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/maxresdefault.jpg", "width": 1280, "height": 720 } }, "channelTitle": "Guardian News", "tags": ["2022"], "categoryId": "25", "liveBroadcastContent": "none", "localized": {"title": "Dozens of diplomats walk out during Russian foreign minister's UN speech", "description": "Dozens of diplomats walked out of a speech by the Russian foreign minister"}, "defaultAudioLanguage": "en-US"} } ], "pageInfo": {"totalResults": 1, "resultsPerPage": 1 } }`))
+		switch r.URL.Path {
+		case "/videos":
+			w.Write([]byte(`
+			{
+				"kind": "youtube#videoListResponse",
+				"etag": "qrtHuLMG8lB-t9VFyDBLxyT9UVQ",
+				"items":
+				[
+					{
+						"kind": "youtube#video",
+						"etag": "07sXT3jsXQoEuvQTmAuOw_8Kr08",
+						"id": "ozgGPWnVLkY",
+						"snippet":
+						{
+							"publishedAt": "2022-03-01T16:28:50Z",
+							"channelId": "UCIRYBXDze5krPDzAEOxFGVA",
+							"title": "Dozens of diplomats walk out during Russian foreign minister's UN speech",
+							"description": "Dozens of diplomats walked out of a speech by the Russian foreign minister",
+							"thumbnails":
+							{
+								"default":
+								{
+									"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg",
+									"width": 120,
+									"height": 90
+								},
+								"medium":
+								{
+									"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/mqdefault.jpg",
+									"width": 320,
+									"height": 180
+								},
+								"high":
+								{
+									"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/hqdefault.jpg",
+									"width": 480,
+									"height": 360
+								},
+								"standard":
+								{
+									"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/sddefault.jpg",
+									"width": 640,
+									"height": 480
+								},
+								"maxres":
+								{
+									"url": "https://i.ytimg.com/vi/ozgGPWnVLkY/maxresdefault.jpg",
+									"width": 1280,
+									"height": 720
+								}
+							},
+							"channelTitle": "Guardian News",
+							"tags":
+							[
+								"2022"
+							],
+							"categoryId": "25",
+							"liveBroadcastContent": "none",
+							"localized":
+							{
+								"title": "Dozens of diplomats walk out during Russian foreign minister's UN speech",
+								"description": "Dozens of diplomats walked out of a speech by the Russian foreign minister"
+							},
+							"defaultAudioLanguage": "en-US"
+						}
+					}
+				],
+				"pageInfo":
+				{
+					"totalResults": 1,
+					"resultsPerPage": 1
+				}
+			}
+			`))
+		case "/channels":
+			w.Write([]byte(`
+			{
+				"kind": "youtube#channelListResponse",
+				"etag": "np4iVL9JNjoxTspKFCROyv48eu0",
+				"pageInfo": {
+				  "totalResults": 1,
+				  "resultsPerPage": 5
+				},
+				"items": [
+				  {
+					"kind": "youtube#channel",
+					"etag": "_BxQL9NUo7YwurKxZooSwDMbvhs",
+					"id": "UCy6kyFxaMqGtpE3pQTflK8A",
+					"snippet": {
+					  "title": "Real Time with Bill Maher",
+					  "description": "He's irrepressible, opinionated, and of course, politically incorrect. Watch new episodes of Real Time with Bill Maher, Fridays at 10PM\n\nSubscribe to the Real Time Channel for the latest on Bill Maher.",
+					  "publishedAt": "2006-01-18T21:22:08Z",
+					  "thumbnails": {
+						"default": {
+						  "url": "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s88-c-k-c0x00ffffff-no-rj",
+						  "width": 88,
+						  "height": 88
+						},
+						"medium": {
+						  "url": "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s240-c-k-c0x00ffffff-no-rj",
+						  "width": 240,
+						  "height": 240
+						},
+						"high": {
+						  "url": "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s800-c-k-c0x00ffffff-no-rj",
+						  "width": 800,
+						  "height": 800
+						}
+					  },
+					  "localized": {
+						"title": "Real Time with Bill Maher",
+						"description": "He's irrepressible, opinionated, and of course, politically incorrect. Watch new episodes of Real Time with Bill Maher, Fridays at 10PM\n\nSubscribe to the Real Time Channel for the latest on Bill Maher."
+					  }
+					},
+					"statistics": {
+					  "viewCount": "1241134069",
+					  "subscriberCount": "2290000",
+					  "hiddenSubscriberCount": false,
+					  "videoCount": "1970"
+					}
+				  }
+				]
+			  }
+			`))
+		}
 	}))
 	defer ts.Close()
 
@@ -32,18 +156,25 @@ func TestYoutubeHappyCase(t *testing.T) {
 	}
 
 	expected := mfTypes.PostMetadata{
-		Author:        "Guardian News",
-		AuthorURL:     "https://www.youtube.com/c/UCIRYBXDze5krPDzAEOxFGVA",
-		AuthorImgUrl:  "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg",
-		PostTitle:     "Dozens of diplomats walk out during Russian foreign minister's UN speech",
-		PostText:      "Dozens of diplomats walked out of a speech by the Russian foreign minister",
-		PostCreatedAt: types.ISO8601("2022-03-01T16:28:50Z"),
-		PostType:      mfTypes.YOUTUBE,
+		Author: mfTypes.PostAuthor{
+			URL:               "https://youtube.com/channel/UCy6kyFxaMqGtpE3pQTflK8A",
+			AuthorImgSmall:    "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s240-c-k-c0x00ffffff-no-rj",
+			AuthorImgMedium:   "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s800-c-k-c0x00ffffff-no-rj",
+			AuthorName:        "Real Time with Bill Maher",
+			AuthorHandle:      "",
+			AuthorDescription: "He's irrepressible, opinionated, and of course, politically incorrect. Watch new episodes of Real Time with Bill Maher, Fridays at 10PM\n\nSubscribe to the Real Time Channel for the latest on Bill Maher.",
+			IsVerified:        false,
+			FollowerCount:     2290000,
+		},
+		ThumbnailImgSmall:  "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg",
+		ThumbnailImgMedium: "https://i.ytimg.com/vi/ozgGPWnVLkY/mqdefault.jpg",
+		PostTitle:          "Dozens of diplomats walk out during Russian foreign minister's UN speech",
+		PostText:           "Dozens of diplomats walked out of a speech by the Russian foreign minister",
+		PostCreatedAt:      types.ISO8601("2022-03-01T16:28:50Z"),
+		PostType:           mfTypes.YOUTUBE,
 	}
 
-	if !reflect.DeepEqual(pm, expected) {
-		t.Errorf("expected %v but got %v", expected, pm)
-	}
+	require.Equal(t, pm, expected)
 }
 
 func TestYoutubeMultipleResponseItems(t *testing.T) {

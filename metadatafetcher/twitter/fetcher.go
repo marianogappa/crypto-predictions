@@ -29,9 +29,16 @@ func (f TwitterMetadataFetcher) Fetch(url *url.URL) (types.PostMetadata, error) 
 	}
 
 	return types.PostMetadata{
-		Author:        tweet.UserHandle,
-		AuthorURL:     fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle),
-		AuthorImgUrl:  "", // TODO
+		Author: types.PostAuthor{
+			URL:               fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle),
+			AuthorImgSmall:    tweet.ProfileImgUrl,
+			AuthorImgMedium:   strings.Replace(tweet.ProfileImgUrl, "_normal.", "_400x400.", -1),
+			AuthorHandle:      tweet.UserHandle,
+			AuthorName:        tweet.UserName,
+			AuthorDescription: "",
+			IsVerified:        tweet.Verified,
+			FollowerCount:     tweet.FollowersCount,
+		},
 		PostTitle:     tweet.TweetText,
 		PostText:      tweet.TweetText,
 		PostCreatedAt: tweet.TweetCreatedAt, // TODO

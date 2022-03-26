@@ -93,7 +93,7 @@ func TestAPI(t *testing.T) {
 			mFetcher := metadatafetcher.NewMetadataFetcher()
 			mFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
 				testFetcher{isCorrectFetcher: true, postMetadata: fetcherTypes.PostMetadata{
-					Author:        "test author",
+					Author:        fetcherTypes.PostAuthor{AuthorHandle: "test author"},
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}
