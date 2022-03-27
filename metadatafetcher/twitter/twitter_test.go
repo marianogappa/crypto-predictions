@@ -4,12 +4,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTwitterHappyCase(t *testing.T) {
@@ -60,25 +60,34 @@ func TestTwitterHappyCase(t *testing.T) {
 	}
 
 	expected := mfTypes.PostMetadata{
-		Author: mfTypes.PostAuthor{
-			URL:               "https://twitter.com/rovercrc",
-			AuthorImgSmall:    "https://pbs.twimg.com/profile_images/1492942875373588490/GSC34oOF_normal.jpg",
-			AuthorImgMedium:   "https://pbs.twimg.com/profile_images/1492942875373588490/GSC34oOF_400x400.jpg",
-			AuthorName:        "Crypto Rover",
-			AuthorHandle:      "rovercrc",
-			AuthorDescription: "",
-			IsVerified:        true,
-			FollowerCount:     93571,
+		Author: types.Account{
+			URL:           mURL("https://twitter.com/rovercrc"),
+			AccountType:   "TWITTER",
+			Handle:        "rovercrc",
+			FollowerCount: 93571,
+			Thumbnails:    []*url.URL{mURL("https://pbs.twimg.com/profile_images/1492942875373588490/GSC34oOF_normal.jpg"), mURL("https://pbs.twimg.com/profile_images/1492942875373588490/GSC34oOF_400x400.jpg")},
+			Name:          "Crypto Rover",
+			Description:   "",
+			CreatedAt:     ptFromISO("2021-01-24T16:50:08.000Z"),
+			IsVerified:    true,
 		},
 		PostTitle:     "Where are the bears now? 🐻🔫",
 		PostText:      "Where are the bears now? 🐻🔫",
-		PostCreatedAt: types.ISO8601("2022-03-24T15:26:16.000Z"),
+		PostCreatedAt: types.ISO8601("2022-03-24T15:26:16Z"),
 		PostType:      mfTypes.TWITTER,
 	}
 
-	if !reflect.DeepEqual(pm, expected) {
-		t.Errorf("expected %v but got %v", expected, pm)
-	}
+	require.Equal(t, expected, pm)
+}
+
+func mURL(s string) *url.URL {
+	u, _ := url.Parse(s)
+	return u
+}
+
+func ptFromISO(s string) *time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return &t
 }
 
 func TestTwitterInvalidTime(t *testing.T) {

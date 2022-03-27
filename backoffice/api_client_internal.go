@@ -83,13 +83,13 @@ func (r response) parse() parsedResponse {
 		pc     = compiler.NewPredictionCompiler(nil, nil)
 	)
 	if r.Prediction != nil {
-		p, _ := pc.Compile(*r.Prediction)
+		p, _, _ := pc.Compile(*r.Prediction)
 		pred = &p
 	}
 	if r.Predictions != nil {
 		preds = &[]types.Prediction{}
 		for _, rawPred := range *r.Predictions {
-			p, _ := pc.Compile(rawPred)
+			p, _, _ := pc.Compile(rawPred)
 			(*preds) = append((*preds), p)
 		}
 	}

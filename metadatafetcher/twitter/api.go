@@ -3,6 +3,7 @@ package twitter
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/marianogappa/predictions/request"
 	"github.com/marianogappa/predictions/types"
@@ -30,12 +31,12 @@ func NewTwitter(apiURL string) Twitter {
 type Tweet struct {
 	TweetText      string
 	TweetID        string
-	TweetCreatedAt types.ISO8601
+	TweetCreatedAt time.Time
 	UserID         string
 	UserName       string
 	UserHandle     string
 	ProfileImgUrl  string
-	UserCreatedAt  types.ISO8601
+	UserCreatedAt  time.Time
 	FollowersCount int
 	Verified       bool
 
@@ -74,25 +75,25 @@ type response struct {
 }
 
 func responseToTweet(r response) (Tweet, error) {
-	_, err := types.ISO8601(r.Data.CreatedAt).Time()
+	tweetCreatedAt, err := types.ISO8601(r.Data.CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, err
 	}
 	if len(r.Includes.Users) < 1 {
 		return Tweet{}, fmt.Errorf("expecting len(r.Includes.Users) to be >= 1, but was %v", len(r.Includes.Users))
 	}
-	_, err = types.ISO8601(r.Includes.Users[0].CreatedAt).Time()
+	userCreatedAt, err := types.ISO8601(r.Includes.Users[0].CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, err
 	}
 	return Tweet{
 		TweetText:      r.Data.Text,
 		TweetID:        r.Data.ID,
-		TweetCreatedAt: types.ISO8601(r.Data.CreatedAt),
+		TweetCreatedAt: tweetCreatedAt,
 		UserID:         r.Includes.Users[0].ID,
 		UserName:       r.Includes.Users[0].Name,
 		UserHandle:     r.Includes.Users[0].Username,
-		UserCreatedAt:  types.ISO8601(r.Includes.Users[0].CreatedAt),
+		UserCreatedAt:  userCreatedAt,
 		Verified:       r.Includes.Users[0].Verified,
 		ProfileImgUrl:  r.Includes.Users[0].ProfileImgUrl,
 		FollowersCount: r.Includes.Users[0].PublicMetrics.FollowersCount,

@@ -40,6 +40,8 @@ func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
 	}
 }
 
+func pBool(b bool) *bool { return &b }
+
 func (r *Daemon) Run(nowTs int) DaemonResult {
 	var result = DaemonResult{Predictions: []*types.Prediction{}, Errors: []error{}}
 
@@ -50,8 +52,11 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 				types.ONGOING_PRE_PREDICTION.String(),
 				types.ONGOING_PREDICTION.String(),
 			},
+			Paused:  pBool(false),
+			Deleted: pBool(false),
 		},
 		[]string{types.CREATED_AT_DESC.String()},
+		0, 0,
 	)
 	if err != nil {
 		result.Errors = append(result.Errors, err)

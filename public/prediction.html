@@ -7,16 +7,6 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        .prediction {}
-
-        .predictionText {}
-
-        .predictionAuthor {}
-
-        .predictionStatus {}
-
-        .predictionValue {}
-
         .predictionUrlTitle,
         .predictionTextTitle,
         .predictionAuthorTitle,
@@ -50,6 +40,19 @@
         .bottomLinks {
             padding-top: 20px;
         }
+
+        .topLinks a {
+            background-color: #2e9d00;
+            padding: 10px;
+            color: white;
+            border: 2px solid #000000;
+            font-weight: bolder;
+            text-decoration: none;
+        }
+
+        .topLinks {
+            margin-top: 20px;
+        }
     </style>
 </head>
 
@@ -64,13 +67,22 @@
 
     {{else}}
 
+    <div class="topLinks">
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=pause">PAUSE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=unpause">UNPAUSE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=hide">HIDE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=unhide">UNHIDE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=delete">DELETE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=undelete">UNDELETE</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=refreshAccount">REFRESH ACCOUNT</a>
+    </div>
     <h3>Status</h3>
-    <span class="predictionStatus {{if(eq .prediction.State.Status " UNSTARTED" )}}{{print "red" }}{{else if(eq
-        .prediction.Status "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+    <span class='predictionStatus {{if(eq .prediction.State.Status "UNSTARTED" )}}{{print "red" }}{{else if(eq
+        .prediction.Status "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}''>
         {{.prediction.State.Status}}
     </span>,
-    <span class="predictionValue {{if(eq .prediction.State.Value " INCORRECT" )}}{{print "red" }}{{else if(eq
-        .prediction.Value "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}">
+    <span class=' predictionValue {{if(eq .prediction.State.Value "INCORRECT" )}}{{print "red" }}{{else if(eq
+        .prediction.Value "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}''>
         {{.prediction.State.Value}}
     </span>
 

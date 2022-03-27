@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/types"
@@ -156,15 +157,18 @@ func TestYoutubeHappyCase(t *testing.T) {
 	}
 
 	expected := mfTypes.PostMetadata{
-		Author: mfTypes.PostAuthor{
-			URL:               "https://youtube.com/channel/UCy6kyFxaMqGtpE3pQTflK8A",
-			AuthorImgSmall:    "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s240-c-k-c0x00ffffff-no-rj",
-			AuthorImgMedium:   "https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s800-c-k-c0x00ffffff-no-rj",
-			AuthorName:        "Real Time with Bill Maher",
-			AuthorHandle:      "",
-			AuthorDescription: "He's irrepressible, opinionated, and of course, politically incorrect. Watch new episodes of Real Time with Bill Maher, Fridays at 10PM\n\nSubscribe to the Real Time Channel for the latest on Bill Maher.",
-			IsVerified:        false,
-			FollowerCount:     2290000,
+		Author: types.Account{
+			URL:           mURL("https://youtube.com/channel/UCy6kyFxaMqGtpE3pQTflK8A"),
+			AccountType:   "YOUTUBE",
+			FollowerCount: 2290000,
+			Thumbnails: []*url.URL{
+				mURL("https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s88-c-k-c0x00ffffff-no-rj"),
+				mURL("https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s240-c-k-c0x00ffffff-no-rj"),
+				mURL("https://yt3.ggpht.com/dvzkOjrnLZXnpSN62MFUsJGPf7JF00Yzaeg4fsHVe-EvDXIovT9B9UMu4KTrpfVfojdNYQbvkw=s800-c-k-c0x00ffffff-no-rj"),
+			},
+			Name:        "Real Time with Bill Maher",
+			Description: "He's irrepressible, opinionated, and of course, politically incorrect. Watch new episodes of Real Time with Bill Maher, Fridays at 10PM\n\nSubscribe to the Real Time Channel for the latest on Bill Maher.",
+			CreatedAt:   ptFromISO("2006-01-18T21:22:08Z"),
 		},
 		ThumbnailImgSmall:  "https://i.ytimg.com/vi/ozgGPWnVLkY/default.jpg",
 		ThumbnailImgMedium: "https://i.ytimg.com/vi/ozgGPWnVLkY/mqdefault.jpg",
@@ -175,6 +179,16 @@ func TestYoutubeHappyCase(t *testing.T) {
 	}
 
 	require.Equal(t, pm, expected)
+}
+
+func mURL(s string) *url.URL {
+	u, _ := url.Parse(s)
+	return u
+}
+
+func ptFromISO(s string) *time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return &t
 }
 
 func TestYoutubeMultipleResponseItems(t *testing.T) {

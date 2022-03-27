@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"time"
 
 	"github.com/google/uuid"
@@ -218,8 +219,50 @@ type PredictionState struct {
 type APIFilters struct {
 	AuthorHandles         []string `json:"authorHandles"`
 	UUIDs                 []string `json:"uuids"`
+	URLs                  []string `json:"urls"`
 	PredictionStateValues []string `json:"predictionStateValues"`
 	PredictionStateStatus []string `json:"predictionStateStatus"`
+	Deleted               *bool    `json:"deleted"`
+	Paused                *bool    `json:"paused"`
+	Hidden                *bool    `json:"hidden"`
+}
+
+type APIAccountFilters struct {
+	Handles []string `json:"handles"`
+	URLs    []string `json:"urls"`
+}
+
+type APIAccountOrderBy int
+
+const (
+	ACCOUNT_CREATED_AT_DESC APIAccountOrderBy = iota
+	ACCOUNT_CREATED_AT_ASC
+	ACCOUNT_FOLLOWER_COUNT_DESC
+)
+
+func APIAccountOrderByFromString(s string) (APIAccountOrderBy, error) {
+	switch s {
+	case "ACCOUNT_CREATED_AT_DESC", "":
+		return ACCOUNT_CREATED_AT_DESC, nil
+	case "ACCOUNT_CREATED_AT_ASC":
+		return ACCOUNT_CREATED_AT_ASC, nil
+	case "ACCOUNT_FOLLOWER_COUNT_DESC":
+		return ACCOUNT_FOLLOWER_COUNT_DESC, nil
+	default:
+		return 0, fmt.Errorf("%w: %v", ErrUnknownAPIOrderBy, s)
+	}
+}
+func (v APIAccountOrderBy) String() string {
+	switch v {
+	case ACCOUNT_CREATED_AT_DESC:
+		return "ACCOUNT_CREATED_AT_DESC"
+	case ACCOUNT_CREATED_AT_ASC:
+		return "ACCOUNT_CREATED_AT_ASC"
+	case ACCOUNT_FOLLOWER_COUNT_DESC:
+		return "ACCOUNT_FOLLOWER_COUNT_DESC"
+	default:
+		return ""
+	}
 }
 
 type APIOrderBy int
@@ -365,4 +408,16 @@ type Tick struct {
 }
 type TickIterator interface {
 	Next() (Tick, error)
+}
+
+type Account struct {
+	URL           *url.URL   `json:"url"`
+	AccountType   string     `json:"account_type"`
+	Handle        string     `json:"handle"`
+	FollowerCount int        `json:"follower_count"`
+	Thumbnails    []*url.URL `json:"thumbnails"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	CreatedAt     *time.Time `json:"created_at"`
+	IsVerified    bool       `json:"is_verified"`
 }

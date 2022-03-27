@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
+	"github.com/marianogappa/predictions/types"
 )
 
 type YoutubeMetadataFetcher struct {
@@ -46,14 +47,40 @@ func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, 
 		return mfTypes.PostMetadata{}, err
 	}
 
+	chURL, err := url.Parse(channel.URL)
+	if err != nil {
+		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's URL: %v", err)
+	}
+
+	chThumbDefURL, err := url.Parse(channel.ThumbnailDefaultURL)
+	if err != nil {
+		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's Default Thumbnail URL: %v", err)
+	}
+
+	chThumbMediumURL, err := url.Parse(channel.ThumbnailMediumURL)
+	if err != nil {
+		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's Medium Thumbnail URL: %v", err)
+	}
+
+	chThumbHighURL, err := url.Parse(channel.ThumbnailHighURL)
+	if err != nil {
+		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's High Thumbnail URL: %v", err)
+	}
+
+	chPublishedAt, err := channel.PublishedAt.Time()
+	if err != nil {
+		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's PublishedAt: %v", err)
+	}
+
 	return mfTypes.PostMetadata{
-		Author: mfTypes.PostAuthor{
-			URL:               channel.URL,
-			AuthorImgSmall:    channel.ThumbnailMediumURL,
-			AuthorImgMedium:   channel.ThumbnailHighURL,
-			AuthorName:        channel.Title,
-			AuthorDescription: channel.Description,
-			FollowerCount:     channel.SubscriberCount,
+		Author: types.Account{
+			URL:           chURL,
+			AccountType:   "YOUTUBE",
+			FollowerCount: channel.SubscriberCount,
+			Thumbnails:    []*url.URL{chThumbDefURL, chThumbMediumURL, chThumbHighURL},
+			Name:          channel.Title,
+			Description:   channel.Description,
+			CreatedAt:     &chPublishedAt,
 		},
 		ThumbnailImgSmall:  video.ThumbnailDefaultURL,
 		ThumbnailImgMedium: video.ThumbnailMediumURL,

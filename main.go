@@ -85,6 +85,7 @@ func main() {
 		backOfficePort = envOrInt("PREDICTIONS_BACKOFFICE_PORT", 1234)
 		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 60*time.Second)
 	)
+	postgresDBStorage.SetDebug(true)
 
 	// Run all components.
 	if runAPI {

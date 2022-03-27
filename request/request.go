@@ -96,7 +96,7 @@ func MakeRequest[A, B any](reqData Request[A, B]) B {
 	var rp A
 	err = json.Unmarshal(byts, &rp)
 	if err != nil {
-		return reqData.ParseError(fmt.Errorf("%w: %v", ErrAPIClientInvalidResponseJSON, err))
+		return reqData.ParseError(fmt.Errorf("%w: %v on [%v]", ErrAPIClientInvalidResponseJSON, err, string(byts)))
 	}
 
 	res, err := reqData.ParseResponse(rp)

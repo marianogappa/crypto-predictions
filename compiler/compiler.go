@@ -248,33 +248,36 @@ func NewPredictionCompiler(fetcher *metadatafetcher.MetadataFetcher, timeNow fun
 	return PredictionCompiler{metadataFetcher: fetcher, timeNow: timeNow}
 }
 
-func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, error) {
+func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *types.Account, error) {
 	rawPrediction := string(rawPredictionBs)
 	p := types.Prediction{}
 
 	raw := prediction{}
 	err := json.Unmarshal([]byte(rawPrediction), &raw)
 	if err != nil {
-		return p, fmt.Errorf("%w: %v", types.ErrInvalidJSON, err)
+		return p, nil, fmt.Errorf("%w: %v", types.ErrInvalidJSON, err)
 	}
 
 	if raw.Reporter == "" {
-		return p, types.ErrEmptyReporter
+		return p, nil, types.ErrEmptyReporter
 	}
 
 	if raw.PostUrl == "" {
-		return p, types.ErrEmptyPostURL
+		return p, nil, types.ErrEmptyPostURL
 	}
+
+	var account *types.Account
 
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
 	if c.metadataFetcher != nil && (raw.PostAuthor == "" || raw.PostedAt == "") {
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
 		if err == nil {
+			account = &metadata.Author
 			if raw.PostAuthor == "" {
-				raw.PostAuthor = metadata.Author.AuthorHandle
+				raw.PostAuthor = metadata.Author.Handle
 			}
 			if raw.PostAuthor == "" {
-				raw.PostAuthor = metadata.Author.AuthorName
+				raw.PostAuthor = metadata.Author.Name
 			}
 			if raw.PostedAt == "" {
 				raw.PostedAt = metadata.PostCreatedAt
@@ -284,13 +287,13 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		}
 	}
 	if raw.PostAuthor == "" {
-		return p, types.ErrEmptyPostAuthor
+		return p, nil, types.ErrEmptyPostAuthor
 	}
 	if raw.PostedAt == "" {
-		return p, types.ErrEmptyPostedAt
+		return p, nil, types.ErrEmptyPostedAt
 	}
 	if _, err := raw.PostedAt.Seconds(); err != nil {
-		return p, types.ErrInvalidPostedAt
+		return p, nil, types.ErrInvalidPostedAt
 	}
 	if raw.Version == "" {
 		raw.Version = "1.0.0"
@@ -311,7 +314,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	for name, condition := range raw.Given {
 		c, err := mapCondition(condition, name, raw.PostedAt)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.Given[name] = &c
 	}
@@ -322,19 +325,19 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	if raw.PrePredict != nil {
 		b, err = mapBoolExpr(raw.PrePredict.WrongIf, p.Given)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.PrePredict.WrongIf = b
 
 		b, err = mapBoolExpr(raw.PrePredict.AnnulledIf, p.Given)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.PrePredict.AnnulledIf = b
 
 		b, err = mapBoolExpr(raw.PrePredict.Predict, p.Given)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.PrePredict.Predict = b
 
@@ -342,14 +345,14 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		p.PrePredict.AnnulledIfPredictIsFalse = raw.PrePredict.AnnulledIfPredictIsFalse
 
 		if p.PrePredict.Predict == nil && (p.PrePredict.WrongIf != nil || p.PrePredict.AnnulledIf != nil) {
-			return p, types.ErrMissingRequiredPrePredictPredictIf
+			return p, nil, types.ErrMissingRequiredPrePredictPredictIf
 		}
 	}
 
 	if raw.Predict.WrongIf != nil {
 		b, err = mapBoolExpr(raw.Predict.WrongIf, p.Given)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.Predict.WrongIf = b
 	}
@@ -357,28 +360,28 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 	if raw.Predict.AnnulledIf != nil {
 		b, err = mapBoolExpr(raw.Predict.AnnulledIf, p.Given)
 		if err != nil {
-			return p, err
+			return p, nil, err
 		}
 		p.Predict.AnnulledIf = b
 	}
 
 	if raw.Predict.Predict == "" {
-		return p, types.ErrEmptyPredict
+		return p, nil, types.ErrEmptyPredict
 	}
 	b, err = mapBoolExpr(&raw.Predict.Predict, p.Given)
 	if err != nil {
-		return p, err
+		return p, nil, err
 	}
 	p.Predict.Predict = *b
 	p.Predict.IgnoreUndecidedIfPredictIsDefined = raw.Predict.IgnoreUndecidedIfPredictIsDefined
 
 	status, err := types.ConditionStatusFromString(raw.PredictionState.Status)
 	if err != nil {
-		return p, err
+		return p, nil, err
 	}
 	value, err := types.PredictionStateValueFromString(raw.PredictionState.Value)
 	if err != nil {
-		return p, err
+		return p, nil, err
 	}
 	p.State = types.PredictionState{
 		Status: status,
@@ -386,5 +389,5 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, e
 		Value:  value,
 	}
 
-	return p, nil
+	return p, account, nil
 }

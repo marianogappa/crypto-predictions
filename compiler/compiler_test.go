@@ -594,7 +594,7 @@ func TestCompile(t *testing.T) {
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: types.ISO8601(""),
 			},
 			err:      types.ErrEmptyPostedAt,
@@ -605,7 +605,7 @@ func TestCompile(t *testing.T) {
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: types.ISO8601("INVALID!!!"),
 			},
 			err:      types.ErrInvalidPostedAt,
@@ -615,7 +615,7 @@ func TestCompile(t *testing.T) {
 			name: "Empty main predict",
 			pred: `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err: types.ErrEmptyPredict,
@@ -636,7 +636,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrOneOfToISO8601ToDurationRequired,
@@ -662,7 +662,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -689,7 +689,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -717,7 +717,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -740,7 +740,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrMissingRequiredPrePredictPredictIf,
@@ -763,7 +763,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrMissingRequiredPrePredictPredictIf,
@@ -787,7 +787,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -811,7 +811,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -834,7 +834,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrBoolExprSyntaxError,
@@ -865,7 +865,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrUnknownConditionStatus,
@@ -897,7 +897,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			err:      types.ErrUnknownPredictionStateValue,
@@ -922,7 +922,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
@@ -985,7 +985,7 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        mfTypes.PostAuthor{AuthorHandle: "CryptoCapo_"},
+				Author:        types.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
@@ -1040,7 +1040,8 @@ func TestCompile(t *testing.T) {
 			if ts.timeNow != nil {
 				pc.timeNow = ts.timeNow
 			}
-			actual, actualErr := pc.Compile([]byte(ts.pred))
+			// TODO test accounts
+			actual, _, actualErr := pc.Compile([]byte(ts.pred))
 
 			if actualErr != nil && ts.err == nil {
 				t.Logf("expected no error but had '%v'", actualErr)

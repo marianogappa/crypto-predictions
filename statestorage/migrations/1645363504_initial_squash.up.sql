@@ -7,7 +7,10 @@ CREATE TABLE predictions (
     uuid uuid NOT NULL PRIMARY KEY,
     blob jsonb NOT NULL,
     created_at timestamp without time zone NOT NULL DEFAULT now(),
-    posted_at timestamp without time zone NOT NULL
+    posted_at timestamp without time zone NOT NULL,
+    paused boolean,
+    deleted boolean,
+    hidden boolean
 );
 
 -- Indices -------------------------------------------------------
@@ -21,4 +24,16 @@ CREATE TABLE prediction_state_value_change (
     state_value text NOT NULL,
     created_at timestamp without time zone DEFAULT now(),
     PRIMARY KEY(prediction_uuid, state_value)
+);
+
+CREATE TABLE accounts (
+    url text PRIMARY KEY,
+    account_type text NOT NULL,
+    handle text,
+    follower_count bigint,
+    thumbnails text[],
+    name text,
+    description text,
+    created_at timestamp without time zone,
+    is_verified boolean
 );

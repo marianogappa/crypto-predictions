@@ -5,8 +5,10 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/marianogappa/predictions/metadatafetcher/types"
+	coreTypes "github.com/marianogappa/predictions/types"
 )
 
 type TwitterMetadataFetcher struct {
@@ -17,8 +19,8 @@ func NewMetadataFetcher(apiURL string) TwitterMetadataFetcher {
 	return TwitterMetadataFetcher{apiURL}
 }
 
-func (f TwitterMetadataFetcher) Fetch(url *url.URL) (types.PostMetadata, error) {
-	path := strings.Split(url.Path, "/")
+func (f TwitterMetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
+	path := strings.Split(u.Path, "/")
 	if len(path) != 4 || path[0] != "" || path[2] != "status" {
 		return types.PostMetadata{}, fmt.Errorf("invalid path for Twitter metadata fetching: %v", path)
 	}
@@ -28,20 +30,35 @@ func (f TwitterMetadataFetcher) Fetch(url *url.URL) (types.PostMetadata, error) 
 		return types.PostMetadata{}, err
 	}
 
+	userURL, err := url.Parse(fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle))
+	if err != nil {
+		return types.PostMetadata{}, fmt.Errorf("Error parsing user's URL: %v", err)
+	}
+
+	userProfileImgURL, err := url.Parse(tweet.ProfileImgUrl)
+	if err != nil {
+		return types.PostMetadata{}, fmt.Errorf("Error parsing user's profile image URL: %v", err)
+	}
+
+	userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgUrl, "_normal.", "_400x400.", -1))
+	if err != nil {
+		return types.PostMetadata{}, fmt.Errorf("Error parsing user's profile medium image URL: %v", err)
+	}
+
 	return types.PostMetadata{
-		Author: types.PostAuthor{
-			URL:               fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle),
-			AuthorImgSmall:    tweet.ProfileImgUrl,
-			AuthorImgMedium:   strings.Replace(tweet.ProfileImgUrl, "_normal.", "_400x400.", -1),
-			AuthorHandle:      tweet.UserHandle,
-			AuthorName:        tweet.UserName,
-			AuthorDescription: "",
-			IsVerified:        tweet.Verified,
-			FollowerCount:     tweet.FollowersCount,
+		Author: coreTypes.Account{
+			URL:           userURL,
+			AccountType:   "TWITTER",
+			FollowerCount: tweet.FollowersCount,
+			Thumbnails:    []*url.URL{userProfileImgURL, userProfileMediumImgURL},
+			Handle:        tweet.UserHandle,
+			Name:          tweet.UserName,
+			IsVerified:    tweet.Verified,
+			CreatedAt:     &tweet.UserCreatedAt,
 		},
 		PostTitle:     tweet.TweetText,
 		PostText:      tweet.TweetText,
-		PostCreatedAt: tweet.TweetCreatedAt, // TODO
+		PostCreatedAt: coreTypes.ISO8601(tweet.TweetCreatedAt.Format(time.RFC3339)), // TODO
 		PostType:      types.TWITTER,
 	}, nil
 }

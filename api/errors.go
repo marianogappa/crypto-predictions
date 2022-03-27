@@ -10,9 +10,11 @@ var (
 	ErrInvalidRequestBody                = errors.New("invalid request body")
 	ErrInvalidRequestJSON                = errors.New("invalid request JSON")
 	ErrStorageErrorRetrievingPredictions = errors.New("storage had error retrieving predictions")
-	ErrStorageErrorStoringPrediction     = errors.New("storage had error storing predictions=")
+	ErrStorageErrorStoringPrediction     = errors.New("storage had error storing predictions")
+	ErrStorageErrorStoringAccount        = errors.New("storage had error storing accounts")
 	ErrFailedToSerializePredictions      = errors.New("failed to serialize predictions")
 	ErrFailedToCompilePrediction         = errors.New("failed to compile prediction")
+	ErrPredictionNotFound                = errors.New("prediction not found")
 
 	errToResponse = map[error]APIResponse{
 		types.ErrUnknownOperandType:                 {Status: 400, ErrorCode: "ErrUnknownOperandType", Message: "unknown value for operandType"},
@@ -45,7 +47,9 @@ var (
 		ErrInvalidRequestJSON:                       {Status: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
 		ErrStorageErrorRetrievingPredictions:        {Status: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},
 		ErrStorageErrorStoringPrediction:            {Status: 500, ErrorCode: "ErrStorageErrorStoringPrediction", Message: "storage had error storing predictions"},
+		ErrStorageErrorStoringAccount:               {Status: 500, ErrorCode: "ErrStorageErrorStoringAccount", Message: "storage had error storing accounts"},
 		ErrFailedToSerializePredictions:             {Status: 500, ErrorCode: "ErrFailedToSerializePredictions", Message: "failed to serialize predictions"},
 		ErrFailedToCompilePrediction:                {Status: 500, ErrorCode: "ErrFailedToCompilePrediction", Message: "failed to compile prediction"},
+		ErrPredictionNotFound:                       {Status: 404, ErrorCode: "ErrPredictionNotFound", Message: "prediction not found"},
 	}
 )

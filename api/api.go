@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -26,8 +24,16 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/new", a.newHandler)
-	mux.HandleFunc("/get", a.getHandler)
+	mux.HandleFunc("/new", buildHandler(a.handleNew))
+	mux.HandleFunc("/get", buildHandler(a.handleGet))
+	mux.HandleFunc("/prediction", buildHandler(a.handleBodyPagePrediction))
+	mux.HandleFunc("/predictionPause", buildHandler(a.handlePause))
+	mux.HandleFunc("/predictionUnpause", buildHandler(a.handleUnpause))
+	mux.HandleFunc("/predictionHide", buildHandler(a.handleHide))
+	mux.HandleFunc("/predictionUnhide", buildHandler(a.handleUnhide))
+	mux.HandleFunc("/predictionDelete", buildHandler(a.handleDelete))
+	mux.HandleFunc("/predictionUndelete", buildHandler(a.handleUndelete))
+	mux.HandleFunc("/predictionRefreshAccount", buildHandler(a.handleRefetchAccount))
 	a.mux = mux
 
 	return a
@@ -54,38 +60,4 @@ func (a *API) Listen(url string) (net.Listener, error) {
 
 func (a *API) BlockinglyServe(l net.Listener) error {
 	return http.Serve(l, a.mux)
-}
-
-type APIResponse struct {
-	Status          int                `json:"status"`
-	Message         string             `json:"message,omitempty"`
-	InternalMessage string             `json:"internalMessage,omitempty"`
-	ErrorCode       string             `json:"errorCode,omitempty"`
-	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
-	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
-	Stored          *bool
-}
-
-func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMessage, stored *bool, err error) {
-	if err == nil {
-		doRespond(w, APIResponse{Message: "", Prediction: pred, Predictions: preds, Stored: stored, Status: 200})
-		return
-	}
-
-	r := APIResponse{Message: "Unknown internal error.", Status: 500, InternalMessage: err.Error()}
-	for maybeErr, maybeResp := range errToResponse {
-		if errors.Is(err, maybeErr) {
-			r = maybeResp
-			r.InternalMessage = err.Error()
-		}
-	}
-	doRespond(w, r)
-}
-
-func doRespond(w http.ResponseWriter, r APIResponse) {
-	log.Printf("API.doRespond: responding request: %+v\n", r)
-
-	w.WriteHeader(r.Status)
-	enc := json.NewEncoder(w)
-	enc.Encode(r)
 }

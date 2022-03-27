@@ -72,7 +72,7 @@ func TestAPI(t *testing.T) {
 				`, url)
 				requireEquals(t, err, nil)
 				requireEquals(t, apiResp.Status, 200)
-				p, err := compiler.NewPredictionCompiler(nil, time.Now).Compile(*apiResp.Prediction)
+				p, _, err := compiler.NewPredictionCompiler(nil, time.Now).Compile(*apiResp.Prediction)
 				requireEquals(t, err, nil)
 				requireEquals(t, p.Reporter, "admin")
 				requireEquals(t, p.PostUrl, "https://twitter.com/CryptoCapo_/status/1499475622988595206")
@@ -93,7 +93,7 @@ func TestAPI(t *testing.T) {
 			mFetcher := metadatafetcher.NewMetadataFetcher()
 			mFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
 				testFetcher{isCorrectFetcher: true, postMetadata: fetcherTypes.PostMetadata{
-					Author:        fetcherTypes.PostAuthor{AuthorHandle: "test author"},
+					Author:        types.Account{Handle: "test author"},
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}

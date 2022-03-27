@@ -5,15 +5,19 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+// TODO implement paused/deleted/hidden filters
+
 type MemoryStateStorage struct {
 	Predictions                 map[string]types.Prediction
 	PredictionStateValueChanges map[string]types.PredictionStateValueChange
+	Accounts                    map[string]types.Account
 }
 
 func NewMemoryStateStorage() MemoryStateStorage {
 	return MemoryStateStorage{
 		Predictions:                 map[string]types.Prediction{},
 		PredictionStateValueChanges: map[string]types.PredictionStateValueChange{},
+		Accounts:                    map[string]types.Account{},
 	}
 }
 
@@ -25,7 +29,7 @@ func sliceToMap(ss []string) map[string]struct{} {
 	return m
 }
 
-func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []string) ([]types.Prediction, error) {
+func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error) {
 	authors := sliceToMap(filters.AuthorHandles)
 	stateStatuses := sliceToMap(filters.PredictionStateStatus)
 	stateValues := sliceToMap(filters.PredictionStateValues)
@@ -47,6 +51,37 @@ func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []
 		}
 		res = append(res, v)
 	}
+	if offset >= len(res) {
+		return []types.Prediction{}, nil
+	}
+	res = res[offset:]
+	if limit < len(res) {
+		res = res[:limit]
+	}
+	return res, nil
+}
+
+func (s MemoryStateStorage) GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error) {
+	handles := sliceToMap(filters.Handles)
+	urls := sliceToMap(filters.URLs)
+
+	res := []types.Account{}
+	for _, v := range s.Accounts {
+		if _, ok := handles[v.Handle]; !ok && len(handles) > 0 {
+			continue
+		}
+		if _, ok := urls[v.URL.String()]; !ok && len(urls) > 0 {
+			continue
+		}
+		res = append(res, v)
+	}
+	if offset >= len(res) {
+		return []types.Account{}, nil
+	}
+	res = res[offset:]
+	if limit < len(res) {
+		res = res[:limit]
+	}
 	return res, nil
 }
 
@@ -62,5 +97,36 @@ func (s MemoryStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.
 
 func (s MemoryStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
 	s.PredictionStateValueChanges[c.PK()] = c
+	return nil
+}
+
+func (s MemoryStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Account, error) {
+	for _, a := range as {
+		if a == nil {
+			continue
+		}
+		s.Accounts[a.URL.String()] = *a
+	}
+
+	return as, nil
+}
+
+// TODO to implement these it's necessary to either wrap predictions in row objects or add fields onto Predictions
+func (s MemoryStateStorage) PausePrediction(uuid string) error {
+	return nil
+}
+func (s MemoryStateStorage) UnpausePrediction(uuid string) error {
+	return nil
+}
+func (s MemoryStateStorage) HidePrediction(uuid string) error {
+	return nil
+}
+func (s MemoryStateStorage) UnhidePrediction(uuid string) error {
+	return nil
+}
+func (s MemoryStateStorage) DeletePrediction(uuid string) error {
+	return nil
+}
+func (s MemoryStateStorage) UndeletePrediction(uuid string) error {
 	return nil
 }

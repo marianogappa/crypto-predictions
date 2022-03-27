@@ -137,15 +137,38 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 		log.Fatal(err)
 	}
 	uuid := r.FormValue("uuid")
+	action := r.FormValue("action")
 
 	t, ok := templates["prediction.html"]
 	if !ok {
-		log.Fatal("Couldn't find prediction.hmtl")
+		log.Fatal("Couldn't find prediction.html")
 	}
 
-	res := s.apiClient.Get(getBody{Filters: types.APIFilters{
-		UUIDs: []string{uuid},
-	}})
+	var res parsedResponse
+	switch action {
+	case "pause":
+		res = s.apiClient.PausePrediction(uuid)
+	case "unpause":
+		res = s.apiClient.UnpausePrediction(uuid)
+	case "hide":
+		res = s.apiClient.HidePrediction(uuid)
+	case "unhide":
+		res = s.apiClient.UnhidePrediction(uuid)
+	case "delete":
+		res = s.apiClient.DeletePrediction(uuid)
+	case "undelete":
+		res = s.apiClient.UndeletePrediction(uuid)
+	case "refreshAccount":
+		res = s.apiClient.RefreshAccount(uuid)
+	default:
+		res.Status = 200
+	}
+
+	if res.Status == 200 {
+		res = s.apiClient.Get(getBody{Filters: types.APIFilters{
+			UUIDs: []string{uuid},
+		}})
+	}
 
 	data := make(map[string]interface{})
 	if res.Predictions != nil && len(*res.Predictions) == 1 {
