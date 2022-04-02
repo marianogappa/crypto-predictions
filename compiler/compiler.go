@@ -375,6 +375,11 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	p.Predict.Predict = *b
 	p.Predict.IgnoreUndecidedIfPredictIsDefined = raw.Predict.IgnoreUndecidedIfPredictIsDefined
 
+	p.Type = types.PredictionTypeFromString(raw.Type)
+	if p.Type == types.PREDICTION_TYPE_UNSUPPORTED {
+		p.Type = CalculatePredictionType(p)
+	}
+
 	status, err := types.ConditionStatusFromString(raw.PredictionState.Status)
 	if err != nil {
 		return p, nil, err

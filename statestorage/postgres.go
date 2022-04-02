@@ -88,6 +88,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		pgPredictionsPredictionStateStatuses{filters.PredictionStateStatus},
 		pgPredictionsPredictionStateValues{filters.PredictionStateValues},
 		pgPredictionsUUIDs{filters.UUIDs},
+		pgPredictionsURLs{filters.URLs},
 	}).build()
 
 	orderBy := predictionsBuildOrderBy(orderBys)

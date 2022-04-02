@@ -965,6 +965,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
+				Type: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
 			},
 		},
 		{
@@ -1028,6 +1029,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
+				Type: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
 			},
 		},
 	}

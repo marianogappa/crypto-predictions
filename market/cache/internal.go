@@ -16,8 +16,8 @@ func (c *MemoryCache) putMinutely(operand types.Operand, ticks []types.Tick) err
 	)
 	for _, tick := range ticks {
 		if lastTimestamp != 0 && tick.Timestamp-lastTimestamp != 60 {
-			lastDateTime := time.Unix(int64(lastTimestamp), 0).Format(time.Kitchen)
-			thisDateTime := time.Unix(int64(tick.Timestamp), 0).Format(time.Kitchen)
+			lastDateTime := time.Unix(int64(lastTimestamp), 0).UTC().Format(time.Kitchen)
+			thisDateTime := time.Unix(int64(tick.Timestamp), 0).UTC().Format(time.Kitchen)
 			return fmt.Errorf("%w: last date was %v and this was %v", ErrReceivedNonSubsequentTick, lastDateTime, thisDateTime)
 		}
 		if tick.Value == 0 {
@@ -105,7 +105,7 @@ func (c *MemoryCache) getMinutely(operand types.Operand, startingTimestamp int) 
 	}
 	var (
 		typedElem    = elem.([1440]float64)
-		y, m, d      = time.Unix(int64(startingTimestamp), 0).Date()
+		y, m, d      = time.Unix(int64(startingTimestamp), 0).UTC().Date()
 		startOfDayTs = int(time.Date(y, m, d, 0, 0, 0, 0, time.UTC).Unix())
 	)
 	for i := minsIndex; i <= 1439; i++ {
@@ -140,7 +140,7 @@ func (c *MemoryCache) getDaily(operand types.Operand, startingTimestamp int) ([]
 	var (
 		typedElem     = elem.([366]float64)
 		isLeap        = isLeapYear(startingTimestamp)
-		y, _, _       = time.Unix(int64(startingTimestamp), 0).Date()
+		y, _, _       = time.Unix(int64(startingTimestamp), 0).UTC().Date()
 		startOfYearTs = int(time.Date(y, 1, 1, 0, 0, 0, 0, time.UTC).Unix())
 	)
 	for i := days; (isLeap && i <= 365) || (!isLeap && i <= 364); i++ {
@@ -181,7 +181,7 @@ func isMinutely(op types.Operand) bool {
 }
 
 func buildKey(op types.Operand, timestamp int) string {
-	tm := time.Unix(int64(timestamp), 0)
+	tm := time.Unix(int64(timestamp), 0).UTC()
 	datePart := tm.Format("2006")
 	if isMinutely(op) {
 		datePart = tm.Format("2006-01-02")
@@ -190,7 +190,7 @@ func buildKey(op types.Operand, timestamp int) string {
 }
 
 func calculateMinsIndex(ts int) (int, error) {
-	tm := time.Unix(int64(ts), 0)
+	tm := time.Unix(int64(ts), 0).UTC()
 	if tm.Second() != 0 {
 		return -1, fmt.Errorf("%w: was %v", ErrTimestampMustHaveZeroInSecondsPart, tm.Second())
 	}
@@ -198,7 +198,7 @@ func calculateMinsIndex(ts int) (int, error) {
 }
 
 func calculateDaysIndex(ts int) (int, error) {
-	tm := time.Unix(int64(ts), 0)
+	tm := time.Unix(int64(ts), 0).UTC()
 	if tm.Second() != 0 || tm.Hour() != 0 || tm.Minute() != 0 {
 		return -1, fmt.Errorf("%w: was %v:%v:%v", ErrTimestampMustHaveZeroInTimePart, tm.Hour(), tm.Minute(), tm.Second())
 	}
@@ -206,7 +206,7 @@ func calculateDaysIndex(ts int) (int, error) {
 }
 
 func isLeapYear(ts int) bool {
-	tm := time.Unix(int64(ts), 0)
+	tm := time.Unix(int64(ts), 0).UTC()
 	year := tm.Year()
 	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }

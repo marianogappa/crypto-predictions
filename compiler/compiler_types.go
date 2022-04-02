@@ -56,4 +56,5 @@ type prediction struct {
 	PrePredict      *prePredict          `json:"prePredict,omitempty"`
 	Predict         predict              `json:"predict"`
 	PredictionState predictionState      `json:"state"`
+	Type            string               `json:"type"`
 }

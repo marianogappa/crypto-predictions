@@ -23,17 +23,25 @@ func (a *API) handleBodyPagePrediction(params bodyPagePrediction) (response, err
 	if err != nil {
 		return response{}, fmt.Errorf("%w: %v", ErrStorageErrorRetrievingPredictions, err)
 	}
+	if len(preds) != 1 {
+		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
+	}
+	pred := preds[0]
 
 	ps := compiler.NewPredictionSerializer()
-	raws := []json.RawMessage{}
-	for _, pred := range preds {
-		bs, err := ps.Serialize(&pred)
-		if err != nil {
-			return response{}, fmt.Errorf("%w: %v", ErrFailedToSerializePredictions, err)
-		}
-		raw := json.RawMessage(bs)
-		raws = append(raws, raw)
+	bs, err := ps.Serialize(&pred)
+	if err != nil {
+		return response{}, fmt.Errorf("%w: %v", ErrFailedToSerializePredictions, err)
+	}
+	raw := json.RawMessage(bs)
+
+	summary, err := a.BuildPredictionMarketSummary(pred)
+	if err != nil {
+		return response{}, fmt.Errorf("%w: %v", ErrStorageErrorRetrievingPredictions, err)
 	}
 
-	return response{preds: &raws}, nil
+	summaryBs, _ := json.Marshal(summary)
+	rawSummary := json.RawMessage(summaryBs)
+
+	return response{pred: &raw, summary: &rawSummary}, nil
 }

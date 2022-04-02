@@ -9,16 +9,17 @@ import (
 )
 
 type response struct {
-	pred   *json.RawMessage
-	preds  *[]json.RawMessage
-	stored *bool
+	pred    *json.RawMessage
+	preds   *[]json.RawMessage
+	summary *json.RawMessage
+	stored  *bool
 }
 
 func buildHandler[P any](do func(p P) (response, error)) func(w http.ResponseWriter, r *http.Request) {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		bs, err := io.ReadAll(r.Body)
 		if err != nil {
-			respond(w, nil, nil, nil, fmt.Errorf("%w: %v", ErrInvalidRequestBody, err))
+			respond(w, response{}, fmt.Errorf("%w: %v", ErrInvalidRequestBody, err))
 			return
 		}
 		defer r.Body.Close()
@@ -26,35 +27,43 @@ func buildHandler[P any](do func(p P) (response, error)) func(w http.ResponseWri
 		var params P
 		err = json.Unmarshal(bs, &params)
 		if err != nil {
-			respond(w, nil, nil, nil, fmt.Errorf("%w: %v", ErrInvalidRequestJSON, err))
+			respond(w, response{}, fmt.Errorf("%w: %v", ErrInvalidRequestJSON, err))
 			return
 		}
 
 		resp, err := do(params)
 		if err != nil {
-			respond(w, nil, nil, nil, err)
+			respond(w, response{}, err)
 			return
 		}
 
-		respond(w, resp.pred, resp.preds, resp.stored, nil)
+		respond(w, resp, nil)
 	}
 
 	return f
 }
 
 type APIResponse struct {
-	Status          int                `json:"status"`
-	Message         string             `json:"message,omitempty"`
-	InternalMessage string             `json:"internalMessage,omitempty"`
-	ErrorCode       string             `json:"errorCode,omitempty"`
-	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
-	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
-	Stored          *bool              `json:"stored,omitempty"`
+	Status            int                `json:"status"`
+	Message           string             `json:"message,omitempty"`
+	InternalMessage   string             `json:"internalMessage,omitempty"`
+	ErrorCode         string             `json:"errorCode,omitempty"`
+	Prediction        *json.RawMessage   `json:"prediction,omitempty"`
+	Predictions       *[]json.RawMessage `json:"predictions,omitempty"`
+	PredictionSummary *json.RawMessage   `json:"predictionSummary,omitempty"`
+	Stored            *bool              `json:"stored,omitempty"`
 }
 
-func respond(w http.ResponseWriter, pred *json.RawMessage, preds *[]json.RawMessage, stored *bool, err error) {
+func respond(w http.ResponseWriter, resp response, err error) {
 	if err == nil {
-		doRespond(w, APIResponse{Message: "", Prediction: pred, Predictions: preds, Stored: stored, Status: 200})
+		doRespond(w, APIResponse{
+			Message:           "",
+			Prediction:        resp.pred,
+			Predictions:       resp.preds,
+			PredictionSummary: resp.summary,
+			Stored:            resp.stored,
+			Status:            200,
+		})
 		return
 	}
 

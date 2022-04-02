@@ -133,7 +133,7 @@ func (c *MemoryCache) Get(operand types.Operand, initialISO8601 types.ISO8601) (
 		return nil, fmt.Errorf("%w: %v", ErrInvalidISO8601, initialISO8601)
 	}
 	c.CacheRequests++
-	startingTimestamp := calculateNormalizedStartingTimestamp(operand, tm)
+	startingTimestamp := calculateNormalizedStartingTimestamp(operand, tm.UTC())
 
 	if isMinutely(operand) {
 		return c.getMinutely(operand, startingTimestamp)

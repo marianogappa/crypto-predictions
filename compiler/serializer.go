@@ -37,6 +37,7 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 		PrePredict:      pp,
 		Predict:         pd,
 		PredictionState: marshalPredictionState(p.State),
+		Type:            p.Type.String(),
 	})
 }
 
