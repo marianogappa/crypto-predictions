@@ -121,6 +121,20 @@ func BoolOperatorFromString(s string) (BoolOperator, error) {
 		return 0, fmt.Errorf("%w: %v", ErrUnknownBoolOperator, s)
 	}
 }
+func (v BoolOperator) String() string {
+	switch v {
+	case LITERAL:
+		return "LITERAL"
+	case AND:
+		return "AND"
+	case OR:
+		return "OR"
+	case NOT:
+		return "NOT"
+	default:
+		return "ERROR"
+	}
+}
 
 type ConditionStatus int
 
@@ -217,7 +231,9 @@ type PredictionState struct {
 }
 
 type APIFilters struct {
+	Tags                  []string `json:"tags"`
 	AuthorHandles         []string `json:"authorHandles"`
+	AuthorURLs            []string `json:"authorURLs"`
 	UUIDs                 []string `json:"uuids"`
 	URLs                  []string `json:"urls"`
 	PredictionStateValues []string `json:"predictionStateValues"`

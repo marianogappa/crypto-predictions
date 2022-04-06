@@ -10,7 +10,9 @@ CREATE TABLE predictions (
     posted_at timestamp without time zone NOT NULL,
     paused boolean,
     deleted boolean,
-    hidden boolean
+    hidden boolean,
+    tags text[],
+    post_url text
 );
 
 -- Indices -------------------------------------------------------
@@ -18,6 +20,8 @@ CREATE TABLE predictions (
 CREATE INDEX predictions_blob_idx ON predictions USING GIN (blob jsonb_ops);
 CREATE INDEX predictions_created_at_idx ON predictions(created_at timestamp_ops);
 CREATE INDEX predictions_posted_at_idx ON predictions(posted_at timestamp_ops);
+CREATE INDEX predictions_tags_idx ON predictions USING GIN (tags array_ops);
+CREATE UNIQUE INDEX predictions_post_url_idx ON predictions(post_url text_ops);
 
 CREATE TABLE prediction_state_value_change (
     prediction_uuid uuid NOT NULL,

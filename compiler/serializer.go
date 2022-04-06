@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -25,12 +26,13 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(prediction{
+	pred := prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
 		Reporter:        p.Reporter,
 		PostAuthor:      p.PostAuthor,
+		PostAuthorURL:   p.PostAuthorURL,
 		PostedAt:        p.PostedAt,
 		PostUrl:         p.PostUrl,
 		Given:           marshalGiven(p.Given),
@@ -38,7 +40,27 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 		Predict:         pd,
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
-	})
+	}
+
+	return json.Marshal(pred)
+}
+
+func (s PredictionSerializer) SerializeForAPI(p *types.Prediction) ([]byte, error) {
+	pred := prediction{
+		UUID:            p.UUID,
+		Version:         p.Version,
+		CreatedAt:       p.CreatedAt,
+		Reporter:        p.Reporter,
+		PostAuthor:      p.PostAuthor,
+		PostAuthorURL:   p.PostAuthorURL,
+		PostedAt:        p.PostedAt,
+		PostUrl:         p.PostUrl,
+		PredictionState: marshalPredictionState(p.State),
+		Type:            p.Type.String(),
+		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
+	}
+
+	return json.Marshal(pred)
 }
 
 func marshalInnerCondition(c *types.Condition) string {
@@ -162,4 +184,45 @@ func marshalPredictionState(ps types.PredictionState) predictionState {
 		LastTs: ps.LastTs,
 		Value:  ps.Value.String(),
 	}
+}
+
+type AccountSerializer struct {
+}
+
+func NewAccountSerializer() AccountSerializer {
+	return AccountSerializer{}
+}
+
+type account struct {
+	URL           string   `json:"url"`
+	AccountType   string   `json:"accountType"`
+	Handle        string   `json:"handle"`
+	FollowerCount int      `json:"followerCount"`
+	Thumbnails    []string `json:"thumbnails"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	CreatedAt     string   `json:"createdAt,omitempty"`
+}
+
+func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
+	thumbs := []string{}
+	for _, thumb := range p.Thumbnails {
+		thumbs = append(thumbs, thumb.String())
+	}
+
+	createdAt := ""
+	if p.CreatedAt != nil {
+		createdAt = p.CreatedAt.Format(time.RFC3339)
+	}
+
+	return json.Marshal(account{
+		URL:           p.URL.String(),
+		AccountType:   p.AccountType,
+		Handle:        p.Handle,
+		FollowerCount: p.FollowerCount,
+		Thumbnails:    thumbs,
+		Name:          p.Name,
+		Description:   p.Description,
+		CreatedAt:     createdAt,
+	})
 }

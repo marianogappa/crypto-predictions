@@ -92,6 +92,126 @@ func TestPredictionType(t *testing.T) {
 			  }`,
 			expected: types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES,
 		},
+		{
+			name: "Basic PREDICTION_TYPE_UNSUPPORTED",
+			pred: `{
+				"uuid": "dbe0e928-1aeb-4d68-bebf-a0b5d6703531",
+				"version": "1.0.0",
+				"createdAt": "2022-03-20T14:12:01Z",
+				"reporter": "admin",
+				"postAuthor": "CryptoCapo_",
+				"postedAt": "2022-03-19T19:59:19.000Z",
+				"postUrl": "https://twitter.com/CryptoCapo_/status/1505272725832708098",
+				"given":
+				{
+					"a":
+					{
+						"condition": "COIN:BINANCE:BTC-USDT <= 23000",
+						"fromISO8601": "2022-03-19T19:59:19Z",
+						"toISO8601": "2022-06-17T20:59:19+01:00",
+						"toDuration": "3m",
+						"assumed": null,
+						"state":
+						{
+							"status": "STARTED",
+							"lastTs": 1648903740,
+							"lastTicks":
+							{
+								"COIN:BINANCE:BTC-USDT":
+								{
+									"t": 1648903740,
+									"v": 46800.010000000002
+								}
+							},
+							"value": "UNDECIDED"
+						},
+						"errorMarginRatio": 0.03
+					},
+					"b":
+					{
+						"condition": "COIN:BINANCE:ETH-USDT <= 1300",
+						"fromISO8601": "2022-03-19T19:59:19Z",
+						"toISO8601": "2022-06-17T20:59:19+01:00",
+						"toDuration": "3m",
+						"assumed": null,
+						"state":
+						{
+							"status": "STARTED",
+							"lastTs": 1648903800,
+							"lastTicks":
+							{
+								"COIN:BINANCE:ETH-USDT":
+								{
+									"t": 1648903800,
+									"v": 3519.19
+								}
+							},
+							"value": "UNDECIDED"
+						},
+						"errorMarginRatio": 0.03
+					},
+					"c":
+					{
+						"condition": "COIN:BINANCE:ADA-USDT <= 0.45",
+						"fromISO8601": "2022-03-19T19:59:19Z",
+						"toISO8601": "2022-06-17T20:59:19+01:00",
+						"toDuration": "3m",
+						"assumed": null,
+						"state":
+						{
+							"status": "STARTED",
+							"lastTs": 1648903800,
+							"lastTicks":
+							{
+								"COIN:BINANCE:ADA-USDT":
+								{
+									"t": 1648903800,
+									"v": 1.189
+								}
+							},
+							"value": "UNDECIDED"
+						},
+						"errorMarginRatio": 0.03
+					},
+					"d":
+					{
+						"condition": "COIN:BINANCE:LUNA-USDT <= 45",
+						"fromISO8601": "2022-03-19T19:59:19Z",
+						"toISO8601": "2022-06-17T20:59:19+01:00",
+						"toDuration": "3m",
+						"assumed": null,
+						"state":
+						{
+							"status": "STARTED",
+							"lastTs": 1648903740,
+							"lastTicks":
+							{
+								"COIN:BINANCE:LUNA-USDT":
+								{
+									"t": 1648903740,
+									"v": 112.2
+								}
+							},
+							"value": "UNDECIDED"
+						},
+						"errorMarginRatio": 0.03
+					}
+				},
+				"prePredict":
+				{},
+				"predict":
+				{
+					"predict": "a and b and c and d"
+				},
+				"state":
+				{
+					"status": "STARTED",
+					"lastTs": 0,
+					"value": "ONGOING_PREDICTION"
+				}
+			}`,
+			expected: types.PREDICTION_TYPE_UNSUPPORTED,
+		},
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {

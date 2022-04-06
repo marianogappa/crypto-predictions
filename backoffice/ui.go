@@ -67,6 +67,7 @@ func (s backOfficeUI) MustBlockinglyServe(port int, apiUrl string) {
 	http.HandleFunc("/", s.indexHandler)
 	http.HandleFunc("/add", s.putHandler)
 	http.HandleFunc("/prediction", s.predictionHandler)
+	http.HandleFunc("/predictionPage", s.predictionPageHandler)
 	// http.HandleFunc("/reRunAll", s.reRunAllHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
@@ -174,6 +175,42 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	if res.Predictions != nil && len(*res.Predictions) == 1 {
 		pred := (*res.Predictions)[0]
 		data["prediction"] = predictionToMap(pred)
+	}
+
+	data["GetPredictionsErr"] = res.Message
+	data["GetPredictionsStatus"] = res.Status
+	data["GetPredictionsErrCode"] = res.ErrorCode
+	data["GetPredictionsInternalMessage"] = res.InternalMessage
+
+	if err := t.Execute(w, data); err != nil {
+		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		log.Fatal(err)
+	}
+	url := r.FormValue("url")
+
+	t, ok := templates["prediction_page.html"]
+	if !ok {
+		log.Fatal("Couldn't find prediction.html")
+	}
+
+	res := s.apiClient.PredictionPage(getBody{Filters: types.APIFilters{
+		URLs: []string{url},
+	}})
+
+	data := make(map[string]interface{})
+	if res.Predictions != nil && len(*res.Predictions) == 1 {
+		pred := (*res.Predictions)[0]
+		data["prediction"] = predictionToMap(pred)
+	}
+	if res.PredictionSummary != nil {
+		data["predictionSummary"] = predictionSummaryToMap(*res.PredictionSummary)
 	}
 
 	data["GetPredictionsErr"] = res.Message

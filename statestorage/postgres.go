@@ -82,6 +82,7 @@ func predictionsBuildOrderBy(orderBys []string) string {
 func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error) {
 	where, args := (&pgWhereBuilder{}).addFilters([]filterable{
 		pgPredictionsAuthorHandles{filters.AuthorHandles},
+		pgPredictionsAuthorURLs{filters.AuthorURLs},
 		pgPredictionsDeleted{filters.Deleted},
 		pgPredictionsHidden{filters.Hidden},
 		pgPredictionsPaused{filters.Paused},
@@ -89,6 +90,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		pgPredictionsPredictionStateValues{filters.PredictionStateValues},
 		pgPredictionsUUIDs{filters.UUIDs},
 		pgPredictionsURLs{filters.URLs},
+		pgPredictionsTags{filters.Tags},
 	}).build()
 
 	orderBy := predictionsBuildOrderBy(orderBys)
@@ -181,7 +183,7 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 			createdAt  pq.NullTime
 		)
 
-		err := rows.Scan(&dbURL, &a.AccountType, &a.Handle, &a.FollowerCount, &thumbnails, &a.Name, &a.Description, &createdAt, &a.IsVerified)
+		err := rows.Scan(&dbURL, &a.AccountType, &a.Handle, &a.FollowerCount, pq.Array(&thumbnails), &a.Name, &a.Description, &createdAt, &a.IsVerified)
 		if err != nil {
 			log.Printf("error reading account from db, with error: %v\n", err)
 		}
@@ -214,7 +216,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 	if len(ps) == 0 {
 		return ps, nil
 	}
-	builder := newPGUpsertManyBuilder([]string{"uuid", "blob", "created_at", "posted_at"}, "predictions", "uuid")
+	builder := newPGUpsertManyBuilder([]string{"uuid", "blob", "created_at", "posted_at", "tags", "post_url"}, "predictions", "uuid")
 	for i, p := range ps {
 		if p.UUID == "" {
 			ps[i].UUID = uuid.NewString()
@@ -223,7 +225,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		if err != nil {
 			log.Printf("Failed to marshal prediction, with error: %v\n", err)
 		}
-		builder.addRow(p.UUID, blob, p.CreatedAt, p.PostedAt)
+		builder.addRow(p.UUID, blob, p.CreatedAt, p.PostedAt, pq.Array(p.CalculateTags()), p.PostUrl)
 	}
 	sql, args := builder.build()
 	_, err := s.db.Exec(sql, args...)
@@ -398,6 +400,19 @@ func (f pgPredictionsAuthorHandles) filter() (string, []interface{}) {
 	return "", nil
 }
 
+type pgPredictionsAuthorURLs struct{ authorURLs []string }
+
+func (f pgPredictionsAuthorURLs) filter() (string, []interface{}) {
+	args := []interface{}{}
+	for _, authorURL := range f.authorURLs {
+		args = append(args, authorURL)
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf("blob->>'postAuthorURL' IN (%v)", strings.Join(strings.Split(strings.Repeat("∆", len(args)), ""), ", ")), args
+	}
+	return "", nil
+}
+
 type pgPredictionsPredictionStateValues struct{ predictionStateValues []string }
 
 func (f pgPredictionsPredictionStateValues) filter() (string, []interface{}) {
@@ -439,6 +454,19 @@ func (f pgPredictionsUUIDs) filter() (string, []interface{}) {
 	}
 	if len(args) > 0 {
 		return fmt.Sprintf("uuid::text IN (%v)", strings.Join(strings.Split(strings.Repeat("∆", len(args)), ""), ", ")), args
+	}
+	return "", nil
+}
+
+type pgPredictionsTags struct{ tags []string }
+
+func (f pgPredictionsTags) filter() (string, []interface{}) {
+	args := []interface{}{}
+	for _, tag := range f.tags {
+		args = append(args, tag)
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf("tags && ARRAY[%v]", strings.Join(strings.Split(strings.Repeat("∆", len(args)), ""), ", ")), args
 	}
 	return "", nil
 }

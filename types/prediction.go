@@ -1,19 +1,20 @@
 package types
 
 type Prediction struct {
-	UUID       string
-	Version    string
-	CreatedAt  ISO8601
-	PostAuthor string
-	PostText   string
-	PostedAt   ISO8601
-	PostUrl    string
-	Given      map[string]*Condition
-	PrePredict PrePredict
-	Predict    Predict
-	State      PredictionState
-	Reporter   string
-	Type       PredictionType
+	UUID          string
+	Version       string
+	CreatedAt     ISO8601
+	PostAuthor    string
+	PostAuthorURL string
+	PostText      string
+	PostedAt      ISO8601
+	PostUrl       string
+	Given         map[string]*Condition
+	PrePredict    PrePredict
+	Predict       Predict
+	State         PredictionState
+	Reporter      string
+	Type          PredictionType
 }
 
 func (p *Prediction) Evaluate() PredictionStateValue {
@@ -62,4 +63,36 @@ func (p *Prediction) ActionableUndecidedConditions() []*Condition {
 		return p.Predict.UndecidedConditions()
 	}
 	return []*Condition{}
+}
+
+func (p *Prediction) CalculateTags() []string {
+	tags := map[string]struct{}{}
+
+	for _, cond := range p.Given {
+		for _, operand := range cond.NonNumberOperands() {
+			tags[operand.Str] = struct{}{}
+		}
+	}
+
+	res := []string{}
+	for tag := range tags {
+		res = append(res, tag)
+	}
+
+	return res
+}
+
+func (p *Prediction) CalculateMainCoin() Operand {
+	switch p.Type {
+	case PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE, PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES, PREDICTION_TYPE_COIN_WILL_RANGE, PREDICTION_TYPE_THE_FLIPPENING:
+		return p.Predict.Predict.Literal.Operands[0]
+	default:
+		// In unsupported cases, return the first available operand (Note: non-deterministic due to map).
+		for _, cond := range p.Given {
+			for _, op := range cond.NonNumberOperands() {
+				return op
+			}
+		}
+		return Operand{}
+	}
 }

@@ -53,6 +53,24 @@ func (c APIClient) Get(body getBody) parsedResponse {
 	return request.MakeRequest(reqData)
 }
 
+type predictionPageBody struct {
+	URL string `json:"url"`
+}
+
+func (c APIClient) PredictionPage(body getBody) parsedResponse {
+	reqData := request.Request[response, parsedResponse]{
+		HttpMethod:    "POST",
+		BaseUrl:       c.apiURL,
+		Path:          "prediction",
+		QueryString:   nil,
+		Body:          predictionPageBody{URL: body.Filters.URLs[0]},
+		ParseResponse: parseResponse,
+		ParseError:    parseError,
+	}
+
+	return request.MakeRequest(reqData)
+}
+
 type uuidBody struct {
 	UUID string `json:"uuid"`
 }

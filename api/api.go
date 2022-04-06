@@ -33,7 +33,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	mux.HandleFunc("/predictionUnhide", buildHandler(a.handleUnhide))
 	mux.HandleFunc("/predictionDelete", buildHandler(a.handleDelete))
 	mux.HandleFunc("/predictionUndelete", buildHandler(a.handleUndelete))
-	mux.HandleFunc("/predictionRefreshAccount", buildHandler(a.handleRefetchAccount))
+	mux.HandleFunc("/predictionRefetchAccount", buildHandler(a.handleRefetchAccount))
 	a.mux = mux
 
 	return a

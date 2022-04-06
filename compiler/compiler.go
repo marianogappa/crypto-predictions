@@ -269,7 +269,8 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	var account *types.Account
 
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
-	if c.metadataFetcher != nil && (raw.PostAuthor == "" || raw.PostedAt == "") {
+	if c.metadataFetcher != nil && (raw.PostAuthor == "" || raw.PostedAt == "" || raw.PostAuthorURL == "") {
+		log.Printf("Fetching metadata for %v\n", raw.PostUrl)
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
 		if err == nil {
 			account = &metadata.Author
@@ -278,6 +279,9 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 			}
 			if raw.PostAuthor == "" {
 				raw.PostAuthor = metadata.Author.Name
+			}
+			if raw.PostAuthorURL == "" && metadata.Author.URL != nil {
+				raw.PostAuthorURL = metadata.Author.URL.String()
 			}
 			if raw.PostedAt == "" {
 				raw.PostedAt = metadata.PostCreatedAt
@@ -305,6 +309,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	p.UUID = raw.UUID
 	p.Reporter = raw.Reporter
 	p.PostAuthor = raw.PostAuthor
+	p.PostAuthorURL = raw.PostAuthorURL
 	p.CreatedAt = raw.CreatedAt
 	p.PostUrl = raw.PostUrl
 	p.PostedAt = raw.PostedAt

@@ -10,9 +10,11 @@ var (
 	ErrInvalidRequestBody                = errors.New("invalid request body")
 	ErrInvalidRequestJSON                = errors.New("invalid request JSON")
 	ErrStorageErrorRetrievingPredictions = errors.New("storage had error retrieving predictions")
+	ErrStorageErrorRetrievingAccounts    = errors.New("storage had error retrieving accounts")
 	ErrStorageErrorStoringPrediction     = errors.New("storage had error storing predictions")
 	ErrStorageErrorStoringAccount        = errors.New("storage had error storing accounts")
 	ErrFailedToSerializePredictions      = errors.New("failed to serialize predictions")
+	ErrFailedToSerializeAccount          = errors.New("failed to serialize account")
 	ErrFailedToCompilePrediction         = errors.New("failed to compile prediction")
 	ErrPredictionNotFound                = errors.New("prediction not found")
 
@@ -46,9 +48,11 @@ var (
 		ErrInvalidRequestBody:                       {Status: 400, ErrorCode: "ErrInvalidRequestBody", Message: "invalid request body"},
 		ErrInvalidRequestJSON:                       {Status: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
 		ErrStorageErrorRetrievingPredictions:        {Status: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},
+		ErrStorageErrorRetrievingAccounts:           {Status: 500, ErrorCode: "ErrStorageErrorRetrievingAccounts", Message: "storage had error retrieving accounts"},
 		ErrStorageErrorStoringPrediction:            {Status: 500, ErrorCode: "ErrStorageErrorStoringPrediction", Message: "storage had error storing predictions"},
 		ErrStorageErrorStoringAccount:               {Status: 500, ErrorCode: "ErrStorageErrorStoringAccount", Message: "storage had error storing accounts"},
 		ErrFailedToSerializePredictions:             {Status: 500, ErrorCode: "ErrFailedToSerializePredictions", Message: "failed to serialize predictions"},
+		ErrFailedToSerializeAccount:                 {Status: 500, ErrorCode: "ErrFailedToSerializeAccount", Message: "failed to serialize account"},
 		ErrFailedToCompilePrediction:                {Status: 500, ErrorCode: "ErrFailedToCompilePrediction", Message: "failed to compile prediction"},
 		ErrPredictionNotFound:                       {Status: 404, ErrorCode: "ErrPredictionNotFound", Message: "prediction not found"},
 	}

@@ -44,6 +44,7 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 		"PrettyPrint":       printer.NewPredictionPrettyPrinter(p).Default(),
 		"URLType":           urlType,
 		"URLSiteSpecificId": urlSiteSpecificId,
+		"Type":              p.Type.String(),
 	}
 	return m
 }
@@ -143,5 +144,15 @@ func mapifyState(state types.PredictionState) map[string]interface{} {
 		"Status": state.Status.String(),
 		"LastTs": state.LastTs,
 		"Value":  state.Value.String(),
+	}
+}
+
+func predictionSummaryToMap(p predictionSummary) map[string]interface{} {
+	return map[string]interface{}{
+		"Ticks":    p.TickMap[p.Coin],
+		"Coin":     p.Coin,
+		"Goal":     p.Goal,
+		"Operator": p.Operator,
+		"Deadline": p.Deadline,
 	}
 }

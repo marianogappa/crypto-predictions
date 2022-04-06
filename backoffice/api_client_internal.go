@@ -3,6 +3,7 @@ package backoffice
 import (
 	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/request"
@@ -66,21 +67,23 @@ func parseError(err error) parsedResponse {
 }
 
 type response struct {
-	Status          int                `json:"status"`
-	Message         string             `json:"message,omitempty"`
-	InternalMessage string             `json:"internalMessage,omitempty"`
-	ErrorCode       string             `json:"errorCode,omitempty"`
-	Prediction      *json.RawMessage   `json:"prediction,omitempty"`
-	Predictions     *[]json.RawMessage `json:"predictions,omitempty"`
-	Stored          *bool              `json:"stored,omitempty"`
+	Status            int                `json:"status"`
+	Message           string             `json:"message,omitempty"`
+	InternalMessage   string             `json:"internalMessage,omitempty"`
+	ErrorCode         string             `json:"errorCode,omitempty"`
+	Prediction        *json.RawMessage   `json:"prediction,omitempty"`
+	Predictions       *[]json.RawMessage `json:"predictions,omitempty"`
+	PredictionSummary *json.RawMessage   `json:"predictionSummary,omitempty"`
+	Stored            *bool              `json:"stored,omitempty"`
 }
 
 func (r response) parse() parsedResponse {
 	var (
-		pred   *types.Prediction
-		preds  *[]types.Prediction
-		stored = r.Stored
-		pc     = compiler.NewPredictionCompiler(nil, nil)
+		pred        *types.Prediction
+		preds       *[]types.Prediction
+		predSummary *predictionSummary
+		stored      = r.Stored
+		pc          = compiler.NewPredictionCompiler(nil, nil)
 	)
 	if r.Prediction != nil {
 		p, _, _ := pc.Compile(*r.Prediction)
@@ -93,24 +96,40 @@ func (r response) parse() parsedResponse {
 			(*preds) = append((*preds), p)
 		}
 	}
+	if r.PredictionSummary != nil {
+		predSummary = &predictionSummary{}
+		err := json.Unmarshal(*r.PredictionSummary, predSummary)
+		if err != nil {
+			log.Printf("Ignoring error unmarshalling prediction summary: %v\n", err)
+		}
+	}
 
 	return parsedResponse{
-		Status:          r.Status,
-		Message:         r.Message,
-		InternalMessage: r.InternalMessage,
-		ErrorCode:       r.ErrorCode,
-		Prediction:      pred,
-		Predictions:     preds,
-		Stored:          stored,
+		Status:            r.Status,
+		Message:           r.Message,
+		InternalMessage:   r.InternalMessage,
+		ErrorCode:         r.ErrorCode,
+		Prediction:        pred,
+		Predictions:       preds,
+		PredictionSummary: predSummary,
+		Stored:            stored,
 	}
 }
 
+type predictionSummary struct {
+	TickMap  map[string][]types.Tick `json:"tickMap"`
+	Coin     string                  `json:"coin"`
+	Goal     types.JsonFloat64       `json:"goal"`
+	Operator string                  `json:"operator"`
+	Deadline types.ISO8601           `json:"deadline"`
+}
 type parsedResponse struct {
-	Status          int
-	Message         string
-	InternalMessage string
-	ErrorCode       string
-	Prediction      *types.Prediction
-	Predictions     *[]types.Prediction
-	Stored          *bool
+	Status            int
+	Message           string
+	InternalMessage   string
+	ErrorCode         string
+	Prediction        *types.Prediction
+	Predictions       *[]types.Prediction
+	PredictionSummary *predictionSummary
+	Stored            *bool
 }

@@ -50,11 +50,15 @@ type prediction struct {
 	CreatedAt       types.ISO8601        `json:"createdAt"`
 	Reporter        string               `json:"reporter"`
 	PostAuthor      string               `json:"postAuthor"`
+	PostAuthorURL   string               `json:"postAuthorURL,omitempty"`
 	PostedAt        types.ISO8601        `json:"postedAt"`
 	PostUrl         string               `json:"postUrl"`
-	Given           map[string]condition `json:"given"`
+	Given           map[string]condition `json:"given,omitempty"`
 	PrePredict      *prePredict          `json:"prePredict,omitempty"`
-	Predict         predict              `json:"predict"`
+	Predict         predict              `json:"predict,omitempty"`
 	PredictionState predictionState      `json:"state"`
 	Type            string               `json:"type"`
+
+	// extra fields for API, but not for Postgres
+	PredictionText string `json:"predictiontext,omitempty"`
 }
