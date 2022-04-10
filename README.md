@@ -12,7 +12,34 @@ The engine maintains a database of "predictions", which are state machines that 
 
 It is shipped as a single binary (Back Office static assets are embedded) which runs all components by default, but can be configured via flags to run individual components separately.
 
-### Components
+## Getting started
+
+### Configuration
+
+Crypto Predictions is configured via enviroment variables. The following variables are supported:
+
+#### Social network API credentials
+
+- `PREDICTIONS_TWITTER_BEARER_TOKEN`: required if running API or BackOffice, so that metadata can be fetched for Predictions & Accounts.
+- `PREDICTIONS_YOUTUBE_API_KEY`: required if running API or BackOffice, so that metadata can be fetched for Predictions & Accounts.
+
+#### Database configuration
+
+- `PREDICTIONS_POSTGRES_USER`: defaults to current user.
+- `PREDICTIONS_POSTGRES_PASS`: defaults to empty string.
+- `PREDICTIONS_POSTGRES_PORT`: defaults to 5432.
+- `PREDICTIONS_POSTGRES_DATABASE`: defaults to current user.
+- `PREDICTIONS_POSTGRES_HOST`: defaults to localhost.
+
+#### Components configuration
+
+- `PREDICTIONS_API_PORT`: defaults to 2345. In the special case of running BackOffice but not API, setting this or the URL is required.
+- `PREDICTIONS_API_URL`: defaults to localhost:2345. In the special case of running BackOffice but not API, setting this or the PORT is required.
+- `PREDICTIONS_BACKOFFICE_PORT`: defaults to 1234.
+- `PREDICTIONS_DAEMON_DURATION`: defaults to 60 seconds. The format is as described here: https://pkg.go.dev/time#ParseDuration.
+- `PREDICTIONS_DEBUG`: set to any value to enable debugging logs.
+
+## Components
 
 **API**
 
