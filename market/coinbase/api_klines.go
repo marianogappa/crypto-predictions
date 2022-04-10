@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -125,7 +126,7 @@ func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO860
 	}
 
 	if c.debug {
-		log.Printf("Coinbase candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+		log.Info().Msgf("Coinbase candlestick request successful! Candlestick count: %v\n", len(candlesticks))
 	}
 
 	return klinesResult{

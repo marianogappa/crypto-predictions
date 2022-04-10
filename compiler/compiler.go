@@ -3,7 +3,6 @@ package compiler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -129,7 +129,7 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 	return 0, fmt.Errorf("%w: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", types.ErrInvalidDuration, dur)
 }
 
-func mapFromTs(c condition, postedAt types.ISO8601) (int, error) {
+func mapFromTs(c Condition, postedAt types.ISO8601) (int, error) {
 	s, err := c.FromISO8601.Seconds()
 	if err == nil {
 		return s, nil
@@ -140,7 +140,7 @@ func mapFromTs(c condition, postedAt types.ISO8601) (int, error) {
 	return postedAt.Seconds()
 }
 
-func mapToTs(c condition, fromTs int) (int, error) {
+func mapToTs(c Condition, fromTs int) (int, error) {
 	s, err := c.ToISO8601.Seconds()
 	if err == nil {
 		return s, nil
@@ -159,7 +159,7 @@ func mapToTs(c condition, fromTs int) (int, error) {
 	return int(fromTime.Add(duration).Unix()), nil
 }
 
-func mapCondition(c condition, name string, postedAt types.ISO8601) (types.Condition, error) {
+func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condition, error) {
 	var (
 		operator    string
 		strOperands []string
@@ -252,7 +252,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	rawPrediction := string(rawPredictionBs)
 	p := types.Prediction{}
 
-	raw := prediction{}
+	raw := Prediction{}
 	err := json.Unmarshal([]byte(rawPrediction), &raw)
 	if err != nil {
 		return p, nil, fmt.Errorf("%w: %v", types.ErrInvalidJSON, err)
@@ -270,7 +270,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 
 	// these fields should be fetchable using the Twitter/Youtube API, but only if they don't exist (to allow caching)
 	if c.metadataFetcher != nil && (raw.PostAuthor == "" || raw.PostedAt == "" || raw.PostAuthorURL == "") {
-		log.Printf("Fetching metadata for %v\n", raw.PostUrl)
+		log.Info().Msgf("Fetching metadata for %v\n", raw.PostUrl)
 		metadata, err := c.metadataFetcher.Fetch(raw.PostUrl)
 		if err == nil {
 			account = &metadata.Author
@@ -287,7 +287,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 				raw.PostedAt = metadata.PostCreatedAt
 			}
 		} else {
-			log.Printf("PredictionCompiler.Compile: ignoring matadataFecher error: %v\n", err)
+			log.Info().Msgf("PredictionCompiler.Compile: ignoring matadataFecher error: %v\n", err)
 		}
 	}
 	if raw.PostAuthor == "" {

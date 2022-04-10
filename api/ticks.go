@@ -6,7 +6,7 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
-type predictionSummary struct {
+type PredictionSummary struct {
 	TickMap  map[string][]types.Tick `json:"tickMap"`
 	Coin     string                  `json:"coin"`
 	Goal     types.JsonFloat64       `json:"goal"`
@@ -14,18 +14,18 @@ type predictionSummary struct {
 	Deadline types.ISO8601           `json:"deadline"`
 }
 
-func (a *API) BuildPredictionMarketSummary(p types.Prediction) (predictionSummary, error) {
+func (a *API) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
 	switch p.Type {
 	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
 		return a.predictionTypeCoinOperatorFloatDeadline(p)
 	}
-	return predictionSummary{}, nil
+	return PredictionSummary{}, nil
 }
 
-func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (predictionSummary, error) {
+func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (PredictionSummary, error) {
 	postedAt, err := p.PostedAt.Time()
 	if err != nil {
-		return predictionSummary{}, err
+		return PredictionSummary{}, err
 	}
 	tmFirstTick := postedAt.Add(-101 * time.Minute)
 	p.Evaluate().IsFinal()
@@ -40,17 +40,17 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (predi
 	opStr := coin.Str
 	it, err := a.mkt.GetTickIterator(coin, initialISO8601, false)
 	if err != nil {
-		return predictionSummary{}, err
+		return PredictionSummary{}, err
 	}
 	for i := 0; i < 100; i++ {
 		tick, err := it.Next()
 		if err != nil {
-			return predictionSummary{}, err
+			return PredictionSummary{}, err
 		}
 		ticks[opStr] = append(ticks[opStr], tick)
 	}
 
-	return predictionSummary{
+	return PredictionSummary{
 		TickMap:  ticks,
 		Operator: operator,
 		Goal:     goal,

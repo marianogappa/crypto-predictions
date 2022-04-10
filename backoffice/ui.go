@@ -4,13 +4,14 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
-	"log"
 	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"syscall"
 	"text/template"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
@@ -49,27 +50,39 @@ func loadTemplates(files embed.FS) error {
 }
 
 type backOfficeUI struct {
-	apiClient APIClient
+	apiClient *APIClient
 	files     embed.FS
+	debug     bool
 }
 
-func NewBackOfficeUI(files embed.FS) backOfficeUI {
-	return backOfficeUI{files: files}
+func NewBackOfficeUI(files embed.FS) *backOfficeUI {
+	return &backOfficeUI{files: files}
+}
+
+func (s *backOfficeUI) SetDebug(b bool) {
+	s.debug = b
 }
 
 func (s backOfficeUI) MustBlockinglyServe(port int, apiUrl string) {
 	s.apiClient = NewAPIClient(apiUrl)
 
+	if s.debug {
+		s.apiClient.SetDebug(s.debug)
+	}
+
 	err := loadTemplates(s.files)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	http.HandleFunc("/", s.indexHandler)
 	http.HandleFunc("/add", s.putHandler)
 	http.HandleFunc("/prediction", s.predictionHandler)
 	http.HandleFunc("/predictionPage", s.predictionPageHandler)
 	// http.HandleFunc("/reRunAll", s.reRunAllHandler)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+
+	addr := fmt.Sprintf(":%v", port)
+	log.Info().Msgf("BackOffice listening on %v", addr)
+	log.Fatal().Err(http.ListenAndServe(addr, nil)).Msg("")
 }
 
 func trim(ss []string) []string {
@@ -84,7 +97,7 @@ func trim(ss []string) []string {
 
 func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	rawUUIDs := r.FormValue("UUIDs")
 	rawAuthors := r.FormValue("authors")
@@ -93,7 +106,7 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	t, ok := templates["index.html"]
 	if !ok {
-		log.Fatal("Couldn't find index.hmtl")
+		log.Fatal().Msg("Couldn't find index.hmtl")
 	}
 
 	res := s.apiClient.Get(getBody{Filters: types.APIFilters{
@@ -104,10 +117,10 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}})
 
 	data := make(map[string]interface{})
-	data["GetPredictionsErr"] = res.Message
+	data["GetPredictionsErr"] = res.ErrorMessage
 	data["GetPredictionsStatus"] = res.Status
 	data["GetPredictionsErrCode"] = res.ErrorCode
-	data["GetPredictionsInternalMessage"] = res.InternalMessage
+	data["GetPredictionsInternalErrorMessage"] = res.InternalErrorMessage
 
 	preds := []types.Prediction{}
 	if res.Predictions != nil {
@@ -135,14 +148,17 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	uuid := r.FormValue("uuid")
+	if uuid == "" {
+		uuid = r.URL.Query().Get("uuid")
+	}
 	action := r.FormValue("action")
 
 	t, ok := templates["prediction.html"]
 	if !ok {
-		log.Fatal("Couldn't find prediction.html")
+		log.Fatal().Msg("Couldn't find prediction.html")
 	}
 
 	var res parsedResponse
@@ -177,27 +193,27 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 		data["prediction"] = predictionToMap(pred)
 	}
 
-	data["GetPredictionsErr"] = res.Message
+	data["GetPredictionsErr"] = res.ErrorMessage
 	data["GetPredictionsStatus"] = res.Status
 	data["GetPredictionsErrCode"] = res.ErrorCode
-	data["GetPredictionsInternalMessage"] = res.InternalMessage
+	data["GetPredictionsInternalErrorMessage"] = res.InternalErrorMessage
 
 	if err := t.Execute(w, data); err != nil {
 		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("")
 		}
 	}
 }
 
 func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	url := r.FormValue("url")
 
 	t, ok := templates["prediction_page.html"]
 	if !ok {
-		log.Fatal("Couldn't find prediction.html")
+		log.Fatal().Msg("Couldn't find prediction.html")
 	}
 
 	res := s.apiClient.PredictionPage(getBody{Filters: types.APIFilters{
@@ -213,28 +229,28 @@ func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Reque
 		data["predictionSummary"] = predictionSummaryToMap(*res.PredictionSummary)
 	}
 
-	data["GetPredictionsErr"] = res.Message
+	data["GetPredictionsErr"] = res.ErrorMessage
 	data["GetPredictionsStatus"] = res.Status
 	data["GetPredictionsErrCode"] = res.ErrorCode
-	data["GetPredictionsInternalMessage"] = res.InternalMessage
+	data["GetPredictionsInternalMessage"] = res.InternalErrorMessage
 
 	if err := t.Execute(w, data); err != nil {
 		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("")
 		}
 	}
 }
 
 func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	rawString := r.FormValue("prediction_input")
 	storeStr := r.FormValue("store")
 
 	t, ok := templates["add.html"]
 	if !ok {
-		log.Fatal("Couldn't find add.hmtl")
+		log.Fatal().Msg("Couldn't find add.hmtl")
 	}
 
 	data := make(map[string]interface{})
@@ -250,10 +266,10 @@ func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 
 		resp := s.apiClient.New([]byte(rawString), store)
 
-		data["Err"] = resp.Message
+		data["Err"] = resp.ErrorMessage
 		data["Status"] = resp.Status
 		data["ErrCode"] = resp.ErrorCode
-		data["InternalMessage"] = resp.InternalMessage
+		data["InternalErrorMessage"] = resp.InternalErrorMessage
 
 		if resp.Stored != nil {
 			data["Stored"] = *resp.Stored
@@ -268,31 +284,7 @@ func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := t.Execute(w, data); err != nil {
 		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("")
 		}
 	}
 }
-
-// func (s backOfficeUI) reRunAllHandler(w http.ResponseWriter, r *http.Request) {
-// 	predictions, err := s.store.GetPredictions([]types.PredictionStateValue{
-// 		types.ONGOING_PRE_PREDICTION,
-// 		types.ONGOING_PREDICTION,
-// 		types.CORRECT,
-// 		types.INCORRECT,
-// 		types.ANNULLED,
-// 	})
-// 	if err != nil {
-// 		log.Println(err)
-// 		http.Redirect(w, r, "/", http.StatusSeeOther)
-// 		return
-// 	}
-// 	for key := range predictions {
-// 		pred := predictions[key]
-// 		(&pred).ClearState()
-// 		predictions[key] = pred
-// 	}
-// 	if err := s.store.UpsertPredictions(predictions); err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	http.Redirect(w, r, "/", http.StatusSeeOther)
-// }

@@ -1,157 +1,86 @@
 package api
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/swaggest/usecase"
 )
 
-type uuidBody struct {
-	UUID string `json:"uuid"`
+type apiReqUuidPath struct {
+	UUID string `path:"uuid" required:"true" format:"uuid"`
+}
+type apiResStored struct {
+	Stored bool `json:"stored" required:"true"`
 }
 
-func (a *API) handlePause(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
+func (a *API) predictionStorageActionWithUUID(uuid string, fn func(string) error) apiResponse[apiResStored] {
+	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
 	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
+		return failWith(ErrPredictionNotFound, err, apiResStored{})
 	}
 	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
+		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
 	}
 
 	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
+		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
 	}
-
 	pred := ps[0]
-	if err := a.store.PausePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
+	if err := fn(pred.UUID); err != nil {
+		return failWith(ErrFailedToCompilePrediction, err, apiResStored{})
 	}
-	return response{stored: pBool(true)}, nil
+	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
 }
 
-func (a *API) handleUnpause(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
+func (a *API) apiPredictionStorageActionWithUUID(fn func(string) error, title string) usecase.Interactor {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+		out := a.predictionStorageActionWithUUID(input.UUID, fn)
+		*output = out
+		return nil
+	})
+	u.SetTags("Prediction")
+	u.SetTitle(title)
+
+	return u
+}
+
+func (a *API) apiPredictionRefetchAccount() usecase.Interactor {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+		out := a.predictionRefetchAccount(input.UUID)
+		*output = out
+		return nil
+	})
+	u.SetTags("Prediction")
+	u.SetTitle("Refetch a social media Account's metadata (e.g. name, thumbnails, isVerified, followerCount).")
+	u.SetDescription("All predictions are made by an Account. The account is fetched when the prediction is created. After some time it may get outdated. Use this call to refetch it.")
+
+	return u
+}
+
+func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
+	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
 	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
+		return failWith(ErrPredictionNotFound, err, apiResStored{})
 	}
 	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
+		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
 	}
 
 	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
+		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
 	}
-
-	pred := ps[0]
-	if err := a.store.UnpausePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
-	}
-	return response{stored: pBool(true)}, nil
-}
-
-func (a *API) handleHide(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
-	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
-	}
-	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
-	}
-
-	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
-	}
-
-	pred := ps[0]
-	if err := a.store.HidePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
-	}
-	return response{stored: pBool(true)}, nil
-}
-
-func (a *API) handleUnhide(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
-	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
-	}
-	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
-	}
-
-	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
-	}
-
-	pred := ps[0]
-	if err := a.store.HidePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
-	}
-	return response{stored: pBool(true)}, nil
-}
-
-func (a *API) handleDelete(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
-	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
-	}
-	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
-	}
-
-	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
-	}
-
-	pred := ps[0]
-	if err := a.store.DeletePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
-	}
-	return response{stored: pBool(true)}, nil
-}
-
-func (a *API) handleUndelete(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
-	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
-	}
-	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
-	}
-
-	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
-	}
-
-	pred := ps[0]
-	if err := a.store.UndeletePrediction(pred.UUID); err != nil {
-		return response{}, fmt.Errorf("%w: error pausing prediction", ErrFailedToCompilePrediction)
-	}
-	return response{stored: pBool(true)}, nil
-}
-
-func (a *API) handleRefetchAccount(uuid uuidBody) (response, error) {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid.UUID}}, nil, 0, 0)
-	if err != nil {
-		return response{}, fmt.Errorf("%w: %v", ErrPredictionNotFound, err)
-	}
-	if len(ps) == 0 {
-		return response{}, fmt.Errorf("%w", ErrPredictionNotFound)
-	}
-	if len(ps) != 1 {
-		return response{}, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps))
-	}
-
 	pred := ps[0]
 
 	metadata, err := a.mFetcher.Fetch(pred.PostUrl)
 	if err != nil {
-		return response{}, fmt.Errorf("%w: error fetching metadata for url: %v", ErrFailedToCompilePrediction, pred.PostUrl)
+		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: error fetching metadata for url: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResStored{})
 	}
 
 	if _, err := a.store.UpsertAccounts([]*types.Account{&metadata.Author}); err != nil {
-		return response{}, fmt.Errorf("%w: error storing account: %v", ErrStorageErrorStoringAccount, err)
+		return failWith(ErrStorageErrorStoringAccount, fmt.Errorf("%w: error storing account: %v", ErrStorageErrorStoringAccount, err), apiResStored{})
 	}
 
-	return response{stored: pBool(true)}, nil
+	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
 }

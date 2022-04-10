@@ -2,8 +2,9 @@ package daemon
 
 import (
 	"errors"
-	"log"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/types"
@@ -44,7 +45,7 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 	}
 
 	if len(errs) > 0 {
-		log.Printf("newPredRunner: errors creating new PredRunner: %v\n", errs)
+		log.Info().Msgf("newPredRunner: errors creating new PredRunner: %v\n", errs)
 	}
 
 	return &result, errs

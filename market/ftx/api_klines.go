@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -107,7 +108,7 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int) (
 		}, err
 	}
 
-	log.Printf("FTX candlestick request successful! Candlestick count: %v\n", len(maybeResponse.Result))
+	log.Info().Msgf("FTX candlestick request successful! Candlestick count: %v\n", len(maybeResponse.Result))
 
 	return klinesResult{
 		candlesticks: maybeResponse.toCandlesticks(),

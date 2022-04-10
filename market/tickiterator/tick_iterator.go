@@ -2,12 +2,12 @@ package tickiterator
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/market/cache"
 	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 type TickIteratorImpl struct {
@@ -81,7 +81,7 @@ func (t *TickIteratorImpl) Next() (types.Tick, error) {
 	// Put in the cache for future uses.
 	if t.tickCache != nil {
 		if err := t.tickCache.Put(t.operand, ticks); err != nil {
-			log.Printf("TickIteratorImpl.Next: ignoring error putting into cache: %v\n", err)
+			log.Info().Msgf("TickIteratorImpl.Next: ignoring error putting into cache: %v\n", err)
 		}
 	}
 

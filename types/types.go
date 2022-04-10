@@ -243,6 +243,39 @@ type APIFilters struct {
 	Hidden                *bool    `json:"hidden"`
 }
 
+func (f APIFilters) ToQueryStringWithOrderBy(orderBy []string) map[string][]string {
+	m := map[string][]string{
+		"tags":                  f.Tags,
+		"authorHandles":         f.AuthorHandles,
+		"authorURLs":            f.AuthorURLs,
+		"uuids":                 f.UUIDs,
+		"urls":                  f.URLs,
+		"predictionStateValues": f.PredictionStateValues,
+		"predictionStateStatus": f.PredictionStateStatus,
+		"orderBys":              orderBy,
+	}
+	if f.Deleted != nil {
+		m["deleted"] = []string{"false"}
+		if *f.Deleted {
+			m["deleted"] = []string{"true"}
+		}
+	}
+	if f.Paused != nil {
+		m["paused"] = []string{"false"}
+		if *f.Paused {
+			m["paused"] = []string{"true"}
+		}
+	}
+	if f.Hidden != nil {
+		m["hidden"] = []string{"false"}
+		if *f.Hidden {
+			m["hidden"] = []string{"true"}
+		}
+	}
+
+	return m
+}
+
 type APIAccountFilters struct {
 	Handles []string `json:"handles"`
 	URLs    []string `json:"urls"`

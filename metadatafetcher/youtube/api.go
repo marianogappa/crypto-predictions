@@ -107,7 +107,7 @@ func (t Youtube) GetVideoByID(id string) (Video, error) {
 		ParseError:    parseVideoError,
 	}
 
-	video := request.MakeRequest(req)
+	video := request.MakeRequest(req, false)
 	if video.err != nil {
 		return video, video.err
 	}
@@ -194,7 +194,7 @@ func (t Youtube) GetChannelByID(id string) (Channel, error) {
 		ParseError:    parseChannelError,
 	}
 
-	channel := request.MakeRequest(req)
+	channel := request.MakeRequest(req, false)
 	if channel.err != nil {
 		return channel, channel.err
 	}

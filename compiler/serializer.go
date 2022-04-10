@@ -17,16 +17,16 @@ func NewPredictionSerializer() PredictionSerializer {
 	return PredictionSerializer{}
 }
 
-func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
+func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
-		return nil, err
+		return Prediction{}, err
 	}
 	pd, err := marshalPredict(p.Predict)
 	if err != nil {
-		return nil, err
+		return Prediction{}, err
 	}
-	pred := prediction{
+	return Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
@@ -40,13 +40,19 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 		Predict:         pd,
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
-	}
-
-	return json.Marshal(pred)
+	}, nil
 }
 
-func (s PredictionSerializer) SerializeForAPI(p *types.Prediction) ([]byte, error) {
-	pred := prediction{
+func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
+	pre, err := s.PreSerialize(p)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(pre)
+}
+
+func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction) (Prediction, error) {
+	pred := Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
@@ -60,6 +66,15 @@ func (s PredictionSerializer) SerializeForAPI(p *types.Prediction) ([]byte, erro
 		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
 	}
 
+	return pred, nil
+}
+
+func (s PredictionSerializer) SerializeForAPI(p *types.Prediction) ([]byte, error) {
+	pred, err := s.PreSerializeForAPI(p)
+	if err != nil {
+		return nil, err
+	}
+
 	return json.Marshal(pred)
 }
 
@@ -70,17 +85,17 @@ func marshalInnerCondition(c *types.Condition) string {
 	return fmt.Sprintf(`%v %v %v`, c.Operands[0].Str, c.Operator, c.Operands[1].Str)
 }
 
-func marshalGiven(given map[string]*types.Condition) map[string]condition {
-	result := map[string]condition{}
+func marshalGiven(given map[string]*types.Condition) map[string]Condition {
+	result := map[string]Condition{}
 	for key, cond := range given {
-		c := condition{
+		c := Condition{
 			Condition:        marshalInnerCondition(cond),
 			FromISO8601:      types.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
 			ToISO8601:        types.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
 			ToDuration:       cond.ToDuration,
 			Assumed:          cond.Assumed,
 			ErrorMarginRatio: cond.ErrorMarginRatio,
-			State: conditionState{
+			State: ConditionState{
 				Status:    cond.State.Status.String(),
 				LastTs:    cond.State.LastTs,
 				LastTicks: cond.State.LastTicks,
@@ -133,7 +148,7 @@ func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 	return nil, fmt.Errorf("marshalBoolExpr: unknown operator '%v'", b.Operator)
 }
 
-func marshalPrePredict(pp types.PrePredict) (*prePredict, error) {
+func marshalPrePredict(pp types.PrePredict) (*PrePredict, error) {
 	wrongIf, err := marshalBoolExpr(pp.WrongIf, 0)
 	if err != nil {
 		return nil, err
@@ -146,7 +161,7 @@ func marshalPrePredict(pp types.PrePredict) (*prePredict, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := &prePredict{
+	result := &PrePredict{
 		WrongIf:                           wrongIf,
 		AnnulledIf:                        annulledIf,
 		Predict:                           predictIf,
@@ -156,20 +171,20 @@ func marshalPrePredict(pp types.PrePredict) (*prePredict, error) {
 	return result, nil
 }
 
-func marshalPredict(p types.Predict) (predict, error) {
+func marshalPredict(p types.Predict) (Predict, error) {
 	wrongIf, err := marshalBoolExpr(p.WrongIf, 0)
 	if err != nil {
-		return predict{}, err
+		return Predict{}, err
 	}
 	annulledIf, err := marshalBoolExpr(p.AnnulledIf, 0)
 	if err != nil {
-		return predict{}, err
+		return Predict{}, err
 	}
 	predictIf, err := marshalBoolExpr(&p.Predict, 0)
 	if err != nil {
-		return predict{}, err
+		return Predict{}, err
 	}
-	result := predict{
+	result := Predict{
 		WrongIf:                           wrongIf,
 		AnnulledIf:                        annulledIf,
 		Predict:                           *predictIf,
@@ -178,8 +193,8 @@ func marshalPredict(p types.Predict) (predict, error) {
 	return result, nil
 }
 
-func marshalPredictionState(ps types.PredictionState) predictionState {
-	return predictionState{
+func marshalPredictionState(ps types.PredictionState) PredictionState {
+	return PredictionState{
 		Status: ps.Status.String(),
 		LastTs: ps.LastTs,
 		Value:  ps.Value.String(),
@@ -193,7 +208,7 @@ func NewAccountSerializer() AccountSerializer {
 	return AccountSerializer{}
 }
 
-type account struct {
+type Account struct {
 	URL           string   `json:"url"`
 	AccountType   string   `json:"accountType"`
 	Handle        string   `json:"handle"`
@@ -204,7 +219,7 @@ type account struct {
 	CreatedAt     string   `json:"createdAt,omitempty"`
 }
 
-func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
+func (s AccountSerializer) PreSerialize(p *types.Account) (Account, error) {
 	thumbs := []string{}
 	for _, thumb := range p.Thumbnails {
 		thumbs = append(thumbs, thumb.String())
@@ -215,7 +230,7 @@ func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
 		createdAt = p.CreatedAt.Format(time.RFC3339)
 	}
 
-	return json.Marshal(account{
+	return Account{
 		URL:           p.URL.String(),
 		AccountType:   p.AccountType,
 		Handle:        p.Handle,
@@ -224,5 +239,12 @@ func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
 		Name:          p.Name,
 		Description:   p.Description,
 		CreatedAt:     createdAt,
-	})
+	}, nil
+}
+func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
+	acc, err := s.PreSerialize(p)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(acc)
 }

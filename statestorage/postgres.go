@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"log"
 	"net/url"
 	"strings"
 
@@ -15,8 +14,16 @@ import (
 	pq "github.com/lib/pq"
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
+type PostgresConf struct {
+	User     string
+	Host     string
+	Pass     string
+	Port     string
+	Database string
+}
 type PostgresDBStateStorage struct {
 	db    *sql.DB
 	debug bool
@@ -25,16 +32,17 @@ type PostgresDBStateStorage struct {
 //go:embed migrations/*.sql
 var fs embed.FS
 
-func MustNewPostgresDBStateStorage() *PostgresDBStateStorage {
-	p, err := NewPostgresDBStateStorage()
+func MustNewPostgresDBStateStorage(c PostgresConf) *PostgresDBStateStorage {
+	p, err := NewPostgresDBStateStorage(c)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("")
 	}
 	return &p
 }
 
-func NewPostgresDBStateStorage() (PostgresDBStateStorage, error) {
-	connStr := "postgres://marianol@localhost/marianol?sslmode=disable"
+func NewPostgresDBStateStorage(c PostgresConf) (PostgresDBStateStorage, error) {
+	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", c.User, c.Pass, c.Host, c.Port, c.Database)
+	log.Info().Str("url", connStr).Msgf("Connected to Postgres DB")
 
 	d, err := iofs.New(fs, "migrations")
 	if err != nil {
@@ -102,7 +110,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 	sql := fmt.Sprintf("SELECT uuid, blob FROM predictions WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
 
 	if s.debug {
-		log.Printf("PostgresDBStateStorage.GetPredictions: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
+		log.Info().Msgf("PostgresDBStateStorage.GetPredictions: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
 	}
 
 	rows, err := s.db.Query(sql, args...)
@@ -118,11 +126,11 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		)
 		err := rows.Scan(&clUUID, &clBlob)
 		if err != nil {
-			log.Printf("error reading predictions fields from db, with error: %v\n", err)
+			log.Info().Msgf("error reading predictions fields from db, with error: %v\n", err)
 		}
 		var pred types.Prediction
 		if pred, _, err = compiler.NewPredictionCompiler(nil, nil).Compile(clBlob); err != nil {
-			log.Printf("read corrupted prediction from db, with error: %v\n", err)
+			log.Info().Msgf("read corrupted prediction from db, with error: %v\n", err)
 			continue
 		}
 		pred.UUID = string(clUUID)
@@ -165,7 +173,7 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 	sql := fmt.Sprintf("SELECT url, account_type, handle, follower_count, thumbnails, name, description, created_at, is_verified FROM accounts WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
 
 	if s.debug {
-		log.Printf("PostgresDBStateStorage.GetAccounts: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
+		log.Info().Msgf("PostgresDBStateStorage.GetAccounts: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
 	}
 
 	rows, err := s.db.Query(sql, args...)
@@ -185,19 +193,19 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 
 		err := rows.Scan(&dbURL, &a.AccountType, &a.Handle, &a.FollowerCount, pq.Array(&thumbnails), &a.Name, &a.Description, &createdAt, &a.IsVerified)
 		if err != nil {
-			log.Printf("error reading account from db, with error: %v\n", err)
+			log.Info().Msgf("error reading account from db, with error: %v\n", err)
 		}
 
 		u, err := url.Parse(dbURL)
 		if err != nil {
-			log.Printf("error reading url from account from db, with error: %v\n", err)
+			log.Info().Msgf("error reading url from account from db, with error: %v\n", err)
 		}
 		a.URL = u
 
 		for _, dbURL := range thumbnails {
 			u, err := url.Parse(dbURL)
 			if err != nil {
-				log.Printf("error reading url from thumbnails from account from db, with error: %v\n", err)
+				log.Info().Msgf("error reading url from thumbnails from account from db, with error: %v\n", err)
 			}
 			a.Thumbnails = append(a.Thumbnails, u)
 		}
@@ -223,7 +231,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		}
 		blob, err := compiler.NewPredictionSerializer().Serialize(p)
 		if err != nil {
-			log.Printf("Failed to marshal prediction, with error: %v\n", err)
+			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}
 		builder.addRow(p.UUID, blob, p.CreatedAt, p.PostedAt, pq.Array(p.CalculateTags()), p.PostUrl)
 	}

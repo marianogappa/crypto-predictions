@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -269,7 +270,7 @@ func (b Binance) getKlines(baseAsset string, quoteAsset string, startTimeMillis 
 	}
 
 	if b.debug {
-		log.Printf("Binance candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+		log.Info().Msgf("Binance candlestick request successful! Candlestick count: %v\n", len(candlesticks))
 	}
 
 	return klinesResult{

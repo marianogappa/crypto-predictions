@@ -4,10 +4,12 @@ import (
 	"embed"
 	"flag"
 	"fmt"
-	"log"
 	"os"
+	"os/user"
 	"strconv"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/api"
 	"github.com/marianogappa/predictions/backoffice"
@@ -30,8 +32,6 @@ var (
 )
 
 func main() {
-	// Logging file and line numbers on STDERR is very useful for debugging.
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.Parse()
 
 	// Parse flags and figure out what components need to run.
@@ -45,7 +45,7 @@ func main() {
 	// Unless only the daemon is running, predictions may be created. If so, credentials for Twitter & Youtube APIs are
 	// required, so that metadata from URLs can be fetched.
 	if (runAPI || runBackOffice) && (os.Getenv("PREDICTIONS_TWITTER_BEARER_TOKEN") == "" || os.Getenv("PREDICTIONS_YOUTUBE_API_KEY") == "") {
-		log.Fatal(
+		log.Fatal().Msg(
 			`Please set the PREDICTIONS_TWITTER_BEARER_TOKEN && PREDICTIONS_YOUTUBE_API_KEY envs; I can't ` +
 				`create predictions properly otherwise. If you're not planning to create predictions, just set them ` +
 				`to any value.`,
@@ -55,14 +55,25 @@ func main() {
 	// If Back Office will run, but API won't, then there must be an addressable API in the network, and its URL/port
 	// must be supplied.
 	if runBackOffice && !runAPI && os.Getenv("PREDICTIONS_API_PORT") == "" && os.Getenv("PREDICTIONS_API_URL") == "" {
-		log.Fatal(`If you want to run the Back Office but not the API, please specify either PREDICTIONS_API_URL or ` +
+		log.Fatal().Msg(`If you want to run the Back Office but not the API, please specify either PREDICTIONS_API_URL or ` +
 			"PREDICTIONS_API_PORT. Otherwise I don't know how to reach the API.")
 	}
+
+	osCurUser, err := user.Current()
+	if err != nil {
+		log.Error().Err(err).Msgf("Failed to get current user (ignoring).")
+	}
+	postgresConf := statestorage.PostgresConf{User: osCurUser.Username, Pass: "", Port: "5432", Database: osCurUser.Username, Host: "localhost"}
+	postgresConf.User = envOrStr("PREDICTIONS_POSTGRES_USER", postgresConf.User)
+	postgresConf.Pass = envOrStr("PREDICTIONS_POSTGRES_PASS", postgresConf.Pass)
+	postgresConf.Port = envOrStr("PREDICTIONS_POSTGRES_PORT", postgresConf.Port)
+	postgresConf.Database = envOrStr("PREDICTIONS_POSTGRES_DATABASE", postgresConf.Database)
+	postgresConf.Host = envOrStr("PREDICTIONS_POSTGRES_HOST", postgresConf.Host)
 
 	// Resolve & instantiate all components.
 	var (
 		// The state storage component is responsible for durably storing predictions.
-		postgresDBStorage = statestorage.MustNewPostgresDBStateStorage()
+		postgresDBStorage = statestorage.MustNewPostgresDBStateStorage(postgresConf)
 
 		// The market component queries all exchange APIs for market data.
 		market = market.NewMarket()
@@ -85,7 +96,12 @@ func main() {
 		backOfficePort = envOrInt("PREDICTIONS_BACKOFFICE_PORT", 1234)
 		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 60*time.Second)
 	)
-	postgresDBStorage.SetDebug(true)
+
+	if os.Getenv("PREDICTIONS_DEBUG") != "" {
+		postgresDBStorage.SetDebug(true)
+		backOffice.SetDebug(true)
+		api.SetDebug(true)
+	}
 
 	// Run all components.
 	if runAPI {

@@ -116,7 +116,7 @@ func (t Twitter) GetTweetByID(id string) (Tweet, error) {
 		ParseError:    parseError,
 	}
 
-	tweet := request.MakeRequest(req)
+	tweet := request.MakeRequest(req, false)
 	if tweet.err != nil {
 		return tweet, tweet.err
 	}

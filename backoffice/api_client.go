@@ -1,7 +1,7 @@
 package backoffice
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"github.com/marianogappa/predictions/request"
 	"github.com/marianogappa/predictions/types"
@@ -9,29 +9,34 @@ import (
 
 type APIClient struct {
 	apiURL string
+	debug  bool
 }
 
-func NewAPIClient(apiURL string) APIClient {
-	return APIClient{apiURL}
+func NewAPIClient(apiURL string) *APIClient {
+	return &APIClient{apiURL: apiURL}
+}
+
+func (c *APIClient) SetDebug(b bool) {
+	c.debug = b
 }
 
 type newBody struct {
-	Prediction json.RawMessage `json:"prediction"`
-	Store      bool            `json:"store"`
+	Prediction string `json:"prediction"`
+	Store      bool   `json:"store"`
 }
 
 func (c APIClient) New(pred []byte, store bool) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "new",
+		Path:          "predictions",
 		QueryString:   nil,
-		Body:          newBody{pred, store},
+		Body:          newBody{string(pred), store},
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 type getBody struct {
@@ -41,16 +46,16 @@ type getBody struct {
 
 func (c APIClient) Get(body getBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
-		HttpMethod:    "POST",
+		HttpMethod:    "GET",
 		BaseUrl:       c.apiURL,
-		Path:          "get",
-		QueryString:   nil,
-		Body:          body,
+		Path:          "predictions",
+		QueryString:   body.Filters.ToQueryStringWithOrderBy(body.OrderBys),
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 type predictionPageBody struct {
@@ -61,14 +66,14 @@ func (c APIClient) PredictionPage(body getBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "prediction",
+		Path:          fmt.Sprintf("pages/prediction/%v", body.Filters.URLs[0]),
 		QueryString:   nil,
-		Body:          predictionPageBody{URL: body.Filters.URLs[0]},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 type uuidBody struct {
@@ -79,96 +84,96 @@ func (c APIClient) PausePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionPause",
+		Path:          fmt.Sprintf("predictions/%v/pause", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) UnpausePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionUnpause",
+		Path:          fmt.Sprintf("predictions/%v/unpause", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) HidePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionHide",
+		Path:          fmt.Sprintf("predictions/%v/hide", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) UnhidePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionUnhide",
+		Path:          fmt.Sprintf("predictions/%v/unhide", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) DeletePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionDelete",
+		Path:          fmt.Sprintf("predictions/%v/delete", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) UndeletePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionUndelete",
+		Path:          fmt.Sprintf("predictions/%v/undelete", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }
 
 func (c APIClient) RefreshAccount(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
-		Path:          "predictionRefreshAccount",
+		Path:          fmt.Sprintf("predictions/%v/refetchAccount", uuid),
 		QueryString:   nil,
-		Body:          uuidBody{uuid},
+		Body:          nil,
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
 
-	return request.MakeRequest(reqData)
+	return request.MakeRequest(reqData, c.debug)
 }

@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -27,14 +30,14 @@ type Request[A, B any] struct {
 	ParseError    func(error) B
 
 	// Optional
-	QueryString map[string]string
+	QueryString map[string][]string
 	Headers     map[string]string
 	Body        any
 	HttpMethod  string        // Defaults to "GET"
 	Timeout     time.Duration // Defaults to 10 * time Second
 }
 
-func MakeRequest[A, B any](reqData Request[A, B]) B {
+func MakeRequest[A, B any](reqData Request[A, B], debug bool) B {
 	var buf *bytes.Buffer
 	if reqData.Body != nil {
 		bs, err := json.Marshal(reqData.Body)
@@ -67,9 +70,12 @@ func MakeRequest[A, B any](reqData Request[A, B]) B {
 
 	if len(reqData.QueryString) > 0 {
 		values := req.URL.Query()
-		for k, v := range reqData.QueryString {
-			values.Set(k, v)
+		for k, vs := range reqData.QueryString {
+			for _, v := range vs {
+				values.Add(k, v)
+			}
 		}
+		req.URL.RawQuery = values.Encode()
 	}
 
 	for k, v := range reqData.Headers {
@@ -81,6 +87,11 @@ func MakeRequest[A, B any](reqData Request[A, B]) B {
 		timeout = reqData.Timeout
 	}
 	client := &http.Client{Timeout: timeout}
+
+	if debug {
+		res, _ := httputil.DumpRequest(req, true)
+		log.Info().Msgf("APIClient.MakeRequest: making API request: %v\n", string(res))
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -102,6 +113,10 @@ func MakeRequest[A, B any](reqData Request[A, B]) B {
 	res, err := reqData.ParseResponse(rp)
 	if err != nil {
 		return reqData.ParseError(fmt.Errorf("%w: %v", ErrAPIClientFailedToParseResponse, err))
+	}
+
+	if debug {
+		log.Info().Msgf("APIClient.MakeRequest: response from API: %+v, error: %v\n", res, err)
 	}
 
 	return res

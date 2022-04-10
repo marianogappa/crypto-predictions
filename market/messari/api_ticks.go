@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 type responseStatus struct {
@@ -87,7 +87,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 	after := time.Unix(int64(startTimeMillis/1000), 0).Format("2006-01-02")
 
 	if b.debug {
-		log.Printf("Running time-series request against Messari API for asset %v after %v...\n", asset, after)
+		log.Info().Msgf("Running time-series request against Messari API for asset %v after %v...\n", asset, after)
 	}
 
 	q := req.URL.Query()
@@ -118,7 +118,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 		err := fmt.Errorf("messari returned broken body response! Was: %v", string(byts))
 		return metricsResult{err: err, httpStatus: 500}, err
 	}
-	log.Println("Messari API response...", string(byts))
+	log.Info().Msgf("Messari API response: %v", string(byts))
 
 	res := response{}
 	err = json.Unmarshal(byts, &res)
@@ -153,7 +153,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 	}
 
 	if b.debug {
-		log.Printf("messari tick request successful! Candlestick count: %v\n", len(ticks))
+		log.Info().Msgf("messari tick request successful! Candlestick count: %v\n", len(ticks))
 	}
 
 	return metricsResult{

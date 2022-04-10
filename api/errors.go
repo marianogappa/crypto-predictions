@@ -6,6 +6,12 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+type ErrorContent struct {
+	Status    int    `json:"status"`
+	Message   string `json:"message,omitempty"`
+	ErrorCode string `json:"errorCode,omitempty"`
+}
+
 var (
 	ErrInvalidRequestBody                = errors.New("invalid request body")
 	ErrInvalidRequestJSON                = errors.New("invalid request JSON")
@@ -18,7 +24,7 @@ var (
 	ErrFailedToCompilePrediction         = errors.New("failed to compile prediction")
 	ErrPredictionNotFound                = errors.New("prediction not found")
 
-	errToResponse = map[error]APIResponse{
+	errToResponse = map[error]ErrorContent{
 		types.ErrUnknownOperandType:                 {Status: 400, ErrorCode: "ErrUnknownOperandType", Message: "unknown value for operandType"},
 		types.ErrUnknownBoolOperator:                {Status: 400, ErrorCode: "ErrUnknownBoolOperator", Message: "unknown value for BoolOperator"},
 		types.ErrUnknownConditionStatus:             {Status: 400, ErrorCode: "ErrUnknownConditionStatus", Message: "invalid state: unknown value for ConditionStatus"},

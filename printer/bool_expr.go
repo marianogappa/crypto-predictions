@@ -2,8 +2,9 @@ package printer
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -44,7 +45,7 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 	default:
 		// TODO: this if is due to a bug that needs to be fixed
 		if e.Literal == nil {
-			log.Printf("Operand was %v but e.Literal was nil!\n", e.Operator.String())
+			log.Info().Msgf("Operand was %v but e.Literal was nil!\n", e.Operator.String())
 			return ""
 		}
 		return printCondition(*e.Literal, true)

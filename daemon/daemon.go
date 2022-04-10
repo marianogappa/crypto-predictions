@@ -3,13 +3,13 @@ package daemon
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 type Daemon struct {
@@ -27,14 +27,14 @@ func NewDaemon(market market.IMarket, store statestorage.StateStorage) *Daemon {
 }
 
 func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
+	log.Info().Msgf("Daemon started and will run again every: %v", dur)
 	for {
 		result := r.Run(int(time.Now().Unix()))
 		if len(result.Errors) > 0 {
-			log.Println("Daemon run finished with errors:")
-			for i, err := range result.Errors {
-				log.Printf("%v) %v", i+1, err.Error())
+			log.Info().Msg("Daemon run finished with errors:")
+			for _, err := range result.Errors {
+				log.Error().Err(err).Msg("")
 			}
-			log.Println()
 		}
 		time.Sleep(dur)
 	}
@@ -79,7 +79,7 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 		predRunners = append(predRunners, predRunner)
 	}
 
-	// log.Printf("Daemon.Run: %v active prediction runners\n", len(predRunners))
+	// log.Info().Msgf("Daemon.Run: %v active prediction runners\n", len(predRunners))
 	for _, predRunner := range predRunners {
 		if errs := predRunner.Run(false); len(errs) > 0 {
 			for _, err := range errs {
@@ -97,11 +97,11 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 				CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
 			})
 			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
-			log.Printf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
+			log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 		}
 	}
 
-	log.Printf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(market.Market).CalculateCacheHitRatio())
+	log.Info().Msgf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(market.Market).CalculateCacheHitRatio())
 
 	// Upsert state with changed predictions
 	_, err = r.store.UpsertPredictions(result.Predictions)

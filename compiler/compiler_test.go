@@ -257,28 +257,28 @@ func TestMapOperands(t *testing.T) {
 func TestMapFromTs(t *testing.T) {
 	tss := []struct {
 		name     string
-		cond     condition
+		cond     Condition
 		postedAt types.ISO8601
 		err      error
 		expected int
 	}{
 		{
 			name:     "Uses postedAt when empty",
-			cond:     condition{FromISO8601: ""},
+			cond:     Condition{FromISO8601: ""},
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      nil,
 			expected: int(tp("2020-01-02 00:00:00").Unix()),
 		},
 		{
 			name:     "Invalid dates fail",
-			cond:     condition{FromISO8601: "invalid date"},
+			cond:     Condition{FromISO8601: "invalid date"},
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrInvalidFromISO8601,
 			expected: 0,
 		},
 		{
 			name:     "Valid dates take precedence over postedAt",
-			cond:     condition{FromISO8601: tpToISO("2022-01-02 00:00:00")},
+			cond:     Condition{FromISO8601: tpToISO("2022-01-02 00:00:00")},
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      nil,
 			expected: int(tp("2022-01-02 00:00:00").Unix()),
@@ -311,39 +311,39 @@ func TestMapFromTs(t *testing.T) {
 func TestMapToTs(t *testing.T) {
 	tss := []struct {
 		name     string
-		cond     condition
+		cond     Condition
 		fromTs   int
 		err      error
 		expected int
 	}{
 		{
 			name:   "All empty",
-			cond:   condition{ToISO8601: "", ToDuration: ""},
+			cond:   Condition{ToISO8601: "", ToDuration: ""},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
 			err:    types.ErrOneOfToISO8601ToDurationRequired,
 		},
 		{
 			name:   "Invalid duration",
-			cond:   condition{ToISO8601: "", ToDuration: "invalid"},
+			cond:   Condition{ToISO8601: "", ToDuration: "invalid"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
 			err:    types.ErrInvalidDuration,
 		},
 		{
 			name:     "Uses FromISO8601+ToDuration when ToISO8601",
-			cond:     condition{ToISO8601: "", ToDuration: "2d"},
+			cond:     Condition{ToISO8601: "", ToDuration: "2d"},
 			fromTs:   int(tp("2020-01-02 00:00:00").Unix()),
 			err:      nil,
 			expected: int(tp("2020-01-04 00:00:00").Unix()),
 		},
 		{
 			name:   "Invalid dates fail",
-			cond:   condition{ToISO8601: "invalid date", ToDuration: "2w"},
+			cond:   Condition{ToISO8601: "invalid date", ToDuration: "2w"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
 			err:    types.ErrInvalidToISO8601,
 		},
 		{
 			name:     "Valid dates take precedence over everything",
-			cond:     condition{ToISO8601: tpToISO("2022-01-02 00:00:00"), ToDuration: "2w"},
+			cond:     Condition{ToISO8601: tpToISO("2022-01-02 00:00:00"), ToDuration: "2w"},
 			fromTs:   int(tp("2020-01-02 00:00:00").Unix()),
 			err:      nil,
 			expected: int(tp("2022-01-02 00:00:00").Unix()),
@@ -376,7 +376,7 @@ func TestMapToTs(t *testing.T) {
 func TestMapCondition(t *testing.T) {
 	tss := []struct {
 		name     string
-		cond     condition
+		cond     Condition
 		condName string
 		postedAt types.ISO8601
 		err      error
@@ -384,51 +384,51 @@ func TestMapCondition(t *testing.T) {
 	}{
 		{
 			name:     "Invalid condition syntax",
-			cond:     condition{Condition: "invalid condition syntax!!"},
+			cond:     Condition{Condition: "invalid condition syntax!!"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrInvalidConditionSyntax,
 		},
 		{
 			name:     "Empty quote asset",
-			cond:     condition{Condition: "COIN:BINANCE:BTC >= 60000"},
+			cond:     Condition{Condition: "COIN:BINANCE:BTC >= 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrEmptyQuoteAsset,
 		},
 		{
 			name:     "Unknown condition operator",
-			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT != 60000"},
+			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT != 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrUnknownConditionOperator,
 		},
 		{
 			name:     "Unknown condition operator",
-			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", ErrorMarginRatio: 0.4},
+			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", ErrorMarginRatio: 0.4},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrErrorMarginRatioAbove30,
 		},
 		{
 			name:     "Unknown condition state value",
-			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: conditionState{Value: "???"}},
+			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: ConditionState{Value: "???"}},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrUnknownConditionStateValue,
 		},
 		{
 			name:     "Unknown condition status",
-			cond:     condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: conditionState{Value: "UNDECIDED", Status: "???"}},
+			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: ConditionState{Value: "UNDECIDED", Status: "???"}},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      types.ErrUnknownConditionStatus,
 		},
 		{
 			name: "Invalid FromISO8601",
-			cond: condition{
+			cond: Condition{
 				Condition:   "COIN:BINANCE:BTC-USDT >= 60000",
-				State:       conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				State:       ConditionState{Value: "UNDECIDED", Status: "STARTED"},
 				FromISO8601: "invalid",
 			},
 			condName: "main",
@@ -437,9 +437,9 @@ func TestMapCondition(t *testing.T) {
 		},
 		{
 			name: "Invalid ToISO8601",
-			cond: condition{
+			cond: Condition{
 				Condition: "COIN:BINANCE:BTC-USDT >= 60000",
-				State:     conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				State:     ConditionState{Value: "UNDECIDED", Status: "STARTED"},
 				ToISO8601: "invalid",
 			},
 			condName: "main",
@@ -448,9 +448,9 @@ func TestMapCondition(t *testing.T) {
 		},
 		{
 			name: "Happy case",
-			cond: condition{
+			cond: Condition{
 				Condition: "COIN:BINANCE:BTC-USDT BETWEEN 60000 AND 70000",
-				State:     conditionState{Value: "UNDECIDED", Status: "STARTED"},
+				State:     ConditionState{Value: "UNDECIDED", Status: "STARTED"},
 				ToISO8601: tpToISO("2020-01-03 00:00:00"),
 			},
 			condName: "main",

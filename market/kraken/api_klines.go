@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/types"
 )
@@ -245,7 +246,7 @@ func (k Kraken) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 	}
 
 	if k.debug {
-		log.Printf("Kraken candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+		log.Info().Msgf("Kraken candlestick request successful! Candlestick count: %v\n", len(candlesticks))
 	}
 
 	return klinesResult{
