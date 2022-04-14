@@ -99,17 +99,44 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 		predictionsByUUID[predictionUUID] = compilerPr
 	}
 
-	// Accounts
-	accounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.ACCOUNT_FOLLOWER_COUNT_DESC.String()}, 10, 0)
+	accountURLSet := map[string]struct{}{}
+
+	// Get the top 10 Accounts by follower count
+	topAccounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.ACCOUNT_FOLLOWER_COUNT_DESC.String()}, 10, 0)
 	if err != nil {
 		return failWith(ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
+	top10AccountURLsByFollowerCount := []string{}
+	for _, account := range topAccounts {
+		accountURL := account.URL.String()
+		top10AccountURLsByFollowerCount = append(top10AccountURLsByFollowerCount, accountURL)
+		accountURLSet[accountURL] = struct{}{}
+	}
+
+	// Also gather all account urls from all predictions into the set
+	for _, prediction := range predictionsByUUID {
+		if prediction.PostAuthorURL == "" {
+			continue
+		}
+		accountURLSet[prediction.PostAuthorURL] = struct{}{}
+	}
+
+	// Make the set a slice
 	accountURLs := []string{}
+	for accountURL := range accountURLSet {
+		accountURLs = append(accountURLs, accountURL)
+	}
+
+	// Get all accounts from the slice
+	allAccounts, err := a.store.GetAccounts(types.APIAccountFilters{URLs: accountURLs}, []string{}, 0, 0)
+	if err != nil {
+		return failWith(ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
+	}
+
 	accountsByURL := map[string]compiler.Account{}
 	accountSerializer := compiler.NewAccountSerializer()
-	for _, account := range accounts {
+	for _, account := range allAccounts {
 		accountURL := account.URL.String()
-		accountURLs = append(accountURLs, accountURL)
 		compilerAcc, err := accountSerializer.PreSerialize(&account)
 		if err != nil {
 			return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
@@ -120,7 +147,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	return apiResponse[apiResGetPagesPrediction]{Status: 200, Data: apiResGetPagesPrediction{
 		Prediction:                    compilerPred,
 		Summary:                       summary,
-		Top10AccountsByFollowerCount:  accountURLs,
+		Top10AccountsByFollowerCount:  top10AccountURLsByFollowerCount,
 		AccountsByURL:                 accountsByURL,
 		Latest10Predictions:           latestPredictionUUIDs,
 		Latest5PredictionsSameAccount: latestPredictionSameAuthorURL,
