@@ -224,16 +224,18 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 	if len(ps) == 0 {
 		return ps, nil
 	}
+
 	builder := newPGUpsertManyBuilder([]string{"uuid", "blob", "created_at", "posted_at", "tags", "post_url"}, "predictions", "uuid")
-	for i, p := range ps {
-		if p.UUID == "" {
+	for i := range ps {
+		if ps[i].UUID == "" {
 			ps[i].UUID = uuid.NewString()
 		}
-		blob, err := compiler.NewPredictionSerializer().Serialize(p)
+		blob, err := compiler.NewPredictionSerializer().Serialize(ps[i])
 		if err != nil {
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}
-		builder.addRow(p.UUID, blob, p.CreatedAt, p.PostedAt, pq.Array(p.CalculateTags()), p.PostUrl)
+		builder.addRow(ps[i].UUID, blob, ps[i].CreatedAt, ps[i].PostedAt, pq.Array(ps[i].CalculateTags()), ps[i].PostUrl)
+		log.Info().Msgf("adding row with tags %v and url %v", ps[i].CalculateTags(), ps[i].PostUrl)
 	}
 	sql, args := builder.build()
 	_, err := s.db.Exec(sql, args...)

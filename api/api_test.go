@@ -31,16 +31,15 @@ func TestAPI(t *testing.T) {
 				require.Len(t, apiResp.Data.Predictions, 0)
 			},
 		},
-		// TODO this test needs to be re-enabled once I fix the issue with validating JSONs using JSON Schema.
-		// {
-		// 	name: "new base case: invalid json",
-		// 	test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
-		// 		apiResp, err := makeNewRequest(`invalid`, url)
-		// 		require.Nil(t, err)
-		// 		require.Equal(t, 400, apiResp.Status)
-		// 		require.Equal(t, ErrInvalidRequestJSON.Error(), apiResp.ErrorMessage)
-		// 	},
-		// },
+		{
+			name: "new base case: invalid json",
+			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {
+				apiResp, err := makeNewRequest(`invalid`, url)
+				require.Nil(t, err)
+				require.Equal(t, 400, apiResp.Status)
+				require.Equal(t, ErrInvalidRequestJSON.Error(), apiResp.ErrorMessage)
+			},
+		},
 		{
 			name: "new happy case",
 			test: func(t *testing.T, url string, store statestorage.StateStorage, market *testMarket, daemon *daemon.Daemon, mFetcher *metadatafetcher.MetadataFetcher) {

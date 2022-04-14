@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
+	jsonschemago "github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/rest"
 	"github.com/swaggest/rest/chirouter"
 	"github.com/swaggest/rest/jsonschema"
@@ -49,11 +52,47 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 
 	s := web.DefaultService()
 
+	s.OpenAPICollector.Reflector().DefaultOptions = append(s.OpenAPICollector.Reflector().DefaultOptions, func(rc *jsonschemago.ReflectContext) {
+		it := rc.InterceptType
+		rc.InterceptType = func(value reflect.Value, schema *jsonschemago.Schema) (bool, error) {
+			stop, err := it(value, schema)
+			if err != nil {
+				return stop, err
+			}
+
+			if schema.HasType(jsonschemago.Object) && len(schema.Properties) > 0 && schema.AdditionalProperties == nil {
+				schema.AdditionalProperties = (&jsonschemago.SchemaOrBool{}).WithTypeBoolean(false)
+			}
+
+			return stop, nil
+		}
+	})
+
 	s.Use(
 		middleware.Recoverer,
 		nethttp.OpenAPIMiddleware(apiSchema),
 		request.DecoderMiddleware(decoderFactory),
 		request.ValidatorMiddleware(validatorFactory),
+
+		// Example middleware to setup custom error responses.
+		func(handler http.Handler) http.Handler {
+			var h *nethttp.Handler
+			if nethttp.HandlerAs(handler, &h) {
+				h.MakeErrResp = func(ctx context.Context, err error) (int, interface{}) {
+					code, er := rest.Err(err)
+
+					return code, apiResponse[map[string]interface{}]{
+						Status:               code,
+						ErrorMessage:         ErrInvalidRequestJSON.Error(),
+						InternalErrorMessage: er.ErrorText,
+						ErrorCode:            "ErrInvalidRequestJSON",
+						Data:                 er.Context,
+					}
+				}
+			}
+
+			return handler
+		},
 		restResponse.EncoderMiddleware,
 		gzip.Middleware,
 	)
@@ -68,6 +107,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	s.Post("/predictions/{uuid}/delete", a.apiPredictionStorageActionWithUUID(a.store.DeletePrediction, "Deleted predictions are not visible to any GET calls (unless showDeleted is set), nor updated by daemon."))
 	s.Post("/predictions/{uuid}/undelete", a.apiPredictionStorageActionWithUUID(a.store.UndeletePrediction, "Undeleting predictions makes them visible to GET calls and updateable by daemon."))
 	s.Post("/predictions/{uuid}/refetchAccount", a.apiPredictionRefetchAccount())
+	s.Post("/maintenance/{action}", a.apiMaintenance())
 
 	s.Docs("/docs", swgui.New)
 
@@ -90,7 +130,7 @@ type apiResponse[D any] struct {
 
 func failWith[D any](errType, err error, zero D) apiResponse[D] {
 	return apiResponse[D]{
-		Status:               errToResponse[errType].Status,
+		Status:               errToResponse[errType].StatusCode,
 		ErrorMessage:         errToResponse[errType].Message,
 		InternalErrorMessage: err.Error(),
 		ErrorCode:            errToResponse[errType].ErrorCode,

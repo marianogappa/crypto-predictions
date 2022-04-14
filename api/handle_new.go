@@ -31,8 +31,8 @@ func (a *API) apiPostPrediction() usecase.Interactor {
 	u.SetTitle("Main API call to create a prediction.")
 
 	errs := []error{}
-	for err := range errToResponse {
-		errs = append(errs, err)
+	for _, errContent := range errToResponse {
+		errs = append(errs, errContent)
 	}
 
 	u.SetExpectedErrors(errs...)
