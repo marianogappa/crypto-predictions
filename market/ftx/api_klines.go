@@ -81,6 +81,10 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int) (
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return klinesResult{httpStatus: 404, err: types.ErrInvalidMarketPair}, types.ErrInvalidMarketPair
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		byts, _ := ioutil.ReadAll(resp.Body)
 		err := fmt.Errorf("ftx returned %v status code with payload [%v]", resp.StatusCode, string(byts))
