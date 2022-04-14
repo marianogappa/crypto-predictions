@@ -35,14 +35,14 @@ var fs embed.FS
 func MustNewPostgresDBStateStorage(c PostgresConf) *PostgresDBStateStorage {
 	p, err := NewPostgresDBStateStorage(c)
 	if err != nil {
-		log.Fatal().Err(err).Msg("")
+		connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", c.User, c.Pass, c.Host, c.Port, c.Database)
+		log.Fatal().Err(err).Msgf("An addressable postgres database is required. Currently looking for it in: %v. Configure these parameters via the PREDICTIONS_POSTGRES_ env variables described in the README.", connStr)
 	}
 	return &p
 }
 
 func NewPostgresDBStateStorage(c PostgresConf) (PostgresDBStateStorage, error) {
 	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", c.User, c.Pass, c.Host, c.Port, c.Database)
-	log.Info().Str("url", connStr).Msgf("Connected to Postgres DB")
 
 	d, err := iofs.New(fs, "migrations")
 	if err != nil {
@@ -60,6 +60,8 @@ func NewPostgresDBStateStorage(c PostgresConf) (PostgresDBStateStorage, error) {
 	if err != nil {
 		return PostgresDBStateStorage{}, err
 	}
+
+	log.Info().Str("url", connStr).Msgf("Connected to Postgres DB")
 	return PostgresDBStateStorage{db: db}, nil
 }
 
