@@ -22,12 +22,12 @@ func (k *Kraken) overrideAPIURL(apiURL string) {
 	k.apiURL = apiURL
 }
 
-func (k *Kraken) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (k *Kraken) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
 	if err != nil {
 		return nil, err
 	}
-	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
 }
 
 func (k *Kraken) GetPatience() time.Duration { return 0 * time.Second }

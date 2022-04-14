@@ -20,7 +20,7 @@ func (c *Coinbase) overrideAPIURL(apiURL string) {
 	c.apiURL = apiURL
 }
 
-func (c *Coinbase) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (c *Coinbase) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	startTimeTm := time.Unix(int64(startTimeTs), 0)
 	startTimeISO8601 := startTimeTm.Format(time.RFC3339)
 	endTimeISO8601 := startTimeTm.Add(299 * 60 * time.Second).Format(time.RFC3339)
@@ -38,7 +38,7 @@ func (c *Coinbase) RequestTicks(operand types.Operand, startTimeTs int) ([]types
 		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
 	}
 
-	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
 }
 
 func (c *Coinbase) GetPatience() time.Duration { return 1 * time.Minute }

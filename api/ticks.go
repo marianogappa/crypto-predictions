@@ -38,12 +38,12 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (Predi
 
 	ticks := map[string][]types.Tick{}
 	opStr := coin.Str
-	it, err := a.mkt.GetTickIterator(coin, initialISO8601, false)
+	it, err := a.mkt.GetIterator(coin, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
 	for i := 0; i < 100; i++ {
-		tick, err := it.Next()
+		tick, err := it.NextTick()
 		if err != nil {
 			return PredictionSummary{}, err
 		}

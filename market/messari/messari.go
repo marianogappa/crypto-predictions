@@ -24,7 +24,7 @@ func (m *Messari) SetDebug(debug bool) {
 	m.debug = debug
 }
 
-func (m *Messari) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (m *Messari) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	res, err := m.getMetrics(operand.BaseAsset, "mcap.out", startTimeTs*1000)
 	if err != nil {
 		if res.messariErrorCode == 404 && strings.HasPrefix(res.messariErrorMessage, "Asset with key = ") && strings.HasSuffix(res.messariErrorMessage, " not found.") {
@@ -33,7 +33,7 @@ func (m *Messari) RequestTicks(operand types.Operand, startTimeTs int) ([]types.
 		return nil, err
 	}
 
-	patchedTicks := common.PatchTickHoles(res.ticks, startTimeTs, 60*24*24)
+	patchedTicks := common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60*24*24)
 
 	// Messari sometimes returns no error but no data for some symbols (e.g. happened with FTM)
 	if len(patchedTicks) == 0 {

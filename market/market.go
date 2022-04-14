@@ -12,15 +12,15 @@ import (
 	"github.com/marianogappa/predictions/market/coinbase"
 	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/market/ftx"
+	"github.com/marianogappa/predictions/market/iterator"
 	"github.com/marianogappa/predictions/market/kraken"
 	"github.com/marianogappa/predictions/market/kucoin"
 	"github.com/marianogappa/predictions/market/messari"
-	"github.com/marianogappa/predictions/market/tickiterator"
 	"github.com/marianogappa/predictions/types"
 )
 
 type IMarket interface {
-	GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error)
+	GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error)
 }
 
 type Market struct {
@@ -49,34 +49,34 @@ func NewMarket() Market {
 	return Market{cache: cache.NewMemoryCache(10000, 1000), timeNowFunc: time.Now}
 }
 
-func (m Market) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
 	switch operand.Type {
 	case types.COIN:
-		return m.getCoinTickIterator(operand, initialISO8601, startFromNext)
+		return m.getCoinIterator(operand, initialISO8601, startFromNext)
 	case types.MARKETCAP:
 		if operand.Provider != "MESSARI" {
 			return nil, fmt.Errorf("only supported provider for MARKETCAP is 'MESSARI', got %v", operand.Provider)
 		}
-		return m.getMarketcapTickIterator(operand, initialISO8601, startFromNext)
+		return m.getMarketcapIterator(operand, initialISO8601, startFromNext)
 	default:
 		return nil, fmt.Errorf("invalid operand type %v", operand.Type)
 	}
 }
 
-func (m Market) getCoinTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+func (m Market) getCoinIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
 	if _, ok := supportedVariableProviders[operand.Provider]; !ok {
 		return nil, fmt.Errorf("the '%v' provider is not supported for %v:%v-%v", operand.Provider, operand.Provider, operand.BaseAsset, operand.QuoteAsset)
 	}
 	exchange := exchanges[strings.ToLower(operand.Provider)]
-	return tickiterator.NewTickIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext)
+	return iterator.NewIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext)
 }
 
-func (m Market) getMarketcapTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+func (m Market) getMarketcapIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
 	if operand.BaseAsset == "" {
 		return nil, errEmptyBaseAsset
 	}
 	mess := messari.NewMessari()
-	return tickiterator.NewTickIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext)
+	return iterator.NewIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext)
 }
 
 func (m Market) CalculateCacheHitRatio() float64 {

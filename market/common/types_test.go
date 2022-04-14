@@ -104,74 +104,124 @@ func f(fl float64) types.JsonFloat64 {
 	return types.JsonFloat64(fl)
 }
 
-func TestPatchTickHoles(t *testing.T) {
+func TestPatchCandlestickHoles(t *testing.T) {
 	tss := []struct {
-		name     string
-		ticks    []types.Tick
-		startTs  int
-		durSecs  int
-		expected []types.Tick
+		name         string
+		candlesticks []types.Candlestick
+		startTs      int
+		durSecs      int
+		expected     []types.Candlestick
 	}{
 		{
-			name:     "Base case",
-			ticks:    []types.Tick{},
+			name:         "Base case",
+			candlesticks: []types.Candlestick{},
+			startTs:      120,
+			durSecs:      60,
+			expected:     []types.Candlestick{},
+		},
+		{
+			name: "Does not need to do anything",
+			candlesticks: []types.Candlestick{
+				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: 120,
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+		},
+		{
+			name: "Removes older entries returned",
+			candlesticks: []types.Candlestick{
+				{Timestamp: 60, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: 120,
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+		},
+		{
+			name: "Removes older entries returned, leaving nothing",
+			candlesticks: []types.Candlestick{
+				{Timestamp: 60, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+			},
 			startTs:  120,
 			durSecs:  60,
-			expected: []types.Tick{},
+			expected: []types.Candlestick{},
 		},
 		{
-			name:     "Does not need to do anything",
-			ticks:    []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
-			startTs:  120,
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+			name: "Needs to add an initial tick",
+			candlesticks: []types.Candlestick{
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: 120,
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: 120, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
 		},
 		{
-			name:     "Removes older entries returned",
-			ticks:    []types.Tick{{Timestamp: 60, Value: 2}, {Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
-			startTs:  120,
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: 120, Value: 1}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
+			name: "Needs to add an initial tick, as well as in the middle",
+			candlesticks: []types.Candlestick{
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 360, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: 120,
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: 120, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+				{Timestamp: 300, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+				{Timestamp: 360, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
 		},
 		{
-			name:     "Removes older entries returned, leaving nothing",
-			ticks:    []types.Tick{{Timestamp: 60, Value: 2}},
-			startTs:  120,
-			durSecs:  60,
-			expected: []types.Tick{},
+			name: "Adjusts start time to zero seconds",
+			candlesticks: []types.Candlestick{
+				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: tInt("2020-01-02 00:02:58"),
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
 		},
 		{
-			name:     "Needs to add an initial tick",
-			ticks:    []types.Tick{{Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
-			startTs:  120,
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: 120, Value: 2}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}},
-		},
-		{
-			name:     "Needs to add an initial tick, as well as in the middle",
-			ticks:    []types.Tick{{Timestamp: 180, Value: 2}, {Timestamp: 360, Value: 3}},
-			startTs:  120,
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: 120, Value: 2}, {Timestamp: 180, Value: 2}, {Timestamp: 240, Value: 3}, {Timestamp: 300, Value: 3}, {Timestamp: 360, Value: 3}},
-		},
-		{
-			name:     "Adjusts start time to zero seconds",
-			ticks:    []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
-			startTs:  tInt("2020-01-02 00:02:58"),
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
-		},
-		{
-			name:     "Adjusts start time to zero seconds rounding up",
-			ticks:    []types.Tick{{Timestamp: tInt("2020-01-02 00:03:00"), Value: 1}, {Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
-			startTs:  tInt("2020-01-02 00:03:02"),
-			durSecs:  60,
-			expected: []types.Tick{{Timestamp: tInt("2020-01-02 00:04:00"), Value: 2}, {Timestamp: tInt("2020-01-02 00:05:00"), Value: 3}},
+			name: "Adjusts start time to zero seconds rounding up",
+			candlesticks: []types.Candlestick{
+				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
+				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
+			startTs: tInt("2020-01-02 00:03:02"),
+			durSecs: 60,
+			expected: []types.Candlestick{
+				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
+				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
+			},
 		},
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
-			actual := PatchTickHoles(ts.ticks, ts.startTs, ts.durSecs)
+			actual := PatchCandlestickHoles(ts.candlesticks, ts.startTs, ts.durSecs)
 			require.Equal(t, ts.expected, actual)
 		})
 	}

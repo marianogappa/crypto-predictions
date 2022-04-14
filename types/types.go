@@ -455,8 +455,9 @@ type Tick struct {
 	Timestamp int         `json:"t"`
 	Value     JsonFloat64 `json:"v"`
 }
-type TickIterator interface {
-	Next() (Tick, error)
+type Iterator interface {
+	NextTick() (Tick, error)
+	NextCandlestick() (Candlestick, error)
 }
 
 type Account struct {

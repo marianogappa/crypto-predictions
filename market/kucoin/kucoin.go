@@ -20,7 +20,7 @@ func (k *Kucoin) overrideAPIURL(apiURL string) {
 	k.apiURL = apiURL
 }
 
-func (k *Kucoin) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (k *Kucoin) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
 	if err != nil {
 		if res.kucoinErrorCode == "400100" && res.kucoinErrorMessage == "This pair is not provided at present" {
@@ -34,7 +34,7 @@ func (k *Kucoin) RequestTicks(operand types.Operand, startTimeTs int) ([]types.T
 		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
 	}
 
-	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
 }
 
 func (k *Kucoin) GetPatience() time.Duration { return 0 * time.Second }

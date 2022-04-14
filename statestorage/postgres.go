@@ -235,7 +235,6 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}
 		builder.addRow(ps[i].UUID, blob, ps[i].CreatedAt, ps[i].PostedAt, pq.Array(ps[i].CalculateTags()), ps[i].PostUrl)
-		log.Info().Msgf("adding row with tags %v and url %v", ps[i].CalculateTags(), ps[i].PostUrl)
 	}
 	sql, args := builder.build()
 	_, err := s.db.Exec(sql, args...)

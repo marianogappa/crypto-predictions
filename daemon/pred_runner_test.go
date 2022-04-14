@@ -327,16 +327,20 @@ type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, ts types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+func (m *testMarket) GetIterator(operand types.Operand, ts types.ISO8601, startFromNext bool) (types.Iterator, error) {
 	m.calls = append(m.calls, marketCall{operand, ts, startFromNext})
-	return testTickIterator{}, nil
+	return testIterator{}, nil
 }
 
-type testTickIterator struct{}
+type testIterator struct{}
 
-func (i testTickIterator) Next() (types.Tick, error) {
+func (i testIterator) NextTick() (types.Tick, error) {
 	return types.Tick{}, nil
 }
-func (i testTickIterator) IsOutOfTicks() bool {
+
+func (i testIterator) NextCandlestick() (types.Candlestick, error) {
+	return types.Candlestick{}, nil
+}
+func (i testIterator) IsOutOfTicks() bool {
 	return true
 }

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func (m *Messari) overrideAPIURL(url string) {
 	m.apiURL = url
 }
 
-func TestHappyToTicks(t *testing.T) {
+func TestHappyToCandlesticks(t *testing.T) {
 	testTicks := `{
 		"status": {
 		  "elapsed": 69,
@@ -76,30 +76,37 @@ func TestHappyToTicks(t *testing.T) {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	ts, err := sr.toTicks()
+	ts, err := sr.toCandlesticks()
 	if err != nil {
-		t.Fatalf("toTicks() should have converted successfully but returned: %v", err)
+		t.Fatalf("toCandlesticks() should have converted successfully but returned: %v", err)
 	}
 	if len(ts) != 3 {
 		t.Fatalf("Should have converted 3 ticks but converted: %v", len(ts))
 	}
-	expected := []types.Tick{
+	expected := []types.Candlestick{
 		{
-			Timestamp: 1599782400,
-			Value:     192017369942.6865,
+			Timestamp:    1599782400,
+			OpenPrice:    192017369942.6865,
+			HighestPrice: 192017369942.6865,
+			LowestPrice:  192017369942.6865,
+			ClosePrice:   192017369942.6865,
 		},
 		{
-			Timestamp: 1599868800,
-			Value:     192951979972.30695,
+			Timestamp:    1599868800,
+			OpenPrice:    192951979972.30695,
+			HighestPrice: 192951979972.30695,
+			LowestPrice:  192951979972.30695,
+			ClosePrice:   192951979972.30695,
 		},
 		{
-			Timestamp: 1599955200,
-			Value:     190846477252.03787,
+			Timestamp:    1599955200,
+			OpenPrice:    190846477252.03787,
+			HighestPrice: 190846477252.03787,
+			LowestPrice:  190846477252.03787,
+			ClosePrice:   190846477252.03787,
 		},
 	}
-	if !reflect.DeepEqual(ts, expected) {
-		t.Fatalf("Ticks should have been %v but were %v", expected, ts)
-	}
+	require.Equal(t, expected, ts)
 }
 
 func TestUnhappyToCandlesticks(t *testing.T) {
@@ -134,9 +141,9 @@ func TestUnhappyToCandlesticks(t *testing.T) {
 				t.Fatalf("Unmarshal failed: %v", err)
 			}
 
-			cs, err := sr.toTicks()
+			cs, err := sr.toCandlesticks()
 			if err == nil {
-				t.Fatalf("Tick should have failed to convert but converted successfully to: %v", cs)
+				t.Fatalf("Candlestick should have failed to convert but converted successfully to: %v", cs)
 			}
 		})
 	}
@@ -160,7 +167,7 @@ func TestTicksInvalidUrl(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL("invalid url")
-	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
 	}
@@ -175,7 +182,7 @@ func TestTicksErrReadingResponseBody(t *testing.T) {
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
 	b.SetDebug(true)
-	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
 	}
@@ -189,7 +196,7 @@ func TestTicksErrorResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
 	}
@@ -202,7 +209,7 @@ func TestTicksInvalidJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
 	}
@@ -221,7 +228,7 @@ func TestTicksInvalidFloatsInJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")
 	}

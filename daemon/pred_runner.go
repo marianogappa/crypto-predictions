@@ -12,7 +12,7 @@ import (
 
 type PredRunner struct {
 	prediction *types.Prediction
-	tickers    map[string]map[string]types.TickIterator
+	tickers    map[string]map[string]types.Iterator
 }
 
 var (
@@ -21,7 +21,7 @@ var (
 
 func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredRunner, []error) {
 	errs := []error{}
-	result := PredRunner{prediction: prediction, tickers: make(map[string]map[string]types.TickIterator)}
+	result := PredRunner{prediction: prediction, tickers: make(map[string]map[string]types.Iterator)}
 
 	predStateValue := prediction.Evaluate()
 	if predStateValue != types.ONGOING_PRE_PREDICTION && predStateValue != types.ONGOING_PREDICTION {
@@ -32,9 +32,9 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 	for _, condition := range prediction.UndecidedConditions() {
 		startISO8601, startFromNext := calculateStartTs(condition)
 
-		result.tickers[condition.Name] = map[string]types.TickIterator{}
+		result.tickers[condition.Name] = map[string]types.Iterator{}
 		for _, operand := range condition.NonNumberOperands() {
-			ticker, err := m.GetTickIterator(operand, startISO8601, startFromNext)
+			ticker, err := m.GetIterator(operand, startISO8601, startFromNext)
 			if err != nil {
 				errs = append(errs, err)
 				return &result, errs
@@ -78,7 +78,7 @@ func (r *PredRunner) Run(once bool) []error {
 func (r *PredRunner) runCondition(cond *types.Condition) error {
 	ticks := map[string]types.Tick{}
 	for key, ticker := range r.tickers[cond.Name] {
-		tick, err := ticker.Next()
+		tick, err := ticker.NextTick()
 		if err != nil {
 			return err
 		}

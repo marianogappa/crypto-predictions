@@ -20,13 +20,13 @@ func (b *Binance) overrideAPIURL(url string) {
 	b.apiURL = url
 }
 
-func (b *Binance) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (b *Binance) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	res, err := b.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs*1000)
 	if err != nil {
 		return nil, err
 	}
 
-	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
 }
 
 func (b *Binance) GetPatience() time.Duration { return 0 * time.Minute }

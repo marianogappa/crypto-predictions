@@ -20,12 +20,12 @@ func (f *FTX) overrideAPIURL(apiURL string) {
 	f.apiURL = apiURL
 }
 
-func (f *FTX) RequestTicks(operand types.Operand, startTimeTs int) ([]types.Tick, error) {
+func (f *FTX) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
 	res, err := f.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
 	if err != nil {
 		return nil, err
 	}
-	return common.PatchTickHoles(common.CandlesticksToTicks(res.candlesticks), startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
 }
 
 func (f *FTX) GetPatience() time.Duration { return 0 * time.Second }

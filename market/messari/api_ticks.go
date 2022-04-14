@@ -49,32 +49,35 @@ func interfaceToFloat(i interface{}) (float64, bool) {
 	return f, true
 }
 
-func (r response) toTicks() ([]types.Tick, error) {
-	ticks := make([]types.Tick, len(r.Data.Values))
+func (r response) toCandlesticks() ([]types.Candlestick, error) {
+	candlesticks := make([]types.Candlestick, len(r.Data.Values))
 	for i := 0; i < len(r.Data.Values); i++ {
 		raw := r.Data.Values[i]
-		tick := types.Tick{}
+		candlestick := types.Candlestick{}
 		if len(raw) != 2 {
-			return ticks, fmt.Errorf("tick %v has len != 2! Invalid syntax from messari", i)
+			return candlesticks, fmt.Errorf("candlestick %v has len != 2! Invalid syntax from messari", i)
 		}
 		rawTimestampMillis, ok := interfaceToFloatRoundInt(raw[0])
 		if !ok {
-			return ticks, fmt.Errorf("tick %v has non-int timestamp! Invalid syntax from messari", i)
+			return candlesticks, fmt.Errorf("candlestick %v has non-int timestamp! Invalid syntax from messari", i)
 		}
-		tick.Timestamp = rawTimestampMillis / 1000
+		candlestick.Timestamp = rawTimestampMillis / 1000
 		price, ok := interfaceToFloat(raw[1])
 		if !ok {
-			return ticks, fmt.Errorf("tick %v has non-float price! Invalid syntax from messari", i)
+			return candlesticks, fmt.Errorf("candlestick %v has non-float price! Invalid syntax from messari", i)
 		}
-		tick.Value = types.JsonFloat64(price)
-		ticks[i] = tick
+		candlestick.OpenPrice = types.JsonFloat64(price)
+		candlestick.HighestPrice = types.JsonFloat64(price)
+		candlestick.LowestPrice = types.JsonFloat64(price)
+		candlestick.ClosePrice = types.JsonFloat64(price)
+		candlesticks[i] = candlestick
 	}
 
-	return ticks, nil
+	return candlesticks, nil
 }
 
 type metricsResult struct {
-	ticks               []types.Tick
+	candlesticks        []types.Candlestick
 	err                 error
 	messariErrorCode    int
 	messariErrorMessage string
@@ -137,7 +140,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 		}, err
 	}
 
-	ticks, err := res.toTicks()
+	candlesticks, err := res.toCandlesticks()
 	if err != nil {
 		return metricsResult{
 			httpStatus: resp.StatusCode,
@@ -145,7 +148,7 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 		}, err
 	}
 
-	if len(ticks) == 0 {
+	if len(candlesticks) == 0 {
 		return metricsResult{
 			httpStatus: 200,
 			err:        types.ErrOutOfTicks,
@@ -153,11 +156,11 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 	}
 
 	if b.debug {
-		log.Info().Msgf("messari tick request successful! Candlestick count: %v\n", len(ticks))
+		log.Info().Msgf("messari tick request successful! Candlestick count: %v\n", len(candlesticks))
 	}
 
 	return metricsResult{
-		ticks:      ticks,
-		httpStatus: 200,
+		candlesticks: candlesticks,
+		httpStatus:   200,
 	}, nil
 }

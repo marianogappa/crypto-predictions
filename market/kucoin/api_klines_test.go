@@ -90,7 +90,7 @@ func TestKlinesInvalidUrl(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL("invalid url")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
 	}
@@ -104,7 +104,7 @@ func TestKlinesErrReadingResponseBody(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
 	}
@@ -118,7 +118,7 @@ func TestKlinesErrorResponse(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
 	}
@@ -132,7 +132,7 @@ func TestKlinesNon200Response(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to 500 response")
 	}
@@ -146,7 +146,7 @@ func TestKlinesInvalidJSONResponse(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
 	}
@@ -160,7 +160,7 @@ func TestKlinesInvalidFloatsInJSONResponse(t *testing.T) {
 
 	b := NewKucoin()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestTicks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"))
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")
 	}

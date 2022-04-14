@@ -183,22 +183,22 @@ func newTestMarket(ticks map[string]types.Tick) *testMarket {
 	return &testMarket{}
 }
 
-func (m *testMarket) GetTickIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.TickIterator, error) {
+func (m *testMarket) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
 	if _, ok := m.ticks[operand.Str]; !ok {
 		return nil, types.ErrInvalidMarketPair
 	}
-	return newTestTickIterator(m.ticks[operand.Str]), nil
+	return newTestIterator(m.ticks[operand.Str]), nil
 }
 
-type testTickIterator struct {
+type testIterator struct {
 	ticks []types.Tick
 }
 
-func newTestTickIterator(ticks []types.Tick) types.TickIterator {
-	return &testTickIterator{ticks}
+func newTestIterator(ticks []types.Tick) types.Iterator {
+	return &testIterator{ticks}
 }
 
-func (i *testTickIterator) Next() (types.Tick, error) {
+func (i *testIterator) NextTick() (types.Tick, error) {
 	if len(i.ticks) > 0 {
 		tick := i.ticks[0]
 		i.ticks = i.ticks[1:]
@@ -207,6 +207,14 @@ func (i *testTickIterator) Next() (types.Tick, error) {
 	return types.Tick{}, types.ErrOutOfTicks
 }
 
-func (i *testTickIterator) IsOutOfTicks() bool {
+func (i *testIterator) NextCandlestick() (types.Candlestick, error) {
+	tick, err := i.NextTick()
+	if err != nil {
+		return types.Candlestick{}, err
+	}
+	return types.Candlestick{OpenPrice: tick.Value, HighestPrice: tick.Value, LowestPrice: tick.Value, ClosePrice: tick.Value}, nil
+}
+
+func (i *testIterator) IsOutOfTicks() bool {
 	return len(i.ticks) == 0
 }
