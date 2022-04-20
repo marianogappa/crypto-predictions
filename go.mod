@@ -9,8 +9,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/lib/pq v1.10.4
 	github.com/rs/zerolog v1.26.1
-	github.com/swaggest/jsonschema-go v0.3.31
-	github.com/swaggest/rest v0.2.25
+	github.com/swaggest/jsonschema-go v0.3.33
+	github.com/swaggest/rest v0.2.26
 	github.com/swaggest/swgui v1.4.5
 	github.com/swaggest/usecase v1.1.2
 )
@@ -24,7 +24,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v3 v3.1.0 // indirect
 	github.com/shurcooL/httpgzip v0.0.0-20190720172056-320755c1c1b0 // indirect
 	github.com/swaggest/form/v5 v5.0.1 // indirect
-	github.com/swaggest/openapi-go v0.2.15 // indirect
+	github.com/swaggest/openapi-go v0.2.17 // indirect
 	github.com/swaggest/refl v1.0.2 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/text v0.3.7 // indirect

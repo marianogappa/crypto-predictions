@@ -17,10 +17,12 @@ type apiResGetPagesPrediction struct {
 	Latest5PredictionsSameAccount []string                       `json:"latest5PredictionsSameAccount"`
 	Latest5PredictionsSameCoin    []string                       `json:"latest5PredictionsSameCoin"`
 	PredictionsByUUID             map[string]compiler.Prediction `json:"predictionsByUUID"`
+	_                             struct{}                       `query:"_" additionalProperties:"false"`
 }
 
 type apiReqGetPagesPrediction struct {
-	URL string `path:"url" format:"uri" description:"e.g. https://twitter.com/VLoveIt2Hack/status/1465354862372298763"`
+	URL string   `path:"url" format:"uri" description:"e.g. https://twitter.com/VLoveIt2Hack/status/1465354862372298763"`
+	_   struct{} `query:"_" additionalProperties:"false"`
 }
 
 func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPrediction] {

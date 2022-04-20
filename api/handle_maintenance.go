@@ -10,12 +10,13 @@ import (
 )
 
 type apiResMaintenance struct {
-	Success bool `json:"success"`
+	Success bool     `json:"success"`
+	_       struct{} `query:"_" additionalProperties:"false"`
 }
 
 type apiReqMaintenance struct {
-	Action string `path:"action"`
-	_      bool   `additionalProperties:"false"`
+	Action string   `path:"action"`
+	_      struct{} `query:"_" additionalProperties:"false"`
 }
 
 func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] {

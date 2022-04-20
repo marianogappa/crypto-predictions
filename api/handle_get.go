@@ -10,6 +10,7 @@ import (
 
 type apiResGetPredictions struct {
 	Predictions []compiler.Prediction `json:"predictions"`
+	_           struct{}              `query:"_" additionalProperties:"false"`
 }
 
 type apiReqGetPredictions struct {
@@ -24,7 +25,7 @@ type apiReqGetPredictions struct {
 	Paused                *bool    `json:"paused" query:"paused" description:"hello!"`
 	Hidden                *bool    `json:"hidden" query:"hidden" description:"hello!"`
 	OrderBys              []string `json:"orderBys" query:"orderBys" description:"Order in which predictions are returned. Defaults to CREATED_AT_DESC." enum:"CREATED_AT_DESC,CREATED_AT_ASC"`
-	_                     bool     `additionalProperties:"false"`
+	_                     struct{} `query:"_" additionalProperties:"false"`
 }
 
 func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPredictions] {

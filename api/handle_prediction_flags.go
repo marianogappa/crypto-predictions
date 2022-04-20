@@ -9,10 +9,12 @@ import (
 )
 
 type apiReqUuidPath struct {
-	UUID string `path:"uuid" required:"true" format:"uuid"`
+	UUID string   `path:"uuid" required:"true" format:"uuid"`
+	_    struct{} `query:"_" additionalProperties:"false"`
 }
 type apiResStored struct {
-	Stored bool `json:"stored" required:"true"`
+	Stored bool     `json:"stored" required:"true"`
+	_      struct{} `query:"_" additionalProperties:"false"`
 }
 
 func (a *API) predictionStorageActionWithUUID(uuid string, fn func(string) error) apiResponse[apiResStored] {

@@ -12,13 +12,15 @@ import (
 )
 
 type apiReqPostPrediction struct {
-	Prediction string `json:"prediction" formValue:"prediction" required:"true"`
-	Store      bool   `json:"store" formValue:"store" required:"true"`
+	Prediction string   `json:"prediction" formValue:"prediction" required:"true"`
+	Store      bool     `json:"store" formValue:"store" required:"true"`
+	_          struct{} `query:"_" additionalProperties:"false"`
 }
 
 type apiResPostPrediction struct {
 	Prediction *compiler.Prediction `json:"prediction"`
 	Stored     bool                 `json:"stored"`
+	_          struct{}             `query:"_" additionalProperties:"false"`
 }
 
 func (a *API) apiPostPrediction() usecase.Interactor {
