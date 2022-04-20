@@ -177,3 +177,17 @@ func (c APIClient) RefreshAccount(uuid string) parsedResponse {
 
 	return request.MakeRequest(reqData, c.debug)
 }
+
+func (c APIClient) ClearState(uuid string) parsedResponse {
+	reqData := request.Request[response, parsedResponse]{
+		HttpMethod:    "POST",
+		BaseUrl:       c.apiURL,
+		Path:          fmt.Sprintf("predictions/%v/clearState", uuid),
+		QueryString:   nil,
+		Body:          nil,
+		ParseResponse: parseResponse,
+		ParseError:    parseError,
+	}
+
+	return request.MakeRequest(reqData, c.debug)
+}

@@ -356,7 +356,7 @@ func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.Prediction
 		INSERT INTO prediction_state_value_change
 		(prediction_uuid, state_value, created_at)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (%v) DO UPDATE SET created_at = EXCLUDED.created_at
+		ON CONFLICT (prediction_uuid, state_value) DO UPDATE SET created_at = EXCLUDED.created_at
 		`, c.PredictionUUID, c.StateValue, c.CreatedAt)
 
 	return err

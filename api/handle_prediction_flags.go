@@ -86,3 +86,35 @@ func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
 
 	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
 }
+
+func (a *API) apiPredictionClearState() usecase.Interactor {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+		out := a.predictionClearState(input.UUID)
+		*output = out
+		return nil
+	})
+	u.SetTags("Prediction")
+	u.SetTitle("Start evolving the prediction from scratch, as if created just now.")
+
+	return u
+}
+
+func (a *API) predictionClearState(uuid string) apiResponse[apiResStored] {
+	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
+	if err != nil {
+		return failWith(ErrPredictionNotFound, err, apiResStored{})
+	}
+	if len(ps) == 0 {
+		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
+	}
+
+	if len(ps) != 1 {
+		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
+	}
+	pred := ps[0]
+	pred.ClearState()
+	if _, err := a.store.UpsertPredictions([]*types.Prediction{&pred}); err != nil {
+		return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: error storing prediction: %v", ErrStorageErrorStoringPrediction, err), apiResStored{})
+	}
+	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
+}

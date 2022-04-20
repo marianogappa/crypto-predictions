@@ -91,11 +91,14 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 
 	for _, prediction := range result.Predictions {
 		if prediction.Evaluate().IsFinal() {
-			r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+			err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
 				PredictionUUID: prediction.UUID,
 				StateValue:     prediction.State.Value.String(),
 				CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
 			})
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", prediction.UUID, err))
+			}
 			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
 			log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 		}

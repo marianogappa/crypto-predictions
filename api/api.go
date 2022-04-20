@@ -107,6 +107,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	s.Post("/predictions/{uuid}/delete", a.apiPredictionStorageActionWithUUID(a.store.DeletePrediction, "Deleted predictions are not visible to any GET calls (unless showDeleted is set), nor updated by daemon."))
 	s.Post("/predictions/{uuid}/undelete", a.apiPredictionStorageActionWithUUID(a.store.UndeletePrediction, "Undeleting predictions makes them visible to GET calls and updateable by daemon."))
 	s.Post("/predictions/{uuid}/refetchAccount", a.apiPredictionRefetchAccount())
+	s.Post("/predictions/{uuid}/clearState", a.apiPredictionClearState())
 	s.Post("/maintenance/{action}", a.apiMaintenance())
 
 	s.Docs("/docs", swgui.New)

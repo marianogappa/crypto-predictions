@@ -75,6 +75,7 @@
         <a href="/prediction?uuid={{.prediction.UUID}}&action=delete">DELETE</a>
         <a href="/prediction?uuid={{.prediction.UUID}}&action=undelete">UNDELETE</a>
         <a href="/prediction?uuid={{.prediction.UUID}}&action=refreshAccount">REFRESH ACCOUNT</a>
+        <a href="/prediction?uuid={{.prediction.UUID}}&action=clearState">CLEAR STATE</a>
     </div>
     <h3>Status</h3>
     <span class='predictionStatus {{if(eq .prediction.State.Status "UNSTARTED" )}}{{print "red" }}{{else if(eq

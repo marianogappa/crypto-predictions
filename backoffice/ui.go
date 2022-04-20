@@ -177,6 +177,8 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 		res = s.apiClient.UndeletePrediction(uuid)
 	case "refreshAccount":
 		res = s.apiClient.RefreshAccount(uuid)
+	case "clearState":
+		res = s.apiClient.ClearState(uuid)
 	default:
 		res.Status = 200
 	}
