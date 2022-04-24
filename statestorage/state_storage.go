@@ -9,6 +9,8 @@ type StateStorage interface {
 	UpsertPredictions([]*types.Prediction) ([]*types.Prediction, error)
 	UpsertAccounts([]*types.Account) ([]*types.Account, error)
 	LogPredictionStateValueChange(types.PredictionStateValueChange) error
+	PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error)
+	InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error
 	PausePrediction(uuid string) error
 	UnpausePrediction(uuid string) error
 	HidePrediction(uuid string) error

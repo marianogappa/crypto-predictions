@@ -362,6 +362,31 @@ func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.Prediction
 	return err
 }
 
+func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error) {
+	var exists bool
+	res, err := s.db.Query(`
+	SELECT EXISTS(SELECT * FROM prediction_interactions WHERE prediction_uuid = $1 AND post_url = $2 AND action_type = $3);
+		`, predictionUUID, postURL, actionType)
+	if err != nil {
+		return false, err
+	}
+	fmt.Println(res.Next())
+	if err := res.Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (s PostgresDBStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
+	_, err := s.db.Query(`
+	INSERT INTO prediction_interactions (prediction_uuid, post_url, action_type, interaction_post_url) VALUES ($1, $2, $3, $4);
+		`, predictionUUID, postURL, actionType, interactionPostURL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type pgPredictionsDeleted struct{ deleted *bool }
 
 func (d pgPredictionsDeleted) filter() (string, []interface{}) {

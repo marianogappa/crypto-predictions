@@ -3,13 +3,21 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/metadatafetcher/twitter"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
+)
+
+var (
+	ErrOnlyTwitterPredictionActioningSupported = errors.New("only Twitter-based prediction actioning is supported")
+	ErrPredictionAlreadyActioned               = errors.New("prediction has already been actioned")
+	ErrUnkownActionType                        = errors.New("unknown action type")
 )
 
 type Daemon struct {
@@ -67,6 +75,12 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 	predRunners := []*PredRunner{}
 	for _, prediction := range predictions {
 		pred := prediction
+		if pred.State.Status == types.UNSTARTED {
+			err := r.ActionPrediction(&pred, ACTION_TYPE_PREDICTION_CREATED)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", pred.UUID, err))
+			}
+		}
 		predRunner, errs := NewPredRunner(&pred, r.market, nowTs)
 		for _, err := range errs {
 			if !errors.Is(err, errPredictionAtFinalStateAtCreation) {
@@ -101,6 +115,12 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 			}
 			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
 			log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
+			if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
+				err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL)
+				if err != nil {
+					result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", prediction.UUID, err))
+				}
+			}
 		}
 	}
 
@@ -113,4 +133,82 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 		return result
 	}
 	return result
+}
+
+type ActionType int
+
+const (
+	ACTION_TYPE_BECAME_FINAL ActionType = iota
+	ACTION_TYPE_PREDICTION_CREATED
+)
+
+func (a ActionType) String() string {
+	switch a {
+	case ACTION_TYPE_BECAME_FINAL:
+		return "ACTION_TYPE_BECAME_FINAL"
+	case ACTION_TYPE_PREDICTION_CREATED:
+		return "ACTION_TYPE_PREDICTION_CREATED"
+	default:
+		return "ACTION_TYPE_UNKNOWN"
+	}
+}
+
+func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType ActionType) error {
+	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
+		return ErrOnlyTwitterPredictionActioningSupported
+	}
+	if actionType != ACTION_TYPE_BECAME_FINAL && actionType != ACTION_TYPE_PREDICTION_CREATED {
+		return ErrUnkownActionType
+	}
+	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostUrl, actionType.String())
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrPredictionAlreadyActioned
+	}
+
+	tweetURL := ""
+	switch actionType {
+	case ACTION_TYPE_BECAME_FINAL:
+		tweetURL, err = r.tweetActionBecameFinal(prediction)
+	case ACTION_TYPE_PREDICTION_CREATED:
+		tweetURL, err = r.tweetActionPredictionCreated(prediction)
+	}
+	if err != nil {
+		return err
+	}
+
+	// TODO eventually we'll need an image & a reply tweet id here
+	r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actionType.String(), tweetURL)
+	return nil
+}
+
+func (r *Daemon) tweetActionBecameFinal(prediction *types.Prediction) (string, error) {
+	twitter := twitter.NewTwitter("")
+
+	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
+	postAuthor := prediction.PostAuthor
+	predictionStateValue := prediction.State.Value.String()
+
+	tweetURL, err := twitter.Tweet(fmt.Sprintf(`%v made the following prediction: "%v" and it just became %v!`, postAuthor, description, predictionStateValue), "", 0)
+	if err != nil {
+		return "", err
+	}
+
+	return tweetURL, err
+}
+
+func (r *Daemon) tweetActionPredictionCreated(prediction *types.Prediction) (string, error) {
+	twitter := twitter.NewTwitter("")
+
+	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
+	postAuthor := prediction.PostAuthor
+
+	tweetURL, err := twitter.Tweet(fmt.Sprintf(`Now tracking the following prediction made by %v: "%v"`, postAuthor, description), "", 0)
+	if err != nil {
+		return "", err
+	}
+
+	return tweetURL, err
 }

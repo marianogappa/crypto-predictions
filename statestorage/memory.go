@@ -130,3 +130,9 @@ func (s MemoryStateStorage) DeletePrediction(uuid string) error {
 func (s MemoryStateStorage) UndeletePrediction(uuid string) error {
 	return nil
 }
+func (s MemoryStateStorage) PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error) {
+	return true, nil
+}
+func (s MemoryStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
+	return nil
+}

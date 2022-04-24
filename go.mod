@@ -3,6 +3,9 @@ module github.com/marianogappa/predictions
 go 1.18
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/dghubble/oauth1 v0.7.1
+	github.com/dghubble/sling v1.4.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
@@ -18,6 +21,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect

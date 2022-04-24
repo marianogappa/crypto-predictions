@@ -41,3 +41,16 @@ CREATE TABLE accounts (
     created_at timestamp without time zone,
     is_verified boolean
 );
+
+CREATE TABLE prediction_interactions (
+    uuid text PRIMARY KEY,
+    post_url text NOT NULL,
+    action_type text NOT NULL,
+    interaction_post_url text NOT NULL,
+    prediction_uuid text NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
+
+-- Indices -------------------------------------------------------
+
+CREATE UNIQUE INDEX prediction_interactions_post_url_action_type_prediction_uuid_id ON prediction_interactions(post_url text_ops,action_type text_ops,prediction_uuid text_ops);
