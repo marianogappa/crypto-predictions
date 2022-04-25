@@ -16,11 +16,17 @@ It is shipped as a single binary (Back Office static assets are embedded) which 
 
 - Download latest binary from [here](https://github.com/marianogappa/crypto-predictions/releases/latest).
 - Have an addressable postgres instance, e.g. `brew install postgresql && brew services start postgresql`
-- Note that, by default, crypto-predictions will try to connect to `postgres://your_user:@localhost:5432/your_user?sslmode=disable`, which will work on a default install, but this will add tables to a database with your username, and you may already have something else there. If you don't want that, just set the adequate environment variables below to customise that behaviour. It is on you to create a different database, but the binary will run migrations on it.
-- There are only two required envs: `PREDICTIONS_TWITTER_BEARER_TOKEN` & `PREDICTIONS_YOUTUBE_API_KEY`, which are the minimum credentials from Twitter API & Youtube API to be able to fetch metadata for creating predictions. You can follow Twitter & Youtube's instructions to get these.
+- There are only two required envs: `PREDICTIONS_TWITTER_BEARER_TOKEN` & `PREDICTIONS_YOUTUBE_API_KEY`, which are the minimum credentials from Twitter API & Youtube API to be able to fetch metadata for creating predictions. You can follow Twitter & Youtube's instructions to get these. While these are required, they are not used unless you create a prediction, so a workaround is to set them to any value.
 - Run the binary with the envs: `PREDICTIONS_TWITTER_BEARER_TOKEN=value1 PREDICTIONS_YOUTUBE_API_KEY=value2 ./crypto-predictions`
+
+**Notes**
+
+- By default, crypto-predictions will try to connect to `postgres://your_user:@localhost:5432/your_user?sslmode=disable`, which will work on a default install, but this will add tables to a database with your username, and you may already have something else there. If you don't want that, just set the adequate environment variables below to customise that behaviour. It is on you to create a different database, but the binary will run migrations on it.
 - The binary logs structured JSON logs, so you might want to run like this: `./crypto-predictions 2>&1 | jq .` for pretty-printed output.
 - Logs will tell you the Postgres instance it connected to, where the API is listening, where the BackOffice can be browsed and where you can see Swagger docs for the API.
+- By default, BackOffice is available on http://localhost:1234. Use it to create some sample predictions (use the example buttons for easy creation).
+- By default, the API listens on http://localhost:2345.
+- By default, API docs are available on http://localhost:2345/docs. Docs are tied to the server, so they are always up to date.
 
 ### Configuration
 
