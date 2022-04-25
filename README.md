@@ -28,8 +28,17 @@ Crypto Predictions is configured via enviroment variables. The following variabl
 
 #### Social network API credentials
 
+These credentials allow retrieving metadata from posts on Twitter & Youtube
+
 - `PREDICTIONS_TWITTER_BEARER_TOKEN`: required if running API or BackOffice, so that metadata can be fetched for Predictions & Accounts.
 - `PREDICTIONS_YOUTUBE_API_KEY`: required if running API or BackOffice, so that metadata can be fetched for Predictions & Accounts.
+
+And these optional credentials allow posting to Twitter (but to obtain them you need to authorize Oauth1 for your Twitter Application on behalf of a Twitter handle:
+
+- `PREDICTIONS_TWITTER_CONSUMER_KEY`
+- `PREDICTIONS_TWITTER_CONSUMER_SECRET`
+- `PREDICTIONS_TWITTER_ACCESS_TOKEN`
+- `PREDICTIONS_TWITTER_ACCESS_SECRET`
 
 #### Database configuration
 
