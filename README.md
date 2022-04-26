@@ -30,7 +30,9 @@ It is shipped as a single binary (Back Office static assets are embedded) which 
 
 ### Configuration
 
-Crypto Predictions is configured via enviroment variables. The following variables are supported:
+Crypto Predictions is configured via enviroment variables. Because this can become troublesome, alternatively a config.json file can be added at the same path as the binary, which contains a JSON map, having keys as env names, and string values.
+
+The following variables are supported:
 
 #### Social network API credentials
 

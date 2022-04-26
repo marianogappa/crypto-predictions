@@ -2,8 +2,10 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"strconv"
@@ -33,6 +35,7 @@ var (
 
 func main() {
 	flag.Parse()
+	loadEnvsFromConfigJson()
 
 	// Parse flags and figure out what components need to run.
 	var (
@@ -140,4 +143,19 @@ func envOrDur(s string, or time.Duration) time.Duration {
 		return or
 	}
 	return d
+}
+
+func loadEnvsFromConfigJson() {
+	file, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		return
+	}
+	envMap := map[string]string{}
+	err = json.Unmarshal(file, &envMap)
+	if err != nil {
+		return
+	}
+	for key, value := range envMap {
+		os.Setenv(key, value)
+	}
 }
