@@ -122,10 +122,10 @@ func (c *API) SetDebug(b bool) {
 }
 
 type apiResponse[D any] struct {
-	Status               int    `json:"status"`
-	ErrorMessage         string `json:"errorMessage,omitempty"`
-	InternalErrorMessage string `json:"internalErrorMessage,omitempty"`
-	ErrorCode            string `json:"errorCode,omitempty"`
+	Status               int    `json:"status" example:"200"`
+	ErrorMessage         string `json:"errorMessage,omitempty" example:""`
+	InternalErrorMessage string `json:"internalErrorMessage,omitempty" example:""`
+	ErrorCode            string `json:"errorCode,omitempty" example:""`
 	Data                 D      `json:"data,omitempty"`
 }
 

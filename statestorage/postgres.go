@@ -370,7 +370,7 @@ func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, post
 	if err != nil {
 		return false, err
 	}
-	fmt.Println(res.Next())
+	res.Next()
 	if err := res.Scan(&exists); err != nil {
 		return false, err
 	}

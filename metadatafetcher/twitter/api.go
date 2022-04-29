@@ -214,7 +214,6 @@ func (t Twitter) uploadMedia(imageFilename string) (int64, error) {
 	// TODO: technically, Twitter could potentially make the daemon stuck forever without a timeout here
 	for {
 		if processingInfo == nil || processingInfo.State == "succeeded" {
-			fmt.Println("Done!")
 			return mediaID, nil
 		}
 		if processingInfo.State == "failed" {

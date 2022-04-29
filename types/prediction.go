@@ -27,6 +27,11 @@ func (p *Prediction) Evaluate() PredictionStateValue {
 	case CORRECT, INCORRECT, ANNULLED:
 		p.State.Status = FINISHED
 	}
+	for _, cond := range p.Given {
+		if cond.State.LastTs > p.State.LastTs {
+			p.State.LastTs = cond.State.LastTs
+		}
+	}
 	return value
 }
 

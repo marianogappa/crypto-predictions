@@ -1,21 +1,43 @@
 package api
 
 import (
+	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/swaggest/jsonschema-go"
 )
 
 type PredictionSummary struct {
-	CandlestickMap  map[string][]types.Candlestick `json:"candlestickMap"`
-	Coin            string                         `json:"coin"`
-	Goal            types.JsonFloat64              `json:"goal"`
-	RangeLow        types.JsonFloat64              `json:"rangeLow"`
-	RangeHigh       types.JsonFloat64              `json:"rangeHigh"`
-	WillReach       types.JsonFloat64              `json:"willReach"`
-	BeforeItReaches types.JsonFloat64              `json:"beforeItReaches"`
-	Operator        string                         `json:"operator"`
-	Deadline        types.ISO8601                  `json:"deadline"`
+	CandlestickMap  map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
+	Coin            string                         `json:"coin,omitempty"`
+	OtherCoin       string                         `json:"otherCoin,omitempty"`
+	Goal            types.JsonFloat64              `json:"goal,omitempty"`
+	RangeLow        types.JsonFloat64              `json:"rangeLow,omitempty"`
+	RangeHigh       types.JsonFloat64              `json:"rangeHigh,omitempty"`
+	WillReach       types.JsonFloat64              `json:"willReach,omitempty"`
+	BeforeItReaches types.JsonFloat64              `json:"beforeItReaches,omitempty"`
+	Operator        string                         `json:"operator,omitempty"`
+	Deadline        types.ISO8601                  `json:"deadline,omitempty"`
+	PredictionType  string                         `json:"predictionType,omitempty"`
+}
+
+func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithExamples(PredictionSummary{
+		CandlestickMap: map[string][]types.Candlestick{
+			"BINANCE:COIN:BTC-USDT": {
+				{Timestamp: 1651161957, OpenPrice: 39000, HighestPrice: 39500, LowestPrice: 39000, ClosePrice: 39050},
+				{Timestamp: 1651162017, OpenPrice: 39500, HighestPrice: 39550, LowestPrice: 39200, ClosePrice: 39020},
+			},
+		},
+		Coin:           "BINANCE:COIN:BTC-USDT",
+		Goal:           45000,
+		Operator:       ">=",
+		Deadline:       "2022-06-24T07:51:06Z",
+		PredictionType: "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
+	})
+
+	return nil
 }
 
 func (a *API) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
@@ -45,6 +67,8 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (Predi
 	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
 	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
 
+	log.Printf("tmFirstTick = %v, finalTs = %v, initialISO8601 = %v\n", tmFirstTick, finalTs, initialISO8601)
+
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
 	it, err := a.mkt.GetIterator(coin, initialISO8601, false)
@@ -60,10 +84,12 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (Predi
 	}
 
 	return PredictionSummary{
+		PredictionType: p.Type.String(),
 		CandlestickMap: candlesticks,
 		Operator:       operator,
 		Goal:           goal,
 		Deadline:       deadline,
+		Coin:           opStr,
 	}, nil
 }
 
@@ -100,10 +126,12 @@ func (a *API) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary
 	}
 
 	return PredictionSummary{
+		PredictionType: p.Type.String(),
 		CandlestickMap: candlesticks,
 		Deadline:       deadline,
 		RangeLow:       rangeLow,
 		RangeHigh:      rangeHigh,
+		Coin:           opStr,
 	}, nil
 }
 
@@ -137,10 +165,12 @@ func (a *API) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (Pr
 	}
 
 	return PredictionSummary{
+		PredictionType:  p.Type.String(),
 		CandlestickMap:  candlesticks,
 		Deadline:        deadline,
 		WillReach:       willReach,
 		BeforeItReaches: beforeItReaches,
+		Coin:            opStr,
 	}, nil
 }
 
@@ -185,8 +215,11 @@ func (a *API) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary
 	}
 
 	return PredictionSummary{
+		PredictionType: p.Type.String(),
 		CandlestickMap: candlesticks,
 		Operator:       operator,
 		Deadline:       deadline,
+		Coin:           opStr1,
+		OtherCoin:      opStr2,
 	}, nil
 }

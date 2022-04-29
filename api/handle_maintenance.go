@@ -3,14 +3,18 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/usecase"
 )
 
 type apiResMaintenance struct {
 	Success bool     `json:"success"`
+	Message string   `json:"message"`
 	_       struct{} `query:"_" additionalProperties:"false"`
 }
 
@@ -20,6 +24,15 @@ type apiReqMaintenance struct {
 }
 
 func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] {
+	switch req.Action {
+	case "ensureAllPredictionsHavePostAuthorURL":
+		return a.ensureAllPredictionsHavePostAuthorURL(req)
+	default:
+		return apiResponse[apiResMaintenance]{Status: 400, Data: apiResMaintenance{Success: false, Message: "action does not exist"}}
+	}
+}
+
+func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiResponse[apiResMaintenance] {
 	preds, err := a.store.GetPredictions(
 		types.APIFilters{},
 		[]string{},
@@ -30,7 +43,11 @@ func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] 
 	}
 
 	// Fetch and upsert all accounts
-	for i, pred := range preds {
+	predsToUpdate := []*types.Prediction{}
+	for _, pred := range preds {
+		if pred.PostAuthorURL != "" {
+			continue
+		}
 		// Re-compile prediction, this time with metadatafetcher, which will create an account and add additional fields to prediction
 		ps := compiler.NewPredictionSerializer()
 		serialised, err := ps.Serialize(&pred)
@@ -38,22 +55,31 @@ func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] 
 			return failWith(ErrFailedToSerializePredictions, fmt.Errorf("%w: error serializing prediction: %v", ErrFailedToSerializePredictions, err), apiResMaintenance{})
 		}
 
-		pc := compiler.NewPredictionCompiler(nil, nil)
+		metadataFetcher := metadatafetcher.NewMetadataFetcher()
+
+		pc := compiler.NewPredictionCompiler(metadataFetcher, time.Now)
 		newPred, _, err := pc.Compile(serialised)
 		if err != nil {
 			return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: error compiling prediction: %v", ErrFailedToSerializePredictions, err), apiResMaintenance{})
 		}
 
-		preds[i] = newPred
+		if newPred.PostAuthorURL == "" {
+			failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: metadata fetcher could not resolve postAuthorURL from postURL: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResMaintenance{})
+		}
+
+		log.Println(newPred.PostAuthorURL)
+
+		predsToUpdate = append(predsToUpdate, &newPred)
 	}
 
-	ps := []*types.Prediction{}
-	for i := range preds {
-		ps = append(ps, &preds[i])
+	_, err = a.store.UpsertPredictions(predsToUpdate)
+	if err != nil {
+		failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})
 	}
-	a.store.UpsertPredictions(ps)
 
-	return apiResponse[apiResMaintenance]{Status: 200, Data: apiResMaintenance{Success: true}}
+	msg := fmt.Sprintf("Upserted %v new postAuthorURLs!", len(predsToUpdate))
+
+	return apiResponse[apiResMaintenance]{Status: 200, Data: apiResMaintenance{Success: true, Message: msg}}
 }
 
 func (a *API) apiMaintenance() usecase.Interactor {
