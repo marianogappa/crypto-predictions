@@ -180,7 +180,9 @@ func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType Actio
 	}
 
 	// TODO eventually we'll need an image & a reply tweet id here
-	r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actionType.String(), tweetURL)
+	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actionType.String(), tweetURL); err != nil {
+		return err
+	}
 	return nil
 }
 

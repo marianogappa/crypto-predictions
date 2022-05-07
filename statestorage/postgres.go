@@ -379,8 +379,8 @@ func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, post
 
 func (s PostgresDBStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
 	_, err := s.db.Query(`
-	INSERT INTO prediction_interactions (prediction_uuid, post_url, action_type, interaction_post_url) VALUES ($1, $2, $3, $4);
-		`, predictionUUID, postURL, actionType, interactionPostURL)
+	INSERT INTO prediction_interactions (uuid, prediction_uuid, post_url, action_type, interaction_post_url) VALUES ($1, $2, $3, $4, $5);
+		`, uuid.NewString(), predictionUUID, postURL, actionType, interactionPostURL)
 	if err != nil {
 		return err
 	}
