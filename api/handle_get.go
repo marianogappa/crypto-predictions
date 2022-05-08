@@ -52,7 +52,7 @@ func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPred
 		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPredictions{})
 	}
 
-	ps := compiler.NewPredictionSerializer()
+	ps := compiler.NewPredictionSerializer(nil)
 	res := []compilerPrediction{}
 	for _, pred := range preds {
 		compPred, err := ps.PreSerialize(&pred)
@@ -92,8 +92,16 @@ The prediction schema contains the following properties:
 - prePredict: sometimes, a prediction has two steps, in which case the <i>prePredict</i> is step one and <i>predict</i> is step two.
 - predict: the actual prediction, stated as a boolean algebra of conditions described in <i>given</i>, e.g. "(a and b and (not c)) or d".
 - state: the current state of the prediction, which includes whether it's UNSTARTED/STARTED/FINISHED, ONGOING_PRE_PREDICTION/ONGOING_PREDICTION/CORRECT/INCORRECT/ANNULLED and the last candlestick timestamp analyzed for it.
-- type: an enum value identifying the "type of prediction". There are currently 4 types of predictions. You can read more about them on the <i>GET /pages/prediction</i> documentation.
-- predictionText: a human-readable text describing the prediction.`)
+- type: an enum value identifying the "type of prediction". There are currently 4 types of predictions. You can read more about them below.
+- predictionText: a human-readable text describing the prediction.
+- summary: contains extra information about the prediction, necessary to plot a candlestick chart. Note that there are different types of predictions, which all have candlesticks, but depending on the type the extra information will be different, so implementations will need to switch based on the <i>predictionType</i>.
+
+Currently available prediction types (and their properties) are:
+
+- PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE: e.g. "Bitcoin >= 45k within 10 days", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>operator</i> (e.g. <i>>=</i>), <i>goal</i> (e.g. <i>45000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
+- PREDICTION_TYPE_COIN_WILL_RANGE: e.g. "Bitcoin will range between 30k and 40k for 10 days", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>rangeLow</i> (e.g. <i>30000</i>), <i>rangeHigh</i> (e.g. <i>40000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
+- PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES: e.g. "Bitcoin will reach 50k before it reaches 30k", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>willReach</i> (e.g. <i>50000</i>), <i>beforeItReaches</i> (e.g. <i>30000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
+- PREDICTION_TYPE_THE_FLIPPENING: e.g. "Ethereum's Marketcap will flip Bitcoin's Marketcap by end of year", will provide <i>coin</i> (e.g. <i>MESSARI:MARKETCAP:BTC</i>), <i>otherCoin</i> (e.g. <i>MESSARI:MARKETCAP:ETH</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).`)
 	u.SetTitle("Main API call for getting predictions based on filters and ordering.")
 	return u
 }

@@ -232,7 +232,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		if ps[i].UUID == "" {
 			ps[i].UUID = uuid.NewString()
 		}
-		blob, err := compiler.NewPredictionSerializer().Serialize(ps[i])
+		blob, err := compiler.NewPredictionSerializer(nil).Serialize(ps[i])
 		if err != nil {
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}

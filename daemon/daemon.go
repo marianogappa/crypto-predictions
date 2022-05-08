@@ -201,6 +201,10 @@ func (r *Daemon) tweetActionBecameFinal(prediction *types.Prediction) (string, e
 	return tweetURL, err
 }
 
+func (r *Daemon) buildImageActionBecameFinal(prediction *types.Prediction) (string, error) {
+	return "", nil
+}
+
 func (r *Daemon) tweetActionPredictionCreated(prediction *types.Prediction) (string, error) {
 	twitter := twitter.NewTwitter("")
 

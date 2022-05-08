@@ -84,7 +84,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 		}
 	}
 
-	res, err := compiler.NewPredictionSerializer().PreSerialize(&pred)
+	res, err := compiler.NewPredictionSerializer(nil).PreSerialize(&pred)
 	if err != nil {
 		return failWith(ErrFailedToSerializePredictions, err, apiResPostPrediction{})
 	}

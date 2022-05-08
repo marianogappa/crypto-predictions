@@ -6,15 +6,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 type PredictionSerializer struct {
+	mkt *market.IMarket
 }
 
-func NewPredictionSerializer() PredictionSerializer {
-	return PredictionSerializer{}
+func NewPredictionSerializer(market *market.IMarket) PredictionSerializer {
+	return PredictionSerializer{mkt: market}
 }
 
 func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, error) {
@@ -51,7 +54,7 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	return json.Marshal(pre)
 }
 
-func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction) (Prediction, error) {
+func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSummary bool) (Prediction, error) {
 	pred := Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
@@ -64,13 +67,23 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction) (Predictio
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
 		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
+		Summary:         PredictionSummary{},
+	}
+
+	if includeSummary && s.mkt != nil {
+		var err error
+		pred.Summary, err = s.BuildPredictionMarketSummary(*p)
+		if err != nil {
+			log.Error().Err(err).Msg("compiler.PreSerializeForAPI: writing summary failed")
+			return pred, err
+		}
 	}
 
 	return pred, nil
 }
 
-func (s PredictionSerializer) SerializeForAPI(p *types.Prediction) ([]byte, error) {
-	pred, err := s.PreSerializeForAPI(p)
+func (s PredictionSerializer) SerializeForAPI(p *types.Prediction, includeSummary bool) ([]byte, error) {
+	pred, err := s.PreSerializeForAPI(p, includeSummary)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,6 @@ import (
 
 type apiResGetPagesPrediction struct {
 	Prediction                    UUID                    `json:"prediction"`
-	Summary                       PredictionSummary       `json:"summary"`
 	Top10AccountsByFollowerCount  []URL                   `json:"top10AccountsByFollowerCount"`
 	AccountsByURL                 mapOfCompilerAccounts   `json:"accountsByURL"`
 	Latest10Predictions           []UUID                  `json:"latest10Predictions"`
@@ -40,18 +39,13 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	}
 	pred := preds[0]
 
-	ps := compiler.NewPredictionSerializer()
-	compilerPred, err := ps.PreSerializeForAPI(&pred)
+	ps := compiler.NewPredictionSerializer(&a.mkt)
+	mainCompilerPred, err := ps.PreSerializeForAPI(&pred, true)
 	if err != nil {
 		return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
 	}
 	predictionsByUUID := map[UUID]compiler.Prediction{}
-	predictionsByUUID[UUID(compilerPred.UUID)] = compilerPred
-
-	summary, err := a.BuildPredictionMarketSummary(pred)
-	if err != nil {
-		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
-	}
+	predictionsByUUID[UUID(mainCompilerPred.UUID)] = mainCompilerPred
 
 	// Latest Predictions
 	latest10Predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.CREATED_AT_DESC.String()}, 10, 0)
@@ -61,8 +55,11 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	latestPredictionUUIDs := []UUID{}
 	for _, prediction := range latest10Predictions {
 		predictionUUID := prediction.UUID
+		if predictionUUID == mainCompilerPred.UUID {
+			continue
+		}
 		latestPredictionUUIDs = append(latestPredictionUUIDs, UUID(predictionUUID))
-		compilerPr, err := ps.PreSerializeForAPI(&prediction)
+		compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
 		if err != nil {
 			return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
 		}
@@ -78,8 +75,11 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 		}
 		for _, prediction := range latest5PredictionsSameAuthor {
 			predictionUUID := prediction.UUID
+			if predictionUUID == mainCompilerPred.UUID {
+				continue
+			}
 			latestPredictionSameAuthorURL = append(latestPredictionSameAuthorURL, UUID(predictionUUID))
-			compilerPr, err := ps.PreSerializeForAPI(&prediction)
+			compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
 			if err != nil {
 				return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
 			}
@@ -95,8 +95,11 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	}
 	for _, prediction := range latest5PredictionsSameCoin {
 		predictionUUID := prediction.UUID
+		if predictionUUID == mainCompilerPred.UUID {
+			continue
+		}
 		latestPredictionSameCoinUUID = append(latestPredictionSameCoinUUID, UUID(predictionUUID))
-		compilerPr, err := ps.PreSerializeForAPI(&prediction)
+		compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
 		if err != nil {
 			return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
 		}
@@ -149,8 +152,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	}
 
 	return apiResponse[apiResGetPagesPrediction]{Status: 200, Data: apiResGetPagesPrediction{
-		Prediction:                    UUID(compilerPred.UUID),
-		Summary:                       summary,
+		Prediction:                    UUID(mainCompilerPred.UUID),
 		Top10AccountsByFollowerCount:  top10AccountURLsByFollowerCount,
 		Latest10Predictions:           latestPredictionUUIDs,
 		Latest5PredictionsSameAccount: latestPredictionSameAuthorURL,
@@ -182,16 +184,7 @@ The following top-level objects contain an ordered array of prediction UUIDs or 
 - latest5PredictionsSameAccount
 - latest5PredictionsSameCoin
 
-The <i>summary</i> top-level property contains extra information about the prediction associated to the specified URL that is not captured on the prediction itself, necessary to plot a candlestick chart. Note that there are different types of predictions, which all have candlesticks, but depending on the type the extra information will be different, so implementations will need to switch based on the <i>predictionType</i>.
-
-Currently available prediction types (and their properties) are:
-
-- PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE: e.g. "Bitcoin >= 45k within 10 days", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>operator</i> (e.g. <i>>=</i>), <i>goal</i> (e.g. <i>45000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
-- PREDICTION_TYPE_COIN_WILL_RANGE: e.g. "Bitcoin will range between 30k and 40k for 10 days", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>rangeLow</i> (e.g. <i>30000</i>), <i>rangeHigh</i> (e.g. <i>40000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
-- PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES: e.g. "Bitcoin will reach 50k before it reaches 30k", will provide <i>coin</i> (e.g. <i>BINANCE:COIN:BTC-USDT</i>), <i>willReach</i> (e.g. <i>50000</i>), <i>beforeItReaches</i> (e.g. <i>30000</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
-- PREDICTION_TYPE_THE_FLIPPENING: e.g. "Ethereum's Marketcap will flip Bitcoin's Marketcap by end of year", will provide <i>coin</i> (e.g. <i>MESSARI:MARKETCAP:BTC</i>), <i>otherCoin</i> (e.g. <i>MESSARI:MARKETCAP:ETH</i>), <i>deadline</i> (e.g. <i>2006-01-02T15:04:05Z07:00</i>).
-
-To learn about the prediction's schema, please review the <i>GET /predictions</i> documentation.
+To learn about the prediction's schema, please review the <i>GET /predictions</i> documentation. This notably contains info about the "summary" property, which is necessary to make a candlestick chart for the main prediction.
 
 Gotchas for accounts:
 

@@ -1,7 +1,6 @@
-package api
+package compiler
 
 import (
-	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
@@ -40,21 +39,21 @@ func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	return nil
 }
 
-func (a *API) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
 	switch p.Type {
 	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
-		return a.predictionTypeCoinOperatorFloatDeadline(p)
+		return s.predictionTypeCoinOperatorFloatDeadline(p)
 	case types.PREDICTION_TYPE_COIN_WILL_RANGE:
-		return a.predictionTypeCoinWillRange(p)
+		return s.predictionTypeCoinWillRange(p)
 	case types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:
-		return a.predictionTypeCoinWillReachBeforeItReaches(p)
+		return s.predictionTypeCoinWillReachBeforeItReaches(p)
 	case types.PREDICTION_TYPE_THE_FLIPPENING:
-		return a.predictionTypeTheFlippening(p)
+		return s.predictionTypeTheFlippening(p)
 	}
 	return PredictionSummary{}, nil
 }
 
-func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (PredictionSummary, error) {
 	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
 	if p.State.Status == types.FINISHED {
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
@@ -67,11 +66,9 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (Predi
 	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
 	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
 
-	log.Printf("tmFirstTick = %v, finalTs = %v, initialISO8601 = %v\n", tmFirstTick, finalTs, initialISO8601)
-
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := a.mkt.GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -93,7 +90,7 @@ func (a *API) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (Predi
 	}, nil
 }
 
-func (a *API) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary, error) {
 	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
 	if p.State.Status == types.FINISHED {
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
@@ -113,7 +110,7 @@ func (a *API) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := a.mkt.GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -135,7 +132,7 @@ func (a *API) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary
 	}, nil
 }
 
-func (a *API) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (PredictionSummary, error) {
 	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
 	if p.State.Status == types.FINISHED {
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
@@ -152,7 +149,7 @@ func (a *API) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (Pr
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := a.mkt.GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -174,7 +171,7 @@ func (a *API) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (Pr
 	}, nil
 }
 
-func (a *API) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary, error) {
 	finalTs := time.Now().Truncate(time.Hour * 24)
 	if p.State.Status == types.FINISHED {
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
@@ -189,7 +186,7 @@ func (a *API) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr1 := marketCap1.Str
-	it1, err := a.mkt.GetIterator(marketCap1, initialISO8601, false)
+	it1, err := (*s.mkt).GetIterator(marketCap1, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -202,7 +199,7 @@ func (a *API) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary
 	}
 
 	opStr2 := marketCap2.Str
-	it2, err := a.mkt.GetIterator(marketCap2, initialISO8601, false)
+	it2, err := (*s.mkt).GetIterator(marketCap2, initialISO8601, false)
 	if err != nil {
 		return PredictionSummary{}, err
 	}

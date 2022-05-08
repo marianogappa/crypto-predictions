@@ -49,7 +49,7 @@ func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiRe
 			continue
 		}
 		// Re-compile prediction, this time with metadatafetcher, which will create an account and add additional fields to prediction
-		ps := compiler.NewPredictionSerializer()
+		ps := compiler.NewPredictionSerializer(nil)
 		serialised, err := ps.Serialize(&pred)
 		if err != nil {
 			return failWith(ErrFailedToSerializePredictions, fmt.Errorf("%w: error serializing prediction: %v", ErrFailedToSerializePredictions, err), apiResMaintenance{})

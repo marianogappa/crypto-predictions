@@ -146,8 +146,6 @@ func makeNewRequest(reqBody string, url string) (apiResponse[apiResPostPredictio
 		return apiResponse[apiResPostPrediction]{}, err
 	}
 
-	fmt.Println("1", string(byts))
-
 	var res apiResponse[apiResPostPrediction]
 	err = json.Unmarshal(byts, &res)
 	if err != nil {

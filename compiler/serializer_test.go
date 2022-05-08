@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSerialize(t *testing.T) {
@@ -125,7 +126,8 @@ func TestSerialize(t *testing.T) {
 					"lastTs": 0,
 					"value": "ONGOING_PRE_PREDICTION"
 				},
-				"type": "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE"
+				"type": "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
+				"summary": {}
 			}`,
 		},
 	}
@@ -137,7 +139,7 @@ func TestSerialize(t *testing.T) {
 				t.Fatalf("invalid JSON in test expectation, fix this! err: %v", err)
 			}
 			expected, _ := json.Marshal(raw)
-			ps := NewPredictionSerializer()
+			ps := NewPredictionSerializer(nil)
 			actual, actualErr := ps.Serialize(&ts.pred)
 
 			if actualErr != nil && ts.err == nil {
@@ -152,9 +154,8 @@ func TestSerialize(t *testing.T) {
 				t.Logf("expected error '%v' but had error '%v'", ts.err, actualErr)
 				t.FailNow()
 			}
-			if ts.err == nil && string(actual) != string(expected) {
-				t.Logf("expected %v but got %v", string(expected), string(actual))
-				t.FailNow()
+			if ts.err == nil {
+				require.Equal(t, expected, actual)
 			}
 		})
 	}
