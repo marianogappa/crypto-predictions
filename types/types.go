@@ -54,6 +54,9 @@ var (
 
 	// From PatchTickHoles
 	ErrOutOfSyncTimestampPatchingHoles = errors.New("out of sync timestamp found patching holes")
+
+	// From storage
+	ErrStorageErrorRetrievingAccounts = errors.New("storage had error retrieving accounts")
 )
 
 type Operand struct {

@@ -35,7 +35,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
 	}
 	if len(preds) != 1 {
-		return failWith(ErrPredictionNotFound, err, apiResGetPagesPrediction{})
+		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResGetPagesPrediction{})
 	}
 	pred := preds[0]
 
@@ -111,7 +111,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	// Get the top 10 Accounts by follower count
 	topAccounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.ACCOUNT_FOLLOWER_COUNT_DESC.String()}, 10, 0)
 	if err != nil {
-		return failWith(ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
+		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
 	top10AccountURLsByFollowerCount := []URL{}
 	for _, account := range topAccounts {
@@ -137,7 +137,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	// Get all accounts from the slice
 	allAccounts, err := a.store.GetAccounts(types.APIAccountFilters{URLs: accountURLs}, []string{}, 0, 0)
 	if err != nil {
-		return failWith(ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
+		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
 
 	accountsByURL := map[URL]compiler.Account{}

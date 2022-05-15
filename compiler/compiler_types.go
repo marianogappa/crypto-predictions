@@ -58,6 +58,6 @@ type Prediction struct {
 	Type            string               `json:"type" description:"This is automatically calculated based on the prediction's structure." enum:"PREDICTION_TYPE_UNSUPPORTED,PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,PREDICTION_TYPE_COIN_WILL_RANGE,PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES,PREDICTION_TYPE_THE_FLIPPENING" example:"PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE"`
 
 	// extra fields for API, but not for Postgres
-	PredictionText string            `json:"predictiontext,omitempty" example:"COIN:BINANCE:BTC-USDT will hit 29000 by end of year"`
+	PredictionText string            `json:"predictionText,omitempty" example:"COIN:BINANCE:BTC-USDT will hit 29000 by end of year"`
 	Summary        PredictionSummary `json:"summary,omitempty"`
 }

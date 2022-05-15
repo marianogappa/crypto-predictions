@@ -3,9 +3,11 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher/twitter"
 	"github.com/marianogappa/predictions/printer"
@@ -21,8 +23,9 @@ var (
 )
 
 type Daemon struct {
-	store  statestorage.StateStorage
-	market market.IMarket
+	store            statestorage.StateStorage
+	market           market.IMarket
+	predImageBuilder imagebuilder.PredictionImageBuilder
 }
 
 type DaemonResult struct {
@@ -31,7 +34,7 @@ type DaemonResult struct {
 }
 
 func NewDaemon(market market.IMarket, store statestorage.StateStorage) *Daemon {
-	return &Daemon{store: store, market: market}
+	return &Daemon{store: store, market: market, predImageBuilder: imagebuilder.NewPredictionImageBuilder(market)}
 }
 
 func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
@@ -154,6 +157,7 @@ func (a ActionType) String() string {
 }
 
 func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType ActionType) error {
+	// TODO eventually we want to action Youtube predictions as well, possibly by just not replying to a tweet.
 	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
 		return ErrOnlyTwitterPredictionActioningSupported
 	}
@@ -167,51 +171,75 @@ func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType Actio
 	if exists {
 		return ErrPredictionAlreadyActioned
 	}
+	if prediction.PostAuthorURL == "" {
+		return errors.New("Daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image!")
+	}
+	accounts, err := r.store.GetAccounts(types.APIAccountFilters{URLs: []string{prediction.PostAuthorURL}}, nil, 1, 0)
+	if err != nil {
+		return fmt.Errorf("%w: %v", types.ErrStorageErrorRetrievingAccounts, err)
+	}
+	if len(accounts) == 0 {
+		return fmt.Errorf("Daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
+	}
+	account := accounts[0]
 
 	tweetURL := ""
 	switch actionType {
 	case ACTION_TYPE_BECAME_FINAL:
-		tweetURL, err = r.tweetActionBecameFinal(prediction)
+		tweetURL, err = r.tweetActionBecameFinal(prediction, account)
 	case ACTION_TYPE_PREDICTION_CREATED:
-		tweetURL, err = r.tweetActionPredictionCreated(prediction)
+		tweetURL, err = r.tweetActionPredictionCreated(prediction, account)
 	}
 	if err != nil {
 		return err
 	}
 
-	// TODO eventually we'll need an image & a reply tweet id here
 	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actionType.String(), tweetURL); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *Daemon) tweetActionBecameFinal(prediction *types.Prediction) (string, error) {
+func (r *Daemon) tweetActionBecameFinal(prediction *types.Prediction, account types.Account) (string, error) {
 	twitter := twitter.NewTwitter("")
 
 	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
 	postAuthor := prediction.PostAuthor
 	predictionStateValue := prediction.State.Value.String()
 
-	tweetURL, err := twitter.Tweet(fmt.Sprintf(`%v made the following prediction: "%v" and it just became %v!`, postAuthor, description, predictionStateValue), "", 0)
+	imageURL, err := r.predImageBuilder.BuildImage(*prediction, account)
+	if err != nil {
+		log.Error().Err(err).Msg("Daemon.tweetActionBecameFinal: silently ignoring error with building image...")
+	}
+	if imageURL != "" {
+		defer os.Remove(imageURL)
+	}
+
+	// TODO eventually we'll need a reply tweet id here
+	tweetURL, err := twitter.Tweet(fmt.Sprintf(`%v made the following prediction: "%v" and it just became %v!`, postAuthor, description, predictionStateValue), imageURL, 0)
 	if err != nil {
 		return "", err
 	}
 
-	return tweetURL, err
+	return tweetURL, nil
 }
 
-func (r *Daemon) buildImageActionBecameFinal(prediction *types.Prediction) (string, error) {
-	return "", nil
-}
-
-func (r *Daemon) tweetActionPredictionCreated(prediction *types.Prediction) (string, error) {
+func (r *Daemon) tweetActionPredictionCreated(prediction *types.Prediction, account types.Account) (string, error) {
 	twitter := twitter.NewTwitter("")
 
 	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
 	postAuthor := prediction.PostAuthor
 
-	tweetURL, err := twitter.Tweet(fmt.Sprintf(`Now tracking the following prediction made by %v: "%v"`, postAuthor, description), "", 0)
+	imageURL, err := r.predImageBuilder.BuildImage(*prediction, account)
+	if err != nil {
+		log.Error().Err(err).Msg("Daemon.tweetActionBecameFinal: silently ignoring error with building image...")
+	}
+	if imageURL != "" {
+		defer os.Remove(imageURL)
+	}
+
+	// TODO eventually we'll need a reply tweet id here
+	tweetURL, err := twitter.Tweet(fmt.Sprintf(`Now tracking the following prediction made by %v: "%v"`, postAuthor, description), imageURL, 0)
 	if err != nil {
 		return "", err
 	}

@@ -189,6 +189,10 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 		}})
 	}
 
+	base64ImageRes := s.apiClient.PredictionImage(predictionImageBody{
+		UUID: uuid,
+	})
+
 	data := make(map[string]interface{})
 	if res.Predictions != nil && len(*res.Predictions) == 1 {
 		pred := (*res.Predictions)[0]
@@ -199,6 +203,7 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	data["GetPredictionsStatus"] = res.Status
 	data["GetPredictionsErrCode"] = res.ErrorCode
 	data["GetPredictionsInternalErrorMessage"] = res.InternalErrorMessage
+	data["Base64Image"] = base64ImageRes.Base64Image
 
 	if err := t.Execute(w, data); err != nil {
 		if nErr, ok := err.(*net.OpError); !ok || nErr.Err != syscall.EPIPE {

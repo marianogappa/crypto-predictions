@@ -59,7 +59,7 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
 	}
 
-	tmFirstTick := finalTs.Add(-120 * time.Minute)
+	tmFirstTick := finalTs.Add(-60 * time.Minute)
 	coin := p.Predict.Predict.Literal.Operands[0]
 	operator := p.Predict.Predict.Literal.Operator
 	goal := p.Predict.Predict.Literal.Operands[1].Number
@@ -72,7 +72,7 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 60; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -96,7 +96,7 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (P
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
 	}
 
-	tmFirstTick := finalTs.Add(-120 * time.Minute)
+	tmFirstTick := finalTs.Add(-60 * time.Minute)
 	coin := p.Predict.Predict.Literal.Operands[0]
 
 	rangeLow := p.Predict.Predict.Literal.Operands[1].Number
@@ -114,7 +114,7 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (P
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 60; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -138,7 +138,7 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
 	}
 
-	tmFirstTick := finalTs.Add(-120 * time.Minute)
+	tmFirstTick := finalTs.Add(-60 * time.Minute)
 	coin := p.Predict.Predict.Literal.Operands[0]
 
 	willReach := p.Predict.Predict.Operands[0].Literal.Operands[1].Number
@@ -153,7 +153,7 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 60; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err

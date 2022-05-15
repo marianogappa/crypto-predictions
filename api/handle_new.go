@@ -66,6 +66,9 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 			if pred.Evaluate().IsFinal() {
 				return failWith(types.ErrPredictionFinishedAtStartTime, types.ErrPredictionFinishedAtStartTime, apiResPostPrediction{})
 			}
+			// The evaluation will set the initial state for the prediction, but we want the Daemon to pick it up
+			// as UNSTARTED so that it will post the initial tweet, so let's clear the state.
+			(&pred).ClearState()
 		}
 	}
 

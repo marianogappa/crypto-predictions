@@ -21,7 +21,6 @@ var (
 	ErrInvalidRequestBody                = errors.New("invalid request body")
 	ErrInvalidRequestJSON                = errors.New("invalid request JSON")
 	ErrStorageErrorRetrievingPredictions = errors.New("storage had error retrieving predictions")
-	ErrStorageErrorRetrievingAccounts    = errors.New("storage had error retrieving accounts")
 	ErrStorageErrorStoringPrediction     = errors.New("storage had error storing predictions")
 	ErrStorageErrorStoringAccount        = errors.New("storage had error storing accounts")
 	ErrFailedToSerializePredictions      = errors.New("failed to serialize predictions")
@@ -59,7 +58,7 @@ var (
 		ErrInvalidRequestBody:                       {StatusCode: 400, ErrorCode: "ErrInvalidRequestBody", Message: "invalid request body"},
 		ErrInvalidRequestJSON:                       {StatusCode: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
 		ErrStorageErrorRetrievingPredictions:        {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},
-		ErrStorageErrorRetrievingAccounts:           {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingAccounts", Message: "storage had error retrieving accounts"},
+		types.ErrStorageErrorRetrievingAccounts:     {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingAccounts", Message: "storage had error retrieving accounts"},
 		ErrStorageErrorStoringPrediction:            {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringPrediction", Message: "storage had error storing predictions"},
 		ErrStorageErrorStoringAccount:               {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringAccount", Message: "storage had error storing accounts"},
 		ErrFailedToSerializePredictions:             {StatusCode: 500, ErrorCode: "ErrFailedToSerializePredictions", Message: "failed to serialize predictions"},

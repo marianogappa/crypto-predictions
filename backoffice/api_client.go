@@ -76,6 +76,24 @@ func (c APIClient) PredictionPage(body getBody) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
+type predictionImageBody struct {
+	UUID string `json:"uuid"`
+}
+
+func (c APIClient) PredictionImage(body predictionImageBody) parsedResponse {
+	reqData := request.Request[response, parsedResponse]{
+		HttpMethod:    "GET",
+		BaseUrl:       c.apiURL,
+		Path:          fmt.Sprintf("predictions/%v/image", body.UUID),
+		QueryString:   nil,
+		Body:          nil,
+		ParseResponse: parseResponse,
+		ParseError:    parseError,
+	}
+
+	return request.MakeRequest(reqData, c.debug)
+}
+
 type uuidBody struct {
 	UUID string `json:"uuid"`
 }

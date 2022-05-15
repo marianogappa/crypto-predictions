@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -100,6 +101,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	s.Get("/predictions", a.apiGetPredictions())
 	s.Get("/pages/prediction/{url}", a.apiGetPagesPrediction())
 	s.Post("/predictions", a.apiPostPrediction())
+	s.Get("/predictions/{uuid}/image", a.apiGetPredictionImage())
 	s.Post("/predictions/{uuid}/pause", a.apiPredictionStorageActionWithUUID(a.store.PausePrediction, "Paused predictions are not updated by daemon until unpaused. They are still returned by GET calls."))
 	s.Post("/predictions/{uuid}/unpause", a.apiPredictionStorageActionWithUUID(a.store.UnpausePrediction, "Upausing makes daemon resume updating predictions."))
 	s.Post("/predictions/{uuid}/hide", a.apiPredictionStorageActionWithUUID(a.store.HidePrediction, "Hidden predictions are not visible to any GET calls (unless showHidden is set), but they are still updated by daemon."))
@@ -130,6 +132,9 @@ type apiResponse[D any] struct {
 }
 
 func failWith[D any](errType, err error, zero D) apiResponse[D] {
+	if err == nil {
+		err = errors.New(errToResponse[errType].Message)
+	}
 	return apiResponse[D]{
 		Status:               errToResponse[errType].StatusCode,
 		ErrorMessage:         errToResponse[errType].Message,

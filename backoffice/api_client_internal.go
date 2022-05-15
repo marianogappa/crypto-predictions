@@ -79,6 +79,7 @@ type responseData struct {
 	Predictions       *[]json.RawMessage `json:"predictions,omitempty"`
 	PredictionSummary *json.RawMessage   `json:"predictionSummary,omitempty"`
 	Stored            *bool              `json:"stored,omitempty"`
+	Base64Image       *string            `json:"base64Image,omitempty"`
 }
 
 func (r response) parse() parsedResponse {
@@ -88,6 +89,7 @@ func (r response) parse() parsedResponse {
 		predSummary *predictionSummary
 		stored      = r.Data.Stored
 		pc          = compiler.NewPredictionCompiler(nil, nil)
+		base64Image *string
 	)
 	if r.Data.Prediction != nil {
 		p, _, _ := pc.Compile(*r.Data.Prediction)
@@ -107,6 +109,9 @@ func (r response) parse() parsedResponse {
 			log.Info().Msgf("Ignoring error unmarshalling prediction summary: %v\n", err)
 		}
 	}
+	if r.Data.Base64Image != nil {
+		base64Image = r.Data.Base64Image
+	}
 
 	return parsedResponse{
 		Status:               r.Status,
@@ -117,6 +122,7 @@ func (r response) parse() parsedResponse {
 		Predictions:          preds,
 		PredictionSummary:    predSummary,
 		Stored:               stored,
+		Base64Image:          base64Image,
 	}
 }
 
@@ -136,6 +142,7 @@ type parsedResponse struct {
 	Predictions          *[]types.Prediction
 	PredictionSummary    *predictionSummary
 	Stored               *bool
+	Base64Image          *string
 }
 
 func (r parsedResponse) String() string {
