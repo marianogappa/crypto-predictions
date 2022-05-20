@@ -13,14 +13,13 @@ import (
 	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/market/ftx"
 	"github.com/marianogappa/predictions/market/iterator"
-	"github.com/marianogappa/predictions/market/kraken"
 	"github.com/marianogappa/predictions/market/kucoin"
 	"github.com/marianogappa/predictions/market/messari"
 	"github.com/marianogappa/predictions/types"
 )
 
 type IMarket interface {
-	GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error)
+	GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error)
 }
 
 type Market struct {
@@ -33,7 +32,6 @@ var (
 		common.BINANCE:              binance.NewBinance(),
 		common.FTX:                  ftx.NewFTX(),
 		common.COINBASE:             coinbase.NewCoinbase(),
-		common.KRAKEN:               kraken.NewKraken(),
 		common.KUCOIN:               kucoin.NewKucoin(),
 		common.BINANCE_USDM_FUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
 	}
@@ -49,10 +47,10 @@ func NewMarket() Market {
 	return Market{cache: cache.NewMemoryCache(10000, 1000), timeNowFunc: time.Now}
 }
 
-func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
+func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
 	switch operand.Type {
 	case types.COIN:
-		return m.getCoinIterator(operand, initialISO8601, startFromNext)
+		return m.getCoinIterator(operand, initialISO8601, startFromNext, intervalMinutes)
 	case types.MARKETCAP:
 		if operand.Provider != "MESSARI" {
 			return nil, fmt.Errorf("only supported provider for MARKETCAP is 'MESSARI', got %v", operand.Provider)
@@ -63,12 +61,12 @@ func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601,
 	}
 }
 
-func (m Market) getCoinIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
+func (m Market) getCoinIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
 	if _, ok := supportedVariableProviders[operand.Provider]; !ok {
 		return nil, fmt.Errorf("the '%v' provider is not supported for %v:%v-%v", operand.Provider, operand.Provider, operand.BaseAsset, operand.QuoteAsset)
 	}
 	exchange := exchanges[strings.ToLower(operand.Provider)]
-	return iterator.NewIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext)
+	return iterator.NewIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext, intervalMinutes)
 }
 
 func (m Market) getMarketcapIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
@@ -76,7 +74,7 @@ func (m Market) getMarketcapIterator(operand types.Operand, initialISO8601 types
 		return nil, errEmptyBaseAsset
 	}
 	mess := messari.NewMessari()
-	return iterator.NewIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext)
+	return iterator.NewIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext, 60*24)
 }
 
 func (m Market) CalculateCacheHitRatio() float64 {

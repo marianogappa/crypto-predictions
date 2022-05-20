@@ -20,8 +20,8 @@ func (b *BinanceUSDMFutures) overrideAPIURL(url string) {
 	b.apiURL = url
 }
 
-func (b *BinanceUSDMFutures) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
-	res, err := b.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs*1000)
+func (b *BinanceUSDMFutures) RequestCandlesticks(operand types.Operand, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+	res, err := b.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs*1000, intervalMinutes)
 	if err != nil {
 		return nil, err
 	}

@@ -259,7 +259,11 @@ func TestIterator(t *testing.T) {
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
 			cache := cache.NewMemoryCache(128, 128)
-			iterator, err := NewIterator(ts.operand, ts.startISO8601, cache, ts.candlestickProvider, ts.timeNowFunc, ts.startFromNext)
+			intervalMinutes := 1
+			if ts.operand.Type == types.MARKETCAP {
+				intervalMinutes = 60 * 24
+			}
+			iterator, err := NewIterator(ts.operand, ts.startISO8601, cache, ts.candlestickProvider, ts.timeNowFunc, ts.startFromNext, intervalMinutes)
 			if err == nil && ts.errCreatingIterator != nil {
 				t.Logf("expected error '%v' but had no error", ts.errCreatingIterator)
 				t.FailNow()
@@ -323,6 +327,7 @@ func TestTickIteratorUsesCache(t *testing.T) {
 		testCandlestickProvider1,
 		func() time.Time { return tp("2022-01-03 00:00:00") },
 		false,
+		1,
 	)
 	tick, err := it1.NextTick()
 	require.Nil(t, err)
@@ -346,6 +351,7 @@ func TestTickIteratorUsesCache(t *testing.T) {
 		testCandlestickProvider2,
 		func() time.Time { return tp("2022-01-03 00:00:00") },
 		false,
+		1,
 	)
 	tick, err = it2.NextTick()
 	require.Nil(t, err)
@@ -386,7 +392,7 @@ func newTestCandlestickProvider(responses []testCandlestickProviderResponse) *te
 	return &testCandlestickProvider{responses: responses}
 }
 
-func (p *testCandlestickProvider) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
+func (p *testCandlestickProvider) RequestCandlesticks(operand types.Operand, startTimeTs, intervalMinutes int) ([]types.Candlestick, error) {
 	resp := p.responses[len(p.calls)]
 	p.calls = append(p.calls, call{operand: operand, startTimeTs: startTimeTs})
 	return resp.candlesticks, resp.err

@@ -24,7 +24,7 @@ func (m *Messari) SetDebug(debug bool) {
 	m.debug = debug
 }
 
-func (m *Messari) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
+func (m *Messari) RequestCandlesticks(operand types.Operand, startTimeTs int, _ignoredIntervalMinutes int) ([]types.Candlestick, error) {
 	res, err := m.getMetrics(operand.BaseAsset, "mcap.out", startTimeTs*1000)
 	if err != nil {
 		if res.messariErrorCode == 404 && strings.HasPrefix(res.messariErrorMessage, "Asset with key = ") && strings.HasSuffix(res.messariErrorMessage, " not found.") {

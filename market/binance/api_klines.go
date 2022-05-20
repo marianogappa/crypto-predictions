@@ -2,6 +2,7 @@ package binance
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -203,13 +204,48 @@ type klinesResult struct {
 	httpStatus          int
 }
 
-func (b Binance) getKlines(baseAsset string, quoteAsset string, startTimeMillis int) (klinesResult, error) {
+func (b Binance) getKlines(baseAsset string, quoteAsset string, startTimeMillis int, intervalMinutes int) (klinesResult, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vklines", b.apiURL), nil)
 	symbol := fmt.Sprintf("%v%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
 	q := req.URL.Query()
 	q.Add("symbol", symbol)
-	q.Add("interval", "1m")
+
+	switch intervalMinutes {
+	case 1:
+		q.Add("interval", "1m")
+	case 3:
+		q.Add("interval", "3m")
+	case 5:
+		q.Add("interval", "5m")
+	case 15:
+		q.Add("interval", "15m")
+	case 30:
+		q.Add("interval", "30m")
+	case 1 * 60:
+		q.Add("interval", "1h")
+	case 2 * 60:
+		q.Add("interval", "2h")
+	case 4 * 60:
+		q.Add("interval", "4h")
+	case 6 * 60:
+		q.Add("interval", "6h")
+	case 8 * 60:
+		q.Add("interval", "8h")
+	case 12 * 60:
+		q.Add("interval", "12h")
+	case 1 * 60 * 24:
+		q.Add("interval", "1d")
+	case 3 * 60 * 24:
+		q.Add("interval", "3d")
+	case 7 * 60 * 24:
+		q.Add("interval", "1w")
+	// TODO This one is problematic because cannot patch holes or do other calculations (because months can have 28, 29, 30 & 31 days)
+	case 30 * 60 * 24:
+		q.Add("interval", "1M")
+	default:
+		return klinesResult{}, errors.New("unsupported interval minutes")
+	}
 	q.Add("limit", "1000")
 	q.Add("startTime", fmt.Sprintf("%v", startTimeMillis))
 
@@ -278,3 +314,81 @@ func (b Binance) getKlines(baseAsset string, quoteAsset string, startTimeMillis 
 		httpStatus:   200,
 	}, nil
 }
+
+// Example request for klines on Binance:
+// https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=3&startTime=1642329924000
+// For 1m interval and date Sunday, January 16, 2022 10:45:24 AM (UTC)
+//
+// Returns
+//
+// [
+//   [
+//     1642329960000,     //  Sunday, January 16, 2022 10:46:00 AM
+//     "43086.22000000",
+//     "43086.22000000",
+//     "43069.48000000",
+//     "43070.00000000",
+//     "8.65209000",
+//     1642330019999,
+//     "372709.68472200",
+//     384,
+//     "2.52145000",
+//     "108606.91496040",
+//     "0"
+//   ],
+//   [
+//     1642330020000,    // Sunday, January 16, 2022 10:47:00 AM
+//     "43070.00000000",
+//     "43079.63000000",
+//     "43069.99000000",
+//     "43072.60000000",
+//     "5.54560000",
+//     1642330079999,
+//     "238872.65921540",
+//     348,
+//     "2.52414000",
+//     "108722.43274820",
+//     "0"
+//   ],
+//   [
+//     1642330080000,    // Sunday, January 16, 2022 10:48:00 AM
+//     "43072.59000000",
+//     "43072.60000000",
+//     "43068.13000000",
+//     "43071.18000000",
+//     "4.13011000",
+//     1642330139999,
+//     "177888.74219360",
+//     344,
+//     "1.53302000",
+//     "66029.17746930",
+//     "0"
+//   ]
+// ]
+//
+// Binance uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested
+// millisecond timestamps to the closest mutiple in the future. To test this, use the following snippet:
+//
+// curl "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=3m&limit=60&startTime=1642330104000" | jq '.[] | .[0] | . / 1000 | todate'
+//
+// And test with these millisecond timestamps:
+//
+// 1642329924000 = Sunday, January 16, 2022 10:45:24 AM
+// 1642329984000 = Sunday, January 16, 2022 10:46:24 AM
+// 1642330044000 = Sunday, January 16, 2022 10:47:24 AM
+// 1642330104000 = Sunday, January 16, 2022 10:48:24 AM
+//
+// On the 1m interval, candlesticks exist at every minute
+// On the 3m interval, candlesticks exist at: 00, 03, 06 ...
+// On the 5m interval, candlesticks exist at: 00, 05, 10 ...
+// On the 15m interval, candlesticks exist at: 00, 15, 30 & 45
+// On the 30m interval, candlesticks exist at: 00 & 30
+// On the 1h interval, candlesticks exist at: 00
+// On the 2h interval, candlesticks exist at: 00:00, 02:00, 04:00 ...
+// On the 4h interval, candlesticks exist at: 00:00, 04:00, 08:00 ...
+// On the 8h interval, candlesticks exist at: 00:00, 08:00 & 16:00 ...
+// On the 12h interval, candlesticks exist at: 00:00 & 12:00
+// On the 1d interval, candlesticks exist at every day
+// On the 3d interval, things become interesting because months can have 28, 29, 30 & 31 days, but it follows the time.Truncate(3 day) logic
+// On the 1w interval, it also follows the time.Truncate(7 day) logic
+// On the 1M interval, candlesticks exist at the beginning of each month

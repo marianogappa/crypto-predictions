@@ -167,7 +167,7 @@ func TestTicksInvalidUrl(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL("invalid url")
-	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
 	}
@@ -182,7 +182,7 @@ func TestTicksErrReadingResponseBody(t *testing.T) {
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
 	b.SetDebug(true)
-	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
 	}
@@ -196,7 +196,7 @@ func TestTicksErrorResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
 	}
@@ -209,7 +209,7 @@ func TestTicksInvalidJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
 	}
@@ -228,7 +228,7 @@ func TestTicksInvalidFloatsInJSONResponse(t *testing.T) {
 
 	b := NewMessari()
 	b.overrideAPIURL(ts.URL + "/")
-	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"))
+	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")
 	}

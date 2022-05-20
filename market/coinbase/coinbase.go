@@ -20,12 +20,12 @@ func (c *Coinbase) overrideAPIURL(apiURL string) {
 	c.apiURL = apiURL
 }
 
-func (c *Coinbase) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
+func (c *Coinbase) RequestCandlesticks(operand types.Operand, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
 	startTimeTm := time.Unix(int64(startTimeTs), 0)
 	startTimeISO8601 := startTimeTm.Format(time.RFC3339)
 	endTimeISO8601 := startTimeTm.Add(299 * 60 * time.Second).Format(time.RFC3339)
 
-	res, err := c.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeISO8601, endTimeISO8601)
+	res, err := c.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeISO8601, endTimeISO8601, intervalMinutes)
 	if err != nil {
 		if res.coinbaseErrorMessage == "NotFound" {
 			return nil, types.ErrInvalidMarketPair

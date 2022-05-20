@@ -2,6 +2,7 @@ package kucoin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -99,13 +100,44 @@ type klinesResult struct {
 	httpStatus         int
 }
 
-func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int) (klinesResult, error) {
+func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) (klinesResult, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarket/candles", k.apiURL), nil)
 	symbol := fmt.Sprintf("%v-%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
 	q := req.URL.Query()
 	q.Add("symbol", symbol)
-	q.Add("type", "1min")
+
+	switch intervalMinutes {
+	case 1:
+		q.Add("type", "1min")
+	case 3:
+		q.Add("type", "3min")
+	case 5:
+		q.Add("type", "5min")
+	case 15:
+		q.Add("type", "15min")
+	case 30:
+		q.Add("type", "30min")
+	case 1 * 60:
+		q.Add("type", "1hour")
+	case 2 * 60:
+		q.Add("type", "2hour")
+	case 4 * 60:
+		q.Add("type", "4hour")
+	case 6 * 60:
+		q.Add("type", "6hour")
+	case 8 * 60:
+		q.Add("type", "8hour")
+	case 12 * 60:
+		q.Add("type", "12hour")
+	case 1 * 60 * 24:
+		q.Add("type", "1day")
+	case 7 * 60 * 24:
+		q.Add("type", "1week")
+	default:
+		return klinesResult{}, errors.New("unsupported interval minutes")
+	}
+
 	q.Add("startAt", fmt.Sprintf("%v", startTimeSecs))
 	q.Add("endAt", fmt.Sprintf("%v", startTimeSecs+1500*60))
 
@@ -161,3 +193,43 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 		httpStatus:   200,
 	}, nil
 }
+
+// Kucoin uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested
+// millisecond timestamps to the closest mutiple in the future. To test this, use the following snippet:
+//
+// curl -s "https://api.kucoin.com/api/v1/market/candles?symbol=BTC-USDT&type=1min&startAt=1642329924&endAt=1642419924" | jq '.data | .[] | .[0] | tonumber | todate'
+//
+// And test with these millisecond timestamps:
+//
+// 1642329924 = Sunday, January 16, 2022 10:45:24 AM
+// 1642329984 = Sunday, January 16, 2022 10:46:24 AM
+// 1642330044 = Sunday, January 16, 2022 10:47:24 AM
+// 1642330104 = Sunday, January 16, 2022 10:48:24 AM
+//
+// Remember that Kucoin & Coinbase are the exchanges that return results in descending order.
+//
+// Note that if `end` - `start` / `granularity` > 300, rather than failing silently, the following error will be
+// returned (which is great):
+//
+// {"message":"granularity too small for the requested time range. Count of aggregations requested exceeds 300"}
+//
+//
+// On the 1min type, candlesticks exist at every minute
+// On the 3min type, candlesticks exist at 00, 03, 06 ...
+// On the 5min type, candlesticks exist at 00, 05, 10 ...
+// On the 15min type, candlesticks exist at 00, 15, 30 ...
+// On the 30min type, candlesticks exist at 00 & 30
+// On the 1hour type, candlesticks exist at every hour
+// On the 2hour type, candlesticks exist at 00:00, 02:00, 04:00 ...
+// On the 4hour type, candlesticks exist at 00:00, 04:00, 08:00 ...
+// On the 6hour type, candlesticks exist at 00:00, 06:00, 12:00 & 18:00
+// On the 8hour type, candlesticks exist at 00:00, 08:00 & 16:00
+// On the 12hour type, candlesticks exist at 00:00 & 12:00
+// On the 1day type, candlesticks exist at every day at 00:00:00
+//
+// The weekly (1week type) is interesting. Check with:
+//
+// curl -s "https://api.kucoin.com/api/v1/market/candles?symbol=BTC-USDT&type=1week&startAt=1632329924&endAt=1699669924" | jq '.data | .[] | .[0] | tonumber | todate'
+//
+// It's not clear how it's truncating weeks, cause it's not following the time.Truncate(7 day) logic, and it's not doing
+// a "first, second, third, forth week of the month" strategy either. Not sure yet what to do in this case.

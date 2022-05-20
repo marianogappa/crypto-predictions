@@ -2,6 +2,7 @@ package binanceusdmfutures
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -203,13 +204,49 @@ type klinesResult struct {
 	httpStatus          int
 }
 
-func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, startTimeMillis int) (klinesResult, error) {
+func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, startTimeMillis int, intervalMinutes int) (klinesResult, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vklines", b.apiURL), nil)
 	symbol := fmt.Sprintf("%v%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
 	q := req.URL.Query()
 	q.Add("symbol", symbol)
-	q.Add("interval", "1m")
+
+	switch intervalMinutes {
+	case 1:
+		q.Add("interval", "1m")
+	case 3:
+		q.Add("interval", "3m")
+	case 5:
+		q.Add("interval", "5m")
+	case 15:
+		q.Add("interval", "15m")
+	case 30:
+		q.Add("interval", "30m")
+	case 1 * 60:
+		q.Add("interval", "1h")
+	case 2 * 60:
+		q.Add("interval", "2h")
+	case 4 * 60:
+		q.Add("interval", "4h")
+	case 6 * 60:
+		q.Add("interval", "6h")
+	case 8 * 60:
+		q.Add("interval", "8h")
+	case 12 * 60:
+		q.Add("interval", "12h")
+	case 1 * 60 * 24:
+		q.Add("interval", "1d")
+	case 3 * 60 * 24:
+		q.Add("interval", "3d")
+	case 7 * 60 * 24:
+		q.Add("interval", "1w")
+	// TODO This one is problematic because cannot patch holes or do other calculations (because months can have 28, 29, 30 & 31 days)
+	case 30 * 60 * 24:
+		q.Add("interval", "1M")
+	default:
+		return klinesResult{}, errors.New("Unsupported interval minutes")
+	}
+
 	q.Add("limit", "1000")
 	q.Add("startTime", fmt.Sprintf("%v", startTimeMillis))
 

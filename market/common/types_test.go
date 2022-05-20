@@ -235,3 +235,185 @@ func tp(s string) time.Time {
 func tInt(s string) int {
 	return int(tp(s).Unix())
 }
+
+func TestNormalizeTimestamp(t *testing.T) {
+	tss := []struct {
+		name                string
+		tm                  types.ISO8601
+		candlestickInterval time.Duration
+		provider            string
+		startFromNext       bool
+		expected            types.ISO8601
+	}{
+		{
+			name:                "1m, BINANCE, startFromNext = false",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 1 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:43:00Z"),
+		},
+		{
+			name:                "1m, BINANCE, startFromNext = true",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 1 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T01:44:00Z"),
+		},
+		{
+			name:                "1m, BINANCE, startFromNext = false, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:42:00Z"),
+			candlestickInterval: 1 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:42:00Z"),
+		},
+		{
+			name:                "1m, BINANCE, startFromNext = true, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:42:00Z"),
+			candlestickInterval: 1 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T01:43:00Z"),
+		},
+		{
+			name:                "5m, BINANCE, startFromNext = false",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 5 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+		},
+		{
+			name:                "5m, BINANCE, startFromNext = true",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 5 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T01:50:00Z"),
+		},
+		{
+			name:                "5m, BINANCE, startFromNext = false, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			candlestickInterval: 5 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+		},
+		{
+			name:                "5m, BINANCE, startFromNext = true, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			candlestickInterval: 5 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T01:50:00Z"),
+		},
+		{
+			name:                "15m, BINANCE, startFromNext = false",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 15 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+		},
+		{
+			name:                "15m, BINANCE, startFromNext = true",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 15 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+		},
+		{
+			name:                "15m, BINANCE, startFromNext = false, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			candlestickInterval: 15 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+		},
+		{
+			name:                "15m, BINANCE, startFromNext = true, already normalized",
+			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			candlestickInterval: 15 * time.Minute,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+		},
+		{
+			name:                "1h, BINANCE, startFromNext = false",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 1 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+		},
+		{
+			name:                "1h, BINANCE, startFromNext = true",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 1 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T03:00:00Z"),
+		},
+		{
+			name:                "1h, BINANCE, startFromNext = false, already normalized",
+			tm:                  types.ISO8601("2021-01-02T02:00:00Z"),
+			candlestickInterval: 1 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+		},
+		{
+			name:                "1h, BINANCE, startFromNext = true, already normalized",
+			tm:                  types.ISO8601("2021-01-02T02:00:00Z"),
+			candlestickInterval: 1 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-02T03:00:00Z"),
+		},
+		{
+			name:                "1d, BINANCE, startFromNext = false",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 24 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-03T00:00:00Z"),
+		},
+		{
+			name:                "1d, BINANCE, startFromNext = true",
+			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			candlestickInterval: 24 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-04T00:00:00Z"),
+		},
+		{
+			name:                "1d, BINANCE, startFromNext = false, already normalized",
+			tm:                  types.ISO8601("2021-01-02T00:00:00Z"),
+			candlestickInterval: 24 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       false,
+			expected:            types.ISO8601("2021-01-02T00:00:00Z"),
+		},
+		{
+			name:                "1d, BINANCE, startFromNext = true, already normalized",
+			tm:                  types.ISO8601("2021-01-02T00:00:00Z"),
+			candlestickInterval: 24 * time.Hour,
+			provider:            "BINANCE",
+			startFromNext:       true,
+			expected:            types.ISO8601("2021-01-03T00:00:00Z"),
+		},
+	}
+	for _, ts := range tss {
+		t.Run(ts.name, func(t *testing.T) {
+			tm, err := ts.tm.Time()
+			require.Nil(t, err)
+			actual := NormalizeTimestamp(tm, ts.candlestickInterval, ts.provider, ts.startFromNext)
+			expected, err := ts.expected.Seconds()
+			require.Nil(t, err)
+			require.Equal(t, expected, actual)
+		})
+	}
+}

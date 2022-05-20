@@ -41,8 +41,10 @@ package cache
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -134,7 +136,12 @@ func (c *MemoryCache) Get(operand types.Operand, initialISO8601 types.ISO8601) (
 		return nil, fmt.Errorf("%w: %v", ErrInvalidISO8601, initialISO8601)
 	}
 	c.CacheRequests++
-	startingTimestamp := calculateNormalizedStartingTimestamp(operand, tm.UTC())
+
+	candlestickInterval := 24 * time.Hour
+	if isMinutely(operand) {
+		candlestickInterval = 1 * time.Minute
+	}
+	startingTimestamp := common.NormalizeTimestamp(tm, candlestickInterval, "TODO_PROVIDER", false)
 
 	if isMinutely(operand) {
 		return c.getMinutely(operand, startingTimestamp)

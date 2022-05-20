@@ -17,22 +17,31 @@ type IteratorImpl struct {
 	operand             types.Operand
 	candlestickProvider common.CandlestickProvider
 	timeNowFunc         func() time.Time
+	intervalMinutes     int
 }
 
-func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool) (*IteratorImpl, error) {
+func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*IteratorImpl, error) {
 	startTm, err := startISO8601.Time()
 	if err != nil {
 		return nil, cache.ErrInvalidISO8601
 	}
-	startTs := calculateNormalizedStartingTimestamp(operand, startTm, startFromNext)
+
+	startTs := common.NormalizeTimestamp(startTm, time.Duration(intervalMinutes)*time.Minute, "TODO_PROVIDER", startFromNext)
+
+	// TODO: currently not caching for any candlestick interval other than minutely & daily.
+	cache := candlestickCache
+	if intervalMinutes != 1 && intervalMinutes != 60*24 {
+		cache = nil
+	}
 
 	return &IteratorImpl{
 		operand:             operand,
-		candlestickCache:    candlestickCache,
+		candlestickCache:    cache,
 		candlestickProvider: candlestickProvider,
 		candlesticks:        []types.Candlestick{},
 		timeNowFunc:         timeNowFunc,
-		lastTs:              startTs - candlestickDurationSecs(operand),
+		lastTs:              startTs - intervalMinutes*60,
+		intervalMinutes:     intervalMinutes,
 	}, nil
 }
 
@@ -67,7 +76,7 @@ func (t *IteratorImpl) NextCandlestick() (types.Candlestick, error) {
 	}
 
 	// If we reach here, the buffer was empty and the cache was empty too. Last chance: try the exchange.
-	candlesticks, err := t.candlestickProvider.RequestCandlesticks(t.operand, t.nextTs())
+	candlesticks, err := t.candlestickProvider.RequestCandlesticks(t.operand, t.nextTs(), t.intervalMinutes)
 	if err != nil {
 		return types.Candlestick{}, err
 	}
@@ -115,15 +124,7 @@ func (t *IteratorImpl) nextTs() int {
 }
 
 func (t *IteratorImpl) candlestickDurationSecs() int {
-	return candlestickDurationSecs(t.operand)
-}
-
-func candlestickDurationSecs(op types.Operand) int {
-	if isMinutely(op) {
-		return 60
-	}
-	// MARKETCAP: 60*60*24
-	return 86400
+	return t.intervalMinutes * 60
 }
 
 func (t *IteratorImpl) pruneOlderCandlesticks(candlesticks []types.Candlestick) []types.Candlestick {
@@ -134,31 +135,4 @@ func (t *IteratorImpl) pruneOlderCandlesticks(candlesticks []types.Candlestick) 
 		}
 	}
 	return candlesticks
-}
-
-func calculateNormalizedStartingTimestamp(operand types.Operand, tm time.Time, startFromNext bool) int {
-	if isMinutely(operand) {
-		if tm.Second() == 0 {
-			return int(tm.Unix()) + b2i(startFromNext)*candlestickDurationSecs(operand)
-		}
-		year, month, day := tm.Date()
-		return int(time.Date(year, month, day, tm.Hour(), tm.Minute()+1+b2i(startFromNext), 0, 0, time.UTC).Unix())
-	}
-
-	if tm.Second() == 0 && tm.Minute() == 0 && tm.Hour() == 0 {
-		return int(tm.Unix()) + b2i(startFromNext)*candlestickDurationSecs(operand)
-	}
-	year, month, day := tm.Date()
-	return int(time.Date(year, month, day+1+b2i(startFromNext), 0, 0, 0, 0, time.UTC).Unix())
-}
-
-func isMinutely(op types.Operand) bool {
-	return op.Type == types.COIN
-}
-
-func b2i(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }

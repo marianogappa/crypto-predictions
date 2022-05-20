@@ -2,6 +2,7 @@ package coinbase
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -70,11 +71,26 @@ type klinesResult struct {
 	httpStatus           int
 }
 
-func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO8601, endTimeISO8601 string) (klinesResult, error) {
+func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO8601, endTimeISO8601 string, intervalMinutes int) (klinesResult, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vproducts/%v-%v/candles", c.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 
 	q := req.URL.Query()
-	q.Add("granularity", "60")
+
+	granularity := intervalMinutes * 60
+
+	validGranularities := map[int]bool{
+		60:    true,
+		300:   true,
+		900:   true,
+		3600:  true,
+		21600: true,
+		86400: true,
+	}
+	if isValid := validGranularities[granularity]; !isValid {
+		return klinesResult{}, errors.New("unsupported resolution")
+	}
+
+	q.Add("granularity", fmt.Sprintf("%v", granularity))
 	q.Add("start", fmt.Sprintf("%v", startTimeISO8601))
 	q.Add("end", fmt.Sprintf("%v", endTimeISO8601))
 
@@ -134,3 +150,21 @@ func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO860
 		httpStatus:   200,
 	}, nil
 }
+
+// Coinbase uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested
+// millisecond timestamps to the closest mutiple in the future. To test this, use the following snippet:
+//
+// curl -s "https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=60&start=2022-01-16T10:45:24Z&end=2022-01-16T10:59:24Z" | jq '.[] | .[0] | todate'
+//
+// Note that if `end` - `start` / `granularity` > 300, rather than failing silently, the following error will be
+// returned (which is great):
+//
+// {"message":"granularity too small for the requested time range. Count of aggregations requested exceeds 300"}
+//
+//
+// On the 60 resolution, candlesticks exist at every minute
+// On the 300 resolution, candlesticks exist at: 00, 05, 10 ...
+// On the 900 resolution, candlesticks exist at: 00, 15, 30 & 45
+// On the 3600 resolution, candlesticks exist at every hour
+// On the 21600 resolution, candlesticks exist at: 00:00, 06:00, 12:00 & 18:00
+// On the 86400 resolution, candlesticks exist at every day at 00:00:00

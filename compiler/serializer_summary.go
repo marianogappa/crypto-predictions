@@ -68,7 +68,7 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -110,7 +110,7 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (P
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -149,7 +149,7 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false)
+	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -186,7 +186,7 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr1 := marketCap1.Str
-	it1, err := (*s.mkt).GetIterator(marketCap1, initialISO8601, false)
+	it1, err := (*s.mkt).GetIterator(marketCap1, initialISO8601, false, 60*24)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
@@ -199,7 +199,7 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 	}
 
 	opStr2 := marketCap2.Str
-	it2, err := (*s.mkt).GetIterator(marketCap2, initialISO8601, false)
+	it2, err := (*s.mkt).GetIterator(marketCap2, initialISO8601, false, 60*24)
 	if err != nil {
 		return PredictionSummary{}, err
 	}

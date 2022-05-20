@@ -20,8 +20,8 @@ func (k *Kucoin) overrideAPIURL(apiURL string) {
 	k.apiURL = apiURL
 }
 
-func (k *Kucoin) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error) {
-	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs)
+func (k *Kucoin) RequestCandlesticks(operand types.Operand, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+	res, err := k.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs, intervalMinutes)
 	if err != nil {
 		if res.kucoinErrorCode == "400100" && res.kucoinErrorMessage == "This pair is not provided at present" {
 			return nil, types.ErrInvalidMarketPair
@@ -29,7 +29,7 @@ func (k *Kucoin) RequestCandlesticks(operand types.Operand, startTimeTs int) ([]
 		return nil, err
 	}
 
-	// Reverse slice, because Coinbase returns candlesticks in descending order
+	// Reverse slice, because Kucoin returns candlesticks in descending order
 	for i, j := 0, len(res.candlesticks)-1; i < j; i, j = i+1, j-1 {
 		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
 	}

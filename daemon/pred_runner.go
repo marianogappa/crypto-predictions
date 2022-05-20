@@ -34,7 +34,7 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 
 		result.tickers[condition.Name] = map[string]types.Iterator{}
 		for _, operand := range condition.NonNumberOperands() {
-			ticker, err := m.GetIterator(operand, startISO8601, startFromNext)
+			ticker, err := m.GetIterator(operand, startISO8601, startFromNext, 1)
 			if err != nil {
 				errs = append(errs, err)
 				return &result, errs

@@ -39,7 +39,7 @@ type CandlestickProvider interface {
 	//
 	// * Fails with ErrInvalidMarketPair if the operand's marketPair / asset does not exist at the exchange. In some
 	//   cases, an exchange may not have data for a marketPair / asset and still not explicitly return an error.
-	RequestCandlesticks(operand types.Operand, startTimeTs int) ([]types.Candlestick, error)
+	RequestCandlesticks(operand types.Operand, startTimeTs, intervalMinutes int) ([]types.Candlestick, error)
 
 	// GetPatience documents the recommended latency a client should observe for requesting the latest candlesticks
 	// for a given market pair. Clients may ignore it, but are more likely to have to deal with empty results, errors
@@ -56,7 +56,7 @@ func CandlesticksToTicks(cs []types.Candlestick) []types.Tick {
 }
 
 func PatchCandlestickHoles(cs []types.Candlestick, startTimeTs, durSecs int) []types.Candlestick {
-	startTimeTs = calculateNormalizedStartingTimestamp(startTimeTs, durSecs)
+	startTimeTs = NormalizeTimestamp(time.Unix(int64(startTimeTs), 0), time.Duration(durSecs)*time.Second, "TODO_PROVIDER", false)
 	lastTs := startTimeTs - durSecs
 	for len(cs) > 0 && cs[0].Timestamp < lastTs+durSecs {
 		cs = cs[1:]
@@ -82,24 +82,21 @@ func PatchCandlestickHoles(cs []types.Candlestick, startTimeTs, durSecs int) []t
 	return fixedCss
 }
 
-func calculateNormalizedStartingTimestamp(startTimeTs, durSecs int) int {
-	tm := time.Unix(int64(startTimeTs), 0)
-	if isMinutely(durSecs) {
-		if tm.Second() == 0 {
-			return int(tm.Unix())
-		}
-		year, month, day := tm.Date()
-
-		return int(time.Date(year, month, day, tm.Hour(), tm.Minute()+1, 0, 0, time.UTC).Unix())
+// TODO: this function only currently supports 1m, 5m, 15m, 1h & 1d intervals. Using other intervals will
+// result in silently incorrect behaviour due to exchanges behaving differently. Please review api_klines files for
+// documented differences in behaviour.
+func NormalizeTimestamp(rawTm time.Time, candlestickInterval time.Duration, provider string, startFromNext bool) int {
+	rawTm = rawTm.UTC()
+	tm := rawTm.Truncate(candlestickInterval).UTC()
+	if tm != rawTm {
+		tm = tm.Add(candlestickInterval)
 	}
-
-	if tm.Second() == 0 && tm.Minute() == 0 && tm.Hour() == 0 {
-		return int(tm.Unix())
-	}
-	year, month, day := tm.Date()
-	return int(time.Date(year, month, day+1, 0, 0, 0, 0, time.UTC).Unix())
+	return int(tm.Add(candlestickInterval * time.Duration(b2i(startFromNext))).Unix())
 }
 
-func isMinutely(durSecs int) bool {
-	return durSecs == 60
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

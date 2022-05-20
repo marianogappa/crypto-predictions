@@ -2,6 +2,7 @@ package ftx
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -65,11 +66,34 @@ type klinesResult struct {
 	httpStatus      int
 }
 
-func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int) (klinesResult, error) {
+func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) (klinesResult, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarkets/%v/%v/candles", f.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 	q := req.URL.Query()
-	q.Add("resolution", "60")
+
+	resolution := intervalMinutes * 60
+
+	validResolutions := map[int]bool{
+		15:    true,
+		60:    true,
+		300:   true,
+		900:   true,
+		3600:  true,
+		14400: true,
+		86400: true,
+		// All multiples of 86400 up to 30*86400 are actually valid
+		// https://docs.ftx.com/#get-historical-prices
+		86400 * 7: true,
+	}
+	if isValid := validResolutions[resolution]; !isValid {
+		return klinesResult{}, errors.New("unsupported resolution")
+	}
+
+	q.Add("resolution", fmt.Sprintf("%v", resolution))
 	q.Add("start_time", fmt.Sprintf("%v", startTimeSecs))
+
+	// N.B.: if you don't supply end_time, or if you supply a very large range, FTX silently ignores this and
+	// instead gives you recent data.
+	q.Add("end_time", fmt.Sprintf("%v", startTimeSecs+1000*intervalMinutes*60))
 
 	req.URL.RawQuery = q.Encode()
 
@@ -119,3 +143,24 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int) (
 		httpStatus:   200,
 	}, nil
 }
+
+// FTX uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested
+// millisecond timestamps to the closest mutiple in the future. To test this, use the following snippet:
+//
+// curl -s "https://ftx.com/api/markets/BTC/USDT/candles?resolution=60&start_time="$(date -j -f "%Y-%m-%d %H:%M:%S" "2020-04-07 00:00:00" "+%s")"&end_time="$(date -j -f "%Y-%m-%d %H:%M:%S" "2020-04-07 00:03:00" "+%s")"" | jq '.result | .[] | .startTime'
+//
+// Two important caveats for FTX:
+//
+// 1) if end_time is not specified, start_time is ignored silently and recent data is returned.
+// 2) if the range between start_time & end_time is too broad, start_time will be pushed upwards until the range spans 1500 candlesticks.
+//
+// On the 15 resolution, candlesticks exist at: 00, 15, 30, 45
+// On the 60 resolution, candlesticks exist at every minute
+// On the 300 resolution, candlesticks exist at: 00, 05, 10 ...
+// On the 900 resolution, candlesticks exist at: 00, 15, 30 & 45
+// On the 3600 resolution, candlesticks exist at every hour at :00
+// On the 14400 resolution, candlesticks exist at: 00:00, 04:00, 08:00 ...
+//
+// From the 86400 resolution and onwards, FTX is a unique case:
+// - it first truncates the date to the beginning of the supplied start_time's day
+// - then it returns candlesticks at multiples of the truncated date, starting at that date rather than a prescribed one

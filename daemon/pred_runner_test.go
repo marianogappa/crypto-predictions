@@ -327,7 +327,7 @@ type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetIterator(operand types.Operand, ts types.ISO8601, startFromNext bool) (types.Iterator, error) {
+func (m *testMarket) GetIterator(operand types.Operand, ts types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
 	m.calls = append(m.calls, marketCall{operand, ts, startFromNext})
 	return testIterator{}, nil
 }

@@ -181,7 +181,7 @@ func newTestMarket(ticks map[string]types.Tick) *testMarket {
 	return &testMarket{}
 }
 
-func (m *testMarket) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
+func (m *testMarket) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
 	if _, ok := m.ticks[operand.Str]; !ok {
 		return nil, types.ErrInvalidMarketPair
 	}
