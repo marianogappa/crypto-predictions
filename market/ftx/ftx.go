@@ -25,7 +25,7 @@ func (f *FTX) RequestCandlesticks(operand types.Operand, startTimeTs int, interv
 	if err != nil {
 		return nil, err
 	}
-	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60*intervalMinutes), nil
 }
 
 func (f *FTX) GetPatience() time.Duration { return 0 * time.Second }

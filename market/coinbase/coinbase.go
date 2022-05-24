@@ -38,7 +38,7 @@ func (c *Coinbase) RequestCandlesticks(operand types.Operand, startTimeTs int, i
 		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
 	}
 
-	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60*intervalMinutes), nil
 }
 
 func (c *Coinbase) GetPatience() time.Duration { return 1 * time.Minute }

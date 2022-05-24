@@ -2,9 +2,11 @@ package imagebuilder
 
 import (
 	"context"
+	"embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -20,15 +22,16 @@ import (
 )
 
 type PredictionImageBuilder struct {
-	market market.IMarket
+	market    market.IMarket
+	templates map[string]*template.Template
 }
 
-func NewPredictionImageBuilder(m market.IMarket) PredictionImageBuilder {
-	return PredictionImageBuilder{m}
+func NewPredictionImageBuilder(m market.IMarket, files embed.FS) PredictionImageBuilder {
+	templates, _ := loadTemplates(files)
+	return PredictionImageBuilder{m, templates}
 }
 
 func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, account types.Account) (string, error) {
-	fmt.Println("Building image for ", prediction, account)
 	url, err := r.BuildImage(prediction, account)
 	if err != nil {
 		return "", err
@@ -58,16 +61,10 @@ func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, ac
 }
 
 func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account types.Account) (string, error) {
-	fmt.Println("Building image for ", prediction, account)
 	if os.Getenv("PREDICTIONS_CHROME_PATH") == "" {
 		return "", errors.New("Daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set.")
 	}
-	if os.Getenv("PREDICTIONS_POST_IMAGE_PATH") == "" {
-		return "", errors.New("Daemon.buildImageAction: PREDICTIONS_POST_IMAGE_PATH env not set.")
-	}
 	chromePath := os.Getenv("PREDICTIONS_CHROME_PATH")
-	postImagePath := os.Getenv("PREDICTIONS_POST_IMAGE_PATH")
-	indexTPLPath := fmt.Sprintf("%v/index.tpl", postImagePath)
 
 	// Inputs
 	name := account.Handle
@@ -91,12 +88,12 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 		return "", err
 	}
 
-	t, err := template.ParseFiles(indexTPLPath)
-	if err != nil {
-		return "", fmt.Errorf("Daemon.buildImageAction: error parsing template file: %v", err)
+	t, ok := r.templates["index.tpl"]
+	if !ok {
+		return "", fmt.Errorf("Daemon.buildImageAction: template file not found: index.tpl")
 	}
 
-	randomHTMLPath := fmt.Sprintf("%v/deleteme_%v.html", postImagePath, uuid.NewString())
+	randomHTMLPath := fmt.Sprintf("deleteme_%v.html", uuid.NewString())
 
 	f, err := os.Create(randomHTMLPath)
 	if err != nil {
@@ -175,4 +172,32 @@ func waitFor(f func() bool, attempts int, interval time.Duration) bool {
 		time.Sleep(interval)
 	}
 	return false
+}
+
+func loadTemplates(files embed.FS) (map[string]*template.Template, error) {
+	var (
+		templatesDir = "public"
+		templates    map[string]*template.Template
+	)
+	if templates == nil {
+		templates = make(map[string]*template.Template)
+	}
+	tmplFiles, err := fs.ReadDir(files, templatesDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, tmpl := range tmplFiles {
+		if tmpl.IsDir() {
+			continue
+		}
+
+		pt, err := template.ParseFS(files, templatesDir+"/"+tmpl.Name())
+		if err != nil {
+			return nil, err
+		}
+
+		templates[tmpl.Name()] = pt
+	}
+	return templates, nil
 }

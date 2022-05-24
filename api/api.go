@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
@@ -30,16 +32,17 @@ import (
 )
 
 type API struct {
-	mux      *web.Service
-	mkt      market.IMarket
-	store    statestorage.StateStorage
-	mFetcher metadatafetcher.MetadataFetcher
-	NowFunc  func() time.Time
-	debug    bool
+	mux          *web.Service
+	mkt          market.IMarket
+	store        statestorage.StateStorage
+	mFetcher     metadatafetcher.MetadataFetcher
+	NowFunc      func() time.Time
+	debug        bool
+	imageBuilder imagebuilder.PredictionImageBuilder
 }
 
-func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher) *API {
-	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher}
+func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher, files embed.FS) *API {
+	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher, imageBuilder: imagebuilder.NewPredictionImageBuilder(mkt, files)}
 
 	apiSchema := &openapi.Collector{}
 	apiSchema.Reflector().SpecEns().Info.Title = "Crypto Predictions"

@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -78,14 +79,14 @@ func TestAPI(t *testing.T) {
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}
-			a := NewAPI(testMarket, memoryStateStorage, *mFetcher)
+			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, embed.FS{})
 			l, err := a.Listen("localhost:0")
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
 			url := l.Addr().String()
 			go a.BlockinglyServe(l)
-			daemon := daemon.NewDaemon(testMarket, memoryStateStorage)
+			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, embed.FS{})
 
 			ts.test(t, url, memoryStateStorage, testMarket, daemon, mFetcher)
 		})

@@ -34,7 +34,7 @@ func (k *Kucoin) RequestCandlesticks(operand types.Operand, startTimeTs int, int
 		res.candlesticks[i], res.candlesticks[j] = res.candlesticks[j], res.candlesticks[i]
 	}
 
-	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60*intervalMinutes), nil
 }
 
 func (k *Kucoin) GetPatience() time.Duration { return 0 * time.Second }

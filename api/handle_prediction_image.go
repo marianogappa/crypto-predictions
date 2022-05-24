@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/usecase"
 )
@@ -45,8 +44,7 @@ func (a *API) getPredictionImage(uuid string) apiResponse[apiResGetPredictionIma
 	}
 	account := accounts[0]
 
-	predImageBuilder := imagebuilder.NewPredictionImageBuilder(a.mkt)
-	base64Image, err := predImageBuilder.BuildImageBase64(pred, account)
+	base64Image, err := a.imageBuilder.BuildImageBase64(pred, account)
 	if err != nil {
 		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPredictionImage{})
 	}

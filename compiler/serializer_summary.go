@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"errors"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
@@ -8,17 +9,24 @@ import (
 )
 
 type PredictionSummary struct {
-	CandlestickMap  map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
-	Coin            string                         `json:"coin,omitempty"`
-	OtherCoin       string                         `json:"otherCoin,omitempty"`
-	Goal            types.JsonFloat64              `json:"goal,omitempty"`
-	RangeLow        types.JsonFloat64              `json:"rangeLow,omitempty"`
-	RangeHigh       types.JsonFloat64              `json:"rangeHigh,omitempty"`
-	WillReach       types.JsonFloat64              `json:"willReach,omitempty"`
-	BeforeItReaches types.JsonFloat64              `json:"beforeItReaches,omitempty"`
-	Operator        string                         `json:"operator,omitempty"`
-	Deadline        types.ISO8601                  `json:"deadline,omitempty"`
-	PredictionType  string                         `json:"predictionType,omitempty"`
+	CandlestickMap           map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
+	Coin                     string                         `json:"coin,omitempty"`
+	OtherCoin                string                         `json:"otherCoin,omitempty"`
+	Goal                     types.JsonFloat64              `json:"goal,omitempty"`
+	GoalWithError            types.JsonFloat64              `json:"goalWithError,omitempty"`
+	RangeLow                 types.JsonFloat64              `json:"rangeLow,omitempty"`
+	RangeLowWithError        types.JsonFloat64              `json:"rangeLowWithError,omitempty"`
+	RangeHigh                types.JsonFloat64              `json:"rangeHigh,omitempty"`
+	RangeHighWithError       types.JsonFloat64              `json:"rangeHighWithError,omitempty"`
+	WillReach                types.JsonFloat64              `json:"willReach,omitempty"`
+	WillReachWithError       types.JsonFloat64              `json:"willReachWithError,omitempty"`
+	BeforeItReaches          types.JsonFloat64              `json:"beforeItReaches,omitempty"`
+	BeforeItReachesWithError types.JsonFloat64              `json:"beforeItReachesWithError,omitempty"`
+	ErrorMarginRatio         types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
+	Operator                 string                         `json:"operator,omitempty"`
+	Deadline                 types.ISO8601                  `json:"deadline,omitempty"`
+	EndedAt                  types.ISO8601                  `json:"endedAt,omitempty"`
+	PredictionType           string                         `json:"predictionType,omitempty"`
 }
 
 func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
@@ -54,25 +62,20 @@ func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (
 }
 
 func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (PredictionSummary, error) {
-	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
-	if p.State.Status == types.FINISHED {
-		finalTs = time.Unix(int64(p.State.LastTs), 0)
-	}
+	typedPred := types.PredictionTypeCoinOperatorFloatDeadline{P: p}
 
-	tmFirstTick := finalTs.Add(-60 * time.Minute)
-	coin := p.Predict.Predict.Literal.Operands[0]
-	operator := p.Predict.Predict.Literal.Operator
-	goal := p.Predict.Predict.Literal.Operands[1].Number
-	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
-	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
-
-	candlesticks := map[string][]types.Candlestick{}
-	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
+	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 60; i++ {
+
+	candlesticks := map[string][]types.Candlestick{}
+	opStr := typedPred.Coin().Str
+	it, err := (*s.mkt).GetIterator(typedPred.Coin(), chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -81,40 +84,34 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 	}
 
 	return PredictionSummary{
-		PredictionType: p.Type.String(),
-		CandlestickMap: candlesticks,
-		Operator:       operator,
-		Goal:           goal,
-		Deadline:       deadline,
-		Coin:           opStr,
+		PredictionType:   p.Type.String(),
+		CandlestickMap:   candlesticks,
+		Operator:         typedPred.Operator(),
+		Goal:             typedPred.Goal(),
+		GoalWithError:    typedPred.GoalWithError(),
+		ErrorMarginRatio: types.JsonFloat64(typedPred.ErrorMarginRatio()),
+		Deadline:         types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
+		EndedAt:          types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
+		Coin:             opStr,
 	}, nil
 }
 
 func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary, error) {
-	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
-	if p.State.Status == types.FINISHED {
-		finalTs = time.Unix(int64(p.State.LastTs), 0)
-	}
+	typedPred := types.PredictionTypeCoinWillRange{P: p}
+	coin := typedPred.Coin()
 
-	tmFirstTick := finalTs.Add(-60 * time.Minute)
-	coin := p.Predict.Predict.Literal.Operands[0]
-
-	rangeLow := p.Predict.Predict.Literal.Operands[1].Number
-	rangeHigh := p.Predict.Predict.Literal.Operands[2].Number
-	if rangeLow > rangeHigh {
-		rangeLow, rangeHigh = rangeHigh, rangeLow
-	}
-
-	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
-	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
-
-	candlesticks := map[string][]types.Candlestick{}
-	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
+	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 60; i++ {
+
+	candlesticks := map[string][]types.Candlestick{}
+	opStr := coin.Str
+	it, err := (*s.mkt).GetIterator(coin, chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -123,37 +120,35 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (P
 	}
 
 	return PredictionSummary{
-		PredictionType: p.Type.String(),
-		CandlestickMap: candlesticks,
-		Deadline:       deadline,
-		RangeLow:       rangeLow,
-		RangeHigh:      rangeHigh,
-		Coin:           opStr,
+		PredictionType:     p.Type.String(),
+		CandlestickMap:     candlesticks,
+		Deadline:           types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
+		EndedAt:            types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
+		ErrorMarginRatio:   types.JsonFloat64(typedPred.ErrorMarginRatio()),
+		RangeLow:           typedPred.RangeLow(),
+		RangeLowWithError:  typedPred.RangeLowWithError(),
+		RangeHigh:          typedPred.RangeHigh(),
+		RangeHighWithError: typedPred.RangeHighWithError(),
+		Coin:               opStr,
 	}, nil
 }
 
 func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (PredictionSummary, error) {
-	finalTs := time.Now().Round(time.Minute).Add(-2 * time.Minute)
-	if p.State.Status == types.FINISHED {
-		finalTs = time.Unix(int64(p.State.LastTs), 0)
-	}
+	typedPred := types.PredictionTypeCoinWillReachBeforeItReaches{P: p}
+	coin := typedPred.Coin()
 
-	tmFirstTick := finalTs.Add(-60 * time.Minute)
-	coin := p.Predict.Predict.Literal.Operands[0]
-
-	willReach := p.Predict.Predict.Operands[0].Literal.Operands[1].Number
-	beforeItReaches := p.Predict.Predict.Operands[1].Operands[0].Literal.Operands[1].Number
-
-	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
-	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
-
-	candlesticks := map[string][]types.Candlestick{}
-	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin, initialISO8601, false, 1)
+	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 60; i++ {
+
+	candlesticks := map[string][]types.Candlestick{}
+	opStr := coin.Str
+	it, err := (*s.mkt).GetIterator(coin, chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -162,12 +157,16 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types
 	}
 
 	return PredictionSummary{
-		PredictionType:  p.Type.String(),
-		CandlestickMap:  candlesticks,
-		Deadline:        deadline,
-		WillReach:       willReach,
-		BeforeItReaches: beforeItReaches,
-		Coin:            opStr,
+		PredictionType:           p.Type.String(),
+		CandlestickMap:           candlesticks,
+		Deadline:                 types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
+		EndedAt:                  types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
+		ErrorMarginRatio:         types.JsonFloat64(typedPred.ErrorMarginRatio()),
+		WillReach:                typedPred.WillReach(),
+		WillReachWithError:       typedPred.WillReachWithError(),
+		BeforeItReaches:          typedPred.BeforeItReaches(),
+		BeforeItReachesWithError: typedPred.BeforeItReachesWithError(),
+		Coin:                     opStr,
 	}, nil
 }
 
@@ -184,13 +183,18 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 	initialISO8601 := types.ISO8601(tmFirstTick.Format(time.RFC3339))
 	deadline := types.ISO8601(time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC().Format(time.RFC3339))
 
-	candlesticks := map[string][]types.Candlestick{}
-	opStr1 := marketCap1.Str
-	it1, err := (*s.mkt).GetIterator(marketCap1, initialISO8601, false, 60*24)
+	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 120; i++ {
+
+	candlesticks := map[string][]types.Candlestick{}
+	opStr1 := marketCap1.Str
+	it1, err := (*s.mkt).GetIterator(marketCap1, chartParams.startTimeISO8601(), false, 60*24)
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+	for i := 0; i < 30; i++ {
 		candlestick, err := it1.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -203,7 +207,7 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 	if err != nil {
 		return PredictionSummary{}, err
 	}
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 30; i++ {
 		candlestick, err := it2.NextCandlestick()
 		if err != nil {
 			return PredictionSummary{}, err
@@ -219,4 +223,53 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 		Coin:           opStr1,
 		OtherCoin:      opStr2,
 	}, nil
+}
+
+type candlestickChartParams struct {
+	startTime           time.Time
+	candlestickCount    int
+	candlestickInterval time.Duration
+}
+
+func (p candlestickChartParams) startTimeISO8601() types.ISO8601 {
+	return types.ISO8601(p.startTime.Format(time.RFC3339))
+}
+
+func (p candlestickChartParams) candlestickIntervalMinutes() int {
+	return int(p.candlestickInterval / time.Minute)
+}
+
+func getCandlestickChartParams(p types.Prediction) (candlestickChartParams, error) {
+	startTime, err := p.PostedAt.Time()
+	if err != nil {
+		return candlestickChartParams{}, err
+	}
+
+	// Compute endTime as the earliest of time.Now(), the lastTs when prediction finished & the prediction's deadline
+	endTime := time.Now().UTC()
+	if p.State.LastTs != 0 && p.State.Status == types.FINISHED {
+		lastTime := time.Unix(int64(p.State.LastTs), 0)
+
+		if lastTime.Before(endTime) {
+			endTime = lastTime
+		}
+	}
+	// TODO careful with this line! It's not guaranteed that all prediction types will have deadline here
+	deadline := time.Unix(int64(p.Predict.Predict.Literal.ToTs), 0).UTC()
+	if deadline.Before(endTime) {
+		endTime = deadline
+	}
+
+	if endTime.Before(startTime) || endTime == startTime {
+		return candlestickChartParams{}, errors.New("startTime is equal to endTime")
+	}
+
+	interval := endTime.Sub(startTime)
+
+	switch {
+	case interval < 5*24*time.Hour:
+		return candlestickChartParams{startTime: endTime.Add(-30 * time.Hour), candlestickCount: 30, candlestickInterval: time.Hour}, nil
+	default:
+		return candlestickChartParams{startTime: endTime.Add(-30 * 24 * time.Hour), candlestickCount: 30, candlestickInterval: 24 * time.Hour}, nil
+	}
 }

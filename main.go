@@ -85,10 +85,10 @@ func main() {
 		metadataFetcher = metadatafetcher.NewMetadataFetcher()
 
 		// The API component is responsible for CRUDing predictions and related entities.
-		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher)
+		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, files)
 
 		// The Daemon component is responsible for continuously running prediction state machines against market data.
-		daemon = daemon.NewDaemon(market, postgresDBStorage)
+		daemon = daemon.NewDaemon(market, postgresDBStorage, files)
 
 		// The BackOffice component is a UI for admins to maintain the predictions system.
 		backOffice = backoffice.NewBackOfficeUI(files)

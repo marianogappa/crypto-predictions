@@ -25,7 +25,7 @@ func (b *BinanceUSDMFutures) RequestCandlesticks(operand types.Operand, startTim
 	if err != nil {
 		return nil, err
 	}
-	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60), nil
+	return common.PatchCandlestickHoles(res.candlesticks, startTimeTs, 60*intervalMinutes), nil
 }
 
 func (b *BinanceUSDMFutures) GetPatience() time.Duration { return 0 * time.Minute }

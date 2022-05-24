@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"os"
@@ -33,8 +34,8 @@ type DaemonResult struct {
 	Predictions []*types.Prediction
 }
 
-func NewDaemon(market market.IMarket, store statestorage.StateStorage) *Daemon {
-	return &Daemon{store: store, market: market, predImageBuilder: imagebuilder.NewPredictionImageBuilder(market)}
+func NewDaemon(market market.IMarket, store statestorage.StateStorage, files embed.FS) *Daemon {
+	return &Daemon{store: store, market: market, predImageBuilder: imagebuilder.NewPredictionImageBuilder(market, files)}
 }
 
 func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {

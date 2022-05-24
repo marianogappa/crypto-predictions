@@ -30,7 +30,7 @@ func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickC
 
 	// TODO: currently not caching for any candlestick interval other than minutely & daily.
 	cache := candlestickCache
-	if intervalMinutes != 1 && intervalMinutes != 60*24 {
+	if intervalMinutes != 1 && (intervalMinutes != 60*24 || (intervalMinutes == 60*24 && operand.Type == types.COIN)) {
 		cache = nil
 	}
 
