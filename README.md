@@ -48,6 +48,10 @@ And these optional credentials allow posting to Twitter (but to obtain them you 
 - `PREDICTIONS_TWITTER_ACCESS_TOKEN`
 - `PREDICTIONS_TWITTER_ACCESS_SECRET`
 
+If you provide the path to a Chrome binary, it will be used to produce images to be added onto Twitter posts (this process will also temporarily write images to the filesystem at the cwd, so make sure it is writable):
+
+- `PREDICTIONS_CHROME_PATH` (also used to produce images shown in the BackOffice)
+
 #### Database configuration
 
 - `PREDICTIONS_POSTGRES_USER`: defaults to current user.
