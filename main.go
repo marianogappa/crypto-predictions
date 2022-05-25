@@ -31,6 +31,7 @@ var (
 	flagAPI        = flag.Bool("api", false, "only run API")
 	flagBackOffice = flag.Bool("backoffice", false, "only run Back Office")
 	flagDaemon     = flag.Bool("daemon", false, "only run Daemon")
+	flagDaemonOnce = flag.Bool("daemononce", false, "only run Daemon once")
 )
 
 func main() {
@@ -39,10 +40,11 @@ func main() {
 
 	// Parse flags and figure out what components need to run.
 	var (
-		runAll        = (!*flagAPI && !*flagBackOffice && !*flagDaemon) || (*flagAPI && *flagBackOffice && *flagDaemon)
+		runAll        = (!*flagAPI && !*flagBackOffice && !*flagDaemon && !*flagDaemonOnce) || (*flagAPI && *flagBackOffice && *flagDaemon)
 		runAPI        = runAll || *flagAPI
 		runBackOffice = runAll || *flagBackOffice
 		runDaemon     = runAll || *flagDaemon
+		runDaemonOnce = !runAll && !*flagDaemon && *flagDaemonOnce
 	)
 
 	// Unless only the daemon is running, predictions may be created. If so, credentials for Twitter & Youtube APIs are
@@ -115,11 +117,15 @@ func main() {
 		go backOffice.MustBlockinglyServe(backOfficePort, apiUrl)
 	}
 
-	if runDaemon {
+	if !runDaemonOnce && runDaemon {
 		go daemon.BlockinglyRunEvery(daemonDuration)
 	}
 
-	select {}
+	if runDaemonOnce {
+		daemon.Run(int(time.Now().Unix()))
+	} else {
+		select {}
+	}
 }
 
 func envOrStr(env, or string) string {
