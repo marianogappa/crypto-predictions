@@ -80,7 +80,7 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 	for _, prediction := range predictions {
 		pred := prediction
 		if pred.State.Status == types.UNSTARTED {
-			err := r.ActionPrediction(&pred, ACTION_TYPE_PREDICTION_CREATED)
+			err := r.ActionPrediction(&pred, ACTION_TYPE_PREDICTION_CREATED, nowTs)
 			if err != nil {
 				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", pred.UUID, err))
 			}
@@ -120,7 +120,7 @@ func (r *Daemon) Run(nowTs int) DaemonResult {
 			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
 			log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 			if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
-				err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL)
+				err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL, nowTs)
 				if err != nil {
 					result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", prediction.UUID, err))
 				}
@@ -157,13 +157,19 @@ func (a ActionType) String() string {
 	}
 }
 
-func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType ActionType) error {
+func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType ActionType, nowTs int) error {
 	// TODO eventually we want to action Youtube predictions as well, possibly by just not replying to a tweet.
 	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
 		return ErrOnlyTwitterPredictionActioningSupported
 	}
 	if actionType != ACTION_TYPE_BECAME_FINAL && actionType != ACTION_TYPE_PREDICTION_CREATED {
 		return ErrUnkownActionType
+	}
+	if prediction.State.LastTs > nowTs {
+		return fmt.Errorf("Daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen. Bailing.", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
+	}
+	if nowTs-prediction.State.LastTs > 60*60*24 {
+		return fmt.Errorf("Daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore.")
 	}
 	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostUrl, actionType.String())
 	if err != nil {
