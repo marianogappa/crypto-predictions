@@ -258,7 +258,7 @@ func TestIterator(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
-			cache := cache.NewMemoryCache(128, 128)
+			cache := cache.NewMemoryCache(map[time.Duration]int{time.Minute: 128, 24 * time.Hour: 128})
 			intervalMinutes := 1
 			if ts.operand.Type == types.MARKETCAP {
 				intervalMinutes = 60 * 24
@@ -308,7 +308,7 @@ func TestTickIteratorUsesCache(t *testing.T) {
 		BaseAsset:  "BTC",
 		QuoteAsset: "USDT",
 	}
-	cache := cache.NewMemoryCache(128, 128)
+	cache := cache.NewMemoryCache(map[time.Duration]int{time.Minute: 128, 24 * time.Hour: 128})
 	cstick1 := types.Candlestick{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, LowestPrice: 1234, ClosePrice: 1234}
 	tick1 := types.Tick{Timestamp: tInt("2020-01-02 00:00:00"), Value: 1234}
 	cstick2 := types.Candlestick{Timestamp: tInt("2020-01-02 00:01:00"), OpenPrice: 1234, HighestPrice: 1234, LowestPrice: 1234, ClosePrice: 1234}

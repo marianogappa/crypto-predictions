@@ -43,8 +43,15 @@ func NewMarket() Market {
 	for exchangeName := range exchanges {
 		supportedVariableProviders[strings.ToUpper(exchangeName)] = struct{}{}
 	}
+	cache := cache.NewMemoryCache(
+		map[time.Duration]int{
+			time.Minute:    10000,
+			1 * time.Hour:  1000,
+			24 * time.Hour: 1000,
+		},
+	)
 
-	return Market{cache: cache.NewMemoryCache(10000, 1000), timeNowFunc: time.Now}
+	return Market{cache: cache, timeNowFunc: time.Now}
 }
 
 func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {

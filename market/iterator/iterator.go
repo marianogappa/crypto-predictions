@@ -18,6 +18,7 @@ type IteratorImpl struct {
 	candlestickProvider common.CandlestickProvider
 	timeNowFunc         func() time.Time
 	intervalMinutes     int
+	metric              cache.Metric
 }
 
 func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*IteratorImpl, error) {
@@ -27,21 +28,17 @@ func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickC
 	}
 
 	startTs := common.NormalizeTimestamp(startTm, time.Duration(intervalMinutes)*time.Minute, "TODO_PROVIDER", startFromNext)
-
-	// TODO: currently not caching for any candlestick interval other than minutely & daily.
-	cache := candlestickCache
-	if intervalMinutes != 1 && (intervalMinutes != 60*24 || (intervalMinutes == 60*24 && operand.Type == types.COIN)) {
-		cache = nil
-	}
+	metric := cache.Metric{Name: operand.Str, CandlestickInterval: time.Duration(intervalMinutes) * time.Minute}
 
 	return &IteratorImpl{
 		operand:             operand,
-		candlestickCache:    cache,
+		candlestickCache:    candlestickCache,
 		candlestickProvider: candlestickProvider,
 		candlesticks:        []types.Candlestick{},
 		timeNowFunc:         timeNowFunc,
 		lastTs:              startTs - intervalMinutes*60,
 		intervalMinutes:     intervalMinutes,
+		metric:              metric,
 	}, nil
 }
 
@@ -56,7 +53,7 @@ func (t *IteratorImpl) NextTick() (types.Tick, error) {
 func (t *IteratorImpl) NextCandlestick() (types.Candlestick, error) {
 	// If the candlesticks buffer is empty, try to get candlesticks from the cache.
 	if len(t.candlesticks) == 0 && t.candlestickCache != nil {
-		ticks, err := t.candlestickCache.Get(t.operand, t.nextISO8601())
+		ticks, err := t.candlestickCache.Get(t.metric, t.nextISO8601())
 		if err == nil {
 			t.candlesticks = ticks
 		}
@@ -97,7 +94,7 @@ func (t *IteratorImpl) NextCandlestick() (types.Candlestick, error) {
 
 	// Put in the cache for future uses.
 	if t.candlestickCache != nil {
-		if err := t.candlestickCache.Put(t.operand, candlesticks); err != nil {
+		if err := t.candlestickCache.Put(t.metric, candlesticks); err != nil {
 			log.Info().Msgf("IteratorImpl.Next: ignoring error putting into cache: %v\n", err)
 		}
 	}
