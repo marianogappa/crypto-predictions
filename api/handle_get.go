@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
@@ -20,12 +21,14 @@ type apiReqGetPredictions struct {
 	AuthorURLs            []string `json:"authorURLs" query:"authorURLs" description:"e.g. https://twitter.com/CryptoCapo_"`
 	UUIDs                 []string `json:"uuids" query:"uuids" description:"These are the prediction's primary keys (although they are also unique by url)"`
 	URLs                  []string `json:"urls" query:"urls" description:"e.g. https://twitter.com/VLoveIt2Hack/status/1465354862372298763"`
-	PredictionStateValues []string `json:"predictionStateValues" query:"predictionStateValues" description:"hello!"`
-	PredictionStateStatus []string `json:"predictionStateStatus" query:"predictionStateStatus" description:"hello!"`
-	Deleted               *bool    `json:"deleted" query:"deleted" description:"hello!"`
-	Paused                *bool    `json:"paused" query:"paused" description:"hello!"`
-	Hidden                *bool    `json:"hidden" query:"hidden" description:"hello!"`
-	OrderBys              []string `json:"orderBys" query:"orderBys" description:"Order in which predictions are returned. Defaults to CREATED_AT_DESC." enum:"CREATED_AT_DESC,CREATED_AT_ASC"`
+	PredictionStateValues []string `json:"predictionStateValues" query:"predictionStateValues" description:""`
+	PredictionStateStatus []string `json:"predictionStateStatus" query:"predictionStateStatus" description:""`
+	Deleted               *bool    `json:"deleted" query:"deleted" description:""`
+	Paused                *bool    `json:"paused" query:"paused" description:""`
+	Hidden                *bool    `json:"hidden" query:"hidden" description:""`
+	OrderBys              []string `json:"orderBys" query:"orderBys" description:"Order in which predictions are returned. Defaults to CREATED_AT_DESC."`
+	Limit                 string   `json:"limit" query:"limit" description:"How many predictions to return"`
+	Offset                string   `json:"offset" query:"offset" description:"From which prediction to return 'limit' predictions"`
 	_                     struct{} `query:"_" additionalProperties:"false"`
 }
 
@@ -43,10 +46,21 @@ func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPred
 		Hidden:                req.Hidden,
 	}
 
+	limit := 0
+	offset := 0
+	rLimit, err := strconv.Atoi(req.Limit)
+	if err == nil && rLimit > 0 {
+		limit = rLimit
+		rOffset, err := strconv.Atoi(req.Offset)
+		if err == nil && rOffset > 0 {
+			offset = rOffset
+		}
+	}
+
 	preds, err := a.store.GetPredictions(
 		filters,
 		req.OrderBys,
-		0, 0,
+		limit, offset,
 	)
 	if err != nil {
 		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPredictions{})

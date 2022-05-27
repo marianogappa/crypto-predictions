@@ -324,6 +324,7 @@ const (
 	CREATED_AT_ASC
 	POSTED_AT_DESC
 	POSTED_AT_ASC
+	UUID_ASC
 )
 
 func APIOrderByFromString(s string) (APIOrderBy, error) {
@@ -336,6 +337,8 @@ func APIOrderByFromString(s string) (APIOrderBy, error) {
 		return POSTED_AT_DESC, nil
 	case "POSTED_AT_ASC":
 		return POSTED_AT_ASC, nil
+	case "UUID_ASC":
+		return UUID_ASC, nil
 	default:
 		return 0, fmt.Errorf("%w: %v", ErrUnknownAPIOrderBy, s)
 	}
@@ -350,6 +353,8 @@ func (v APIOrderBy) String() string {
 		return "POSTED_AT_DESC"
 	case POSTED_AT_ASC:
 		return "POSTED_AT_ASC"
+	case UUID_ASC:
+		return "UUID_ASC"
 	default:
 		return ""
 	}

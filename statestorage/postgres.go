@@ -84,6 +84,8 @@ func predictionsBuildOrderBy(orderBys []string) string {
 			resultArr = append(resultArr, "posted_at DESC")
 		case types.POSTED_AT_ASC.String():
 			resultArr = append(resultArr, "posted_at ASC")
+		case types.UUID_ASC.String():
+			resultArr = append(resultArr, "uuid ASC")
 		}
 	}
 	return strings.Join(resultArr, ", ")
