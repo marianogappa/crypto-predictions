@@ -238,6 +238,7 @@ type APIFilters struct {
 	AuthorHandles         []string `json:"authorHandles"`
 	AuthorURLs            []string `json:"authorURLs"`
 	UUIDs                 []string `json:"uuids"`
+	GreaterThanUUID       string   `json:"greaterThanUUID"`
 	URLs                  []string `json:"urls"`
 	PredictionStateValues []string `json:"predictionStateValues"`
 	PredictionStateStatus []string `json:"predictionStateStatus"`

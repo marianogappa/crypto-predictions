@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"net"
@@ -41,8 +40,8 @@ type API struct {
 	imageBuilder imagebuilder.PredictionImageBuilder
 }
 
-func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher, files embed.FS) *API {
-	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher, imageBuilder: imagebuilder.NewPredictionImageBuilder(mkt, files)}
+func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher, imgBuilder imagebuilder.PredictionImageBuilder) *API {
+	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher, imageBuilder: imgBuilder}
 
 	apiSchema := &openapi.Collector{}
 	apiSchema.Reflector().SpecEns().Info.Title = "Crypto Predictions"

@@ -1,16 +1,12 @@
 package daemon
 
 import (
-	"embed"
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/market"
-	"github.com/marianogappa/predictions/metadatafetcher/twitter"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
@@ -27,229 +23,105 @@ type Daemon struct {
 	store            statestorage.StateStorage
 	market           market.IMarket
 	predImageBuilder imagebuilder.PredictionImageBuilder
+
+	errs []error
 }
 
-type DaemonResult struct {
-	Errors      []error
-	Predictions []*types.Prediction
+func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder) *Daemon {
+	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder}
 }
 
-func NewDaemon(market market.IMarket, store statestorage.StateStorage, files embed.FS) *Daemon {
-	return &Daemon{store: store, market: market, predImageBuilder: imagebuilder.NewPredictionImageBuilder(market, files)}
-}
-
-func (r *Daemon) BlockinglyRunEvery(dur time.Duration) DaemonResult {
-	log.Info().Msgf("Daemon started and will run again every: %v", dur)
+func (r *Daemon) BlockinglyRunEvery(dur time.Duration) {
+	log.Info().Msgf("Daemon scheduler started and will run again every: %v", dur)
 	for {
-		result := r.Run(int(time.Now().Unix()))
-		if len(result.Errors) > 0 {
-			log.Info().Msg("Daemon run finished with errors:")
-			for _, err := range result.Errors {
-				log.Error().Err(err).Msg("")
-			}
-		}
+		r.Run(int(time.Now().Unix()))
 		time.Sleep(dur)
 	}
 }
 
-func pBool(b bool) *bool { return &b }
-
-func (r *Daemon) Run(nowTs int) DaemonResult {
-	var result = DaemonResult{Predictions: []*types.Prediction{}, Errors: []error{}}
-
-	// Get ongoing predictions from storage
-	predictions, err := r.store.GetPredictions(
-		types.APIFilters{
-			PredictionStateValues: []string{
-				types.ONGOING_PRE_PREDICTION.String(),
-				types.ONGOING_PREDICTION.String(),
-			},
-			Paused:  pBool(false),
-			Deleted: pBool(false),
-		},
-		[]string{types.CREATED_AT_DESC.String()},
-		0, 0,
+func (r *Daemon) Run(nowTs int) []error {
+	r.errs = []error{}
+	var (
+		predictionsScanner = NewEvolvablePredictionsScanner(r.store)
+		prediction         types.Prediction
 	)
-	if err != nil {
-		result.Errors = append(result.Errors, err)
-		return result
-	}
 
-	// Create prediction runners from all ongoing predictions
-	predRunners := []*PredRunner{}
-	for _, prediction := range predictions {
-		pred := prediction
-		if pred.State.Status == types.UNSTARTED {
-			err := r.ActionPrediction(&pred, ACTION_TYPE_PREDICTION_CREATED, nowTs)
-			if err != nil {
-				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", pred.UUID, err))
-			}
-		}
-		predRunner, errs := NewPredRunner(&pred, r.market, nowTs)
-		for _, err := range errs {
-			if !errors.Is(err, errPredictionAtFinalStateAtCreation) {
-				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", pred.UUID, err))
-			}
-		}
-		if len(errs) > 0 {
+	for predictionsScanner.Scan(&prediction) {
+		r.MaybeActionPredictionCreated(prediction, nowTs)
+		if ok := r.EvolvePrediction(&prediction, r.market, nowTs); !ok {
 			continue
 		}
-		predRunners = append(predRunners, predRunner)
+		r.MaybeActionPredictionFinal(prediction, nowTs)
+		r.StoreEvolvedPrediction(prediction)
 	}
-
-	// log.Info().Msgf("Daemon.Run: %v active prediction runners\n", len(predRunners))
-	for _, predRunner := range predRunners {
-		if errs := predRunner.Run(false); len(errs) > 0 {
-			for _, err := range errs {
-				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", predRunner.prediction.UUID, err))
-			}
-		}
-		result.Predictions = append(result.Predictions, predRunner.prediction)
-	}
-
-	for _, prediction := range result.Predictions {
-		if prediction.Evaluate().IsFinal() {
-			err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
-				PredictionUUID: prediction.UUID,
-				StateValue:     prediction.State.Value.String(),
-				CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
-			})
-			if err != nil {
-				result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", prediction.UUID, err))
-			}
-			description := printer.NewPredictionPrettyPrinter(*prediction).Default()
-			log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
-			if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
-				err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL, nowTs)
-				if err != nil {
-					result.Errors = append(result.Errors, fmt.Errorf("for %v: %w", prediction.UUID, err))
-				}
-			}
-		}
-	}
+	r.AddErrs(nil, predictionsScanner.Error)
 
 	log.Info().Msgf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(market.Market).CalculateCacheHitRatio())
-
-	// Upsert state with changed predictions
-	_, err = r.store.UpsertPredictions(result.Predictions)
-	if err != nil {
-		result.Errors = append(result.Errors, err)
-		return result
+	if len(r.errs) > 0 {
+		log.Info().Errs("errs", r.errs).Msg("Daemon.Run: finished with errors")
 	}
-	return result
+
+	return r.errs
 }
 
-type ActionType int
+func (r *Daemon) MaybeActionPredictionCreated(prediction types.Prediction, nowTs int) {
+	if prediction.State.Status != types.UNSTARTED {
+		return
+	}
+	err := r.ActionPrediction(prediction, ACTION_TYPE_PREDICTION_CREATED, nowTs)
+	r.AddErrs(&prediction, err)
+}
 
-const (
-	ACTION_TYPE_BECAME_FINAL ActionType = iota
-	ACTION_TYPE_PREDICTION_CREATED
-)
+func (r *Daemon) EvolvePrediction(prediction *types.Prediction, m market.IMarket, nowTs int) bool {
+	predRunner, errs := NewPredRunner(prediction, r.market, nowTs)
+	r.AddErrs(prediction, errs...)
+	if len(errs) > 0 {
+		return false
+	}
+	errs = predRunner.Run(false)
+	r.AddErrs(predRunner.prediction, errs...)
 
-func (a ActionType) String() string {
-	switch a {
-	case ACTION_TYPE_BECAME_FINAL:
-		return "ACTION_TYPE_BECAME_FINAL"
-	case ACTION_TYPE_PREDICTION_CREATED:
-		return "ACTION_TYPE_PREDICTION_CREATED"
-	default:
-		return "ACTION_TYPE_UNKNOWN"
+	return true
+}
+
+func (r *Daemon) MaybeActionPredictionFinal(prediction types.Prediction, nowTs int) {
+	if !prediction.Evaluate().IsFinal() {
+		return
+	}
+
+	err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+		PredictionUUID: prediction.UUID,
+		StateValue:     prediction.State.Value.String(),
+		CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
+	})
+	r.AddErrs(&prediction, err)
+
+	description := printer.NewPredictionPrettyPrinter(prediction).Default()
+	log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
+
+	if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
+		err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL, nowTs)
+		r.AddErrs(&prediction, err)
 	}
 }
 
-func (r *Daemon) ActionPrediction(prediction *types.Prediction, actionType ActionType, nowTs int) error {
-	// TODO eventually we want to action Youtube predictions as well, possibly by just not replying to a tweet.
-	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
-		return ErrOnlyTwitterPredictionActioningSupported
-	}
-	if actionType != ACTION_TYPE_BECAME_FINAL && actionType != ACTION_TYPE_PREDICTION_CREATED {
-		return ErrUnkownActionType
-	}
-	if prediction.State.LastTs > nowTs {
-		return fmt.Errorf("Daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen. Bailing.", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
-	}
-	if nowTs-prediction.State.LastTs > 60*60*24 {
-		return fmt.Errorf("Daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore.")
-	}
-	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostUrl, actionType.String())
-	if err != nil {
-		return err
-	}
-	if exists {
-		return ErrPredictionAlreadyActioned
-	}
-	if prediction.PostAuthorURL == "" {
-		return errors.New("Daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image!")
-	}
-	accounts, err := r.store.GetAccounts(types.APIAccountFilters{URLs: []string{prediction.PostAuthorURL}}, nil, 1, 0)
-	if err != nil {
-		return fmt.Errorf("%w: %v", types.ErrStorageErrorRetrievingAccounts, err)
-	}
-	if len(accounts) == 0 {
-		return fmt.Errorf("Daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
-	}
-	account := accounts[0]
-
-	tweetURL := ""
-	switch actionType {
-	case ACTION_TYPE_BECAME_FINAL:
-		tweetURL, err = r.tweetActionBecameFinal(prediction, account)
-	case ACTION_TYPE_PREDICTION_CREATED:
-		tweetURL, err = r.tweetActionPredictionCreated(prediction, account)
-	}
-	if err != nil {
-		return err
-	}
-
-	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actionType.String(), tweetURL); err != nil {
-		return err
-	}
-	return nil
+func (r *Daemon) StoreEvolvedPrediction(prediction types.Prediction) {
+	_, err := r.store.UpsertPredictions([]*types.Prediction{&prediction})
+	r.AddErrs(&prediction, err)
 }
 
-func (r *Daemon) tweetActionBecameFinal(prediction *types.Prediction, account types.Account) (string, error) {
-	twitter := twitter.NewTwitter("")
-
-	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
-	postAuthor := prediction.PostAuthor
-	predictionStateValue := prediction.State.Value.String()
-
-	imageURL, err := r.predImageBuilder.BuildImage(*prediction, account)
-	if err != nil {
-		log.Error().Err(err).Msg("Daemon.tweetActionBecameFinal: silently ignoring error with building image...")
+func (r *Daemon) AddErrs(prediction *types.Prediction, errs ...error) {
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, errPredictionAtFinalStateAtCreation) {
+			continue
+		}
+		if prediction == nil {
+			r.errs = append(r.errs, err)
+		} else {
+			r.errs = append(r.errs, fmt.Errorf("for %v: %w", prediction.UUID, err))
+		}
 	}
-	if imageURL != "" {
-		defer os.Remove(imageURL)
-	}
-
-	// TODO eventually we'll need a reply tweet id here
-	tweetURL, err := twitter.Tweet(fmt.Sprintf(`%v made the following prediction: "%v" and it just became %v!`, postAuthor, description, predictionStateValue), imageURL, 0)
-	if err != nil {
-		return "", err
-	}
-
-	return tweetURL, nil
-}
-
-func (r *Daemon) tweetActionPredictionCreated(prediction *types.Prediction, account types.Account) (string, error) {
-	twitter := twitter.NewTwitter("")
-
-	description := printer.NewPredictionPrettyPrinter(*prediction).Default()
-	postAuthor := prediction.PostAuthor
-
-	imageURL, err := r.predImageBuilder.BuildImage(*prediction, account)
-	if err != nil {
-		log.Error().Err(err).Msg("Daemon.tweetActionBecameFinal: silently ignoring error with building image...")
-	}
-	if imageURL != "" {
-		defer os.Remove(imageURL)
-	}
-
-	// TODO eventually we'll need a reply tweet id here
-	tweetURL, err := twitter.Tweet(fmt.Sprintf(`Now tracking the following prediction made by %v: "%v"`, postAuthor, description), imageURL, 0)
-	if err != nil {
-		return "", err
-	}
-
-	return tweetURL, err
 }

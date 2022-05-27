@@ -39,7 +39,7 @@ var (
 	errEmptyBaseAsset          = errors.New("base asset must be supplied in order to create Tick Iterator")
 )
 
-func NewMarket() Market {
+func NewMarket(cacheSizes map[time.Duration]int) Market {
 	for exchangeName := range exchanges {
 		supportedVariableProviders[strings.ToUpper(exchangeName)] = struct{}{}
 	}

@@ -22,13 +22,14 @@ import (
 )
 
 type PredictionImageBuilder struct {
-	market    market.IMarket
-	templates map[string]*template.Template
+	market     market.IMarket
+	templates  map[string]*template.Template
+	chromePath string
 }
 
-func NewPredictionImageBuilder(m market.IMarket, files embed.FS) PredictionImageBuilder {
+func NewPredictionImageBuilder(m market.IMarket, files embed.FS, chromePath string) PredictionImageBuilder {
 	templates, _ := loadTemplates(files)
-	return PredictionImageBuilder{m, templates}
+	return PredictionImageBuilder{market: m, templates: templates, chromePath: chromePath}
 }
 
 func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, account types.Account) (string, error) {
@@ -61,10 +62,9 @@ func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, ac
 }
 
 func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account types.Account) (string, error) {
-	if os.Getenv("PREDICTIONS_CHROME_PATH") == "" {
+	if r.chromePath == "" {
 		return "", errors.New("Daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set.")
 	}
-	chromePath := os.Getenv("PREDICTIONS_CHROME_PATH")
 
 	// Inputs
 	name := account.Handle
@@ -125,7 +125,7 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 
 	cmd := exec.CommandContext(
 		ctx,
-		chromePath,
+		r.chromePath,
 		"--headless",
 		"--disable-gpu",
 		fmt.Sprintf(`--screenshot=%v`, randomImagePath),

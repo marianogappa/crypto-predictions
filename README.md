@@ -68,6 +68,22 @@ If you provide the path to a Chrome binary, it will be used to produce images to
 - `PREDICTIONS_DAEMON_DURATION`: defaults to 60 seconds. The format is as described here: https://pkg.go.dev/time#ParseDuration.
 - `PREDICTIONS_DEBUG`: set to any value to enable debugging logs.
 
+#### Market cache configuration
+
+Market candlestick requests are cached, because most predictions ask the same candlesticks to the same exchanges over and over again.
+
+There are separate caches for separate candlestick intervals.
+
+Each cache entry stores up to 500 subsequent candlesticks of a given metric.
+
+The following configurations specify how many cache entries exist per metric per candlestick interval. Entry eviction strategy is LRU.
+
+If memory is not a problem, the higher the better!
+
+- `PREDICTIONS_MARKET_CACHE_SIZE_1_MINUTE`: defaults to 10000
+- `PREDICTIONS_MARKET_CACHE_SIZE_1_HOUR`: defaults to 1000
+- `PREDICTIONS_MARKET_CACHE_SIZE_1_DAY`: defaults to 1000
+
 ## Components
 
 **API**

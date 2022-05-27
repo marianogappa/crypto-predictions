@@ -16,6 +16,7 @@ import (
 	"github.com/marianogappa/predictions/api"
 	"github.com/marianogappa/predictions/backoffice"
 	"github.com/marianogappa/predictions/daemon"
+	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
@@ -80,17 +81,26 @@ func main() {
 		// The state storage component is responsible for durably storing predictions.
 		postgresDBStorage = statestorage.MustNewPostgresDBStateStorage(postgresConf)
 
+		marketCacheSizes = map[time.Duration]int{
+			time.Minute:    envOrInt("PREDICTIONS_MARKET_CACHE_SIZE_1_MINUTE", 10000),
+			1 * time.Hour:  envOrInt("PREDICTIONS_MARKET_CACHE_SIZE_1_HOUR", 1000),
+			24 * time.Hour: envOrInt("PREDICTIONS_MARKET_CACHE_SIZE_1_DAY", 1000),
+		}
+
 		// The market component queries all exchange APIs for market data.
-		market = market.NewMarket()
+		market = market.NewMarket(marketCacheSizes)
 
 		// The metadataFetcher component queries the Twitter/Youtube APIs for social post metadata, e.g. timestamps.
 		metadataFetcher = metadatafetcher.NewMetadataFetcher()
 
+		// The predictionImageBuilder builds images for actioning prediction event posts, e.g. created, finalised.
+		predictionImageBuilder = imagebuilder.NewPredictionImageBuilder(market, files, envOrStr("PREDICTIONS_CHROME_PATH", ""))
+
 		// The API component is responsible for CRUDing predictions and related entities.
-		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, files)
+		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, predictionImageBuilder)
 
 		// The Daemon component is responsible for continuously running prediction state machines against market data.
-		daemon = daemon.NewDaemon(market, postgresDBStorage, files)
+		daemon = daemon.NewDaemon(market, postgresDBStorage, predictionImageBuilder)
 
 		// The BackOffice component is a UI for admins to maintain the predictions system.
 		backOffice = backoffice.NewBackOfficeUI(files)

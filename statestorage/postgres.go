@@ -103,6 +103,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		pgPredictionsUUIDs{filters.UUIDs},
 		pgPredictionsURLs{filters.URLs},
 		pgPredictionsTags{filters.Tags},
+		pgGreaterThanUUID{filters.GreaterThanUUID},
 	}).build()
 
 	orderBy := predictionsBuildOrderBy(orderBys)
@@ -546,4 +547,13 @@ func (f pgAccountsURLs) filter() (string, []interface{}) {
 		return fmt.Sprintf("url IN (%v)", strings.Join(strings.Split(strings.Repeat("∆", len(args)), ""), ", ")), args
 	}
 	return "", nil
+}
+
+type pgGreaterThanUUID struct{ uuid string }
+
+func (f pgGreaterThanUUID) filter() (string, []interface{}) {
+	if f.uuid == "" {
+		return "", nil
+	}
+	return "uuid > ∆", []interface{}{f.uuid}
 }
