@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 )
 
 type response struct {
@@ -186,6 +187,10 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 			httpStatus: 500,
 			err:        err,
 		}, err
+	}
+
+	if k.debug {
+		log.Info().Str("exchange", "KuCoin").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
 	return klinesResult{

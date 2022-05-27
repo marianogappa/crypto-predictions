@@ -306,7 +306,7 @@ func (b Binance) getKlines(baseAsset string, quoteAsset string, startTimeMillis 
 	}
 
 	if b.debug {
-		log.Info().Msgf("Binance candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+		log.Info().Str("exchange", "Binance").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
 	return klinesResult{

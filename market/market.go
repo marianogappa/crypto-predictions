@@ -23,23 +23,26 @@ type IMarket interface {
 }
 
 type Market struct {
-	cache       *cache.MemoryCache
-	timeNowFunc func() time.Time
+	cache                      *cache.MemoryCache
+	timeNowFunc                func() time.Time
+	debug                      bool
+	exchanges                  map[string]common.Exchange
+	supportedVariableProviders map[string]struct{}
 }
 
 var (
-	exchanges = map[string]common.Exchange{
+	errEmptyBaseAsset = errors.New("base asset must be supplied in order to create Tick Iterator")
+)
+
+func NewMarket(cacheSizes map[time.Duration]int) Market {
+	exchanges := map[string]common.Exchange{
 		common.BINANCE:              binance.NewBinance(),
 		common.FTX:                  ftx.NewFTX(),
 		common.COINBASE:             coinbase.NewCoinbase(),
 		common.KUCOIN:               kucoin.NewKucoin(),
 		common.BINANCE_USDM_FUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
 	}
-	supportedVariableProviders = map[string]struct{}{}
-	errEmptyBaseAsset          = errors.New("base asset must be supplied in order to create Tick Iterator")
-)
-
-func NewMarket(cacheSizes map[time.Duration]int) Market {
+	supportedVariableProviders := map[string]struct{}{}
 	for exchangeName := range exchanges {
 		supportedVariableProviders[strings.ToUpper(exchangeName)] = struct{}{}
 	}
@@ -51,7 +54,14 @@ func NewMarket(cacheSizes map[time.Duration]int) Market {
 		},
 	)
 
-	return Market{cache: cache, timeNowFunc: time.Now}
+	return Market{cache: cache, timeNowFunc: time.Now, exchanges: exchanges, supportedVariableProviders: supportedVariableProviders}
+}
+
+func (m *Market) SetDebug(debug bool) {
+	m.debug = debug
+	for _, exchange := range m.exchanges {
+		exchange.SetDebug(debug)
+	}
 }
 
 func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
@@ -69,10 +79,10 @@ func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601,
 }
 
 func (m Market) getCoinIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
-	if _, ok := supportedVariableProviders[operand.Provider]; !ok {
+	if _, ok := m.supportedVariableProviders[operand.Provider]; !ok {
 		return nil, fmt.Errorf("the '%v' provider is not supported for %v:%v-%v", operand.Provider, operand.Provider, operand.BaseAsset, operand.QuoteAsset)
 	}
-	exchange := exchanges[strings.ToLower(operand.Provider)]
+	exchange := m.exchanges[strings.ToLower(operand.Provider)]
 	return iterator.NewIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext, intervalMinutes)
 }
 

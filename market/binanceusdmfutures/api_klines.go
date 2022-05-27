@@ -307,7 +307,7 @@ func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, start
 	}
 
 	if b.debug {
-		log.Info().Msgf("BinanceUSDMFutures candlestick request successful! Candlestick count: %v\n", len(candlesticks))
+		log.Info().Str("exchange", "BinanceUDSMFutures").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
 	return klinesResult{

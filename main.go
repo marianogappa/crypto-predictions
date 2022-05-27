@@ -116,6 +116,7 @@ func main() {
 		postgresDBStorage.SetDebug(true)
 		backOffice.SetDebug(true)
 		api.SetDebug(true)
+		market.SetDebug(true)
 	}
 
 	// Run all components.

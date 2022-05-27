@@ -136,7 +136,9 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, i
 		}, err
 	}
 
-	log.Info().Msgf("FTX candlestick request successful! Candlestick count: %v\n", len(maybeResponse.Result))
+	if f.debug {
+		log.Info().Str("exchange", "FTX").Int("candlestick_count", len(maybeResponse.Result)).Msg("Candlestick request successful!")
+	}
 
 	return klinesResult{
 		candlesticks: maybeResponse.toCandlesticks(),
