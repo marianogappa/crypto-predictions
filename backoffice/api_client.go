@@ -58,10 +58,6 @@ func (c APIClient) Get(body getBody) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-type predictionPageBody struct {
-	URL string `json:"url"`
-}
-
 func (c APIClient) PredictionPage(body getBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
@@ -92,10 +88,6 @@ func (c APIClient) PredictionImage(body predictionImageBody) parsedResponse {
 	}
 
 	return request.MakeRequest(reqData, c.debug)
-}
-
-type uuidBody struct {
-	UUID string `json:"uuid"`
 }
 
 func (c APIClient) PausePrediction(uuid string) parsedResponse {

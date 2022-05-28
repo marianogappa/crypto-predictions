@@ -40,10 +40,10 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actionType Action
 		return ErrUnkownActionType
 	}
 	if prediction.State.LastTs > nowTs {
-		return fmt.Errorf("Daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen. Bailing.", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
+		return fmt.Errorf("daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen, bailing", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
 	}
 	if nowTs-prediction.State.LastTs > 60*60*24 {
-		return fmt.Errorf("Daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore.")
+		return fmt.Errorf("daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore")
 	}
 	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostUrl, actionType.String())
 	if err != nil {
@@ -53,14 +53,14 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actionType Action
 		return ErrPredictionAlreadyActioned
 	}
 	if prediction.PostAuthorURL == "" {
-		return errors.New("Daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image!")
+		return errors.New("daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image")
 	}
 	accounts, err := r.store.GetAccounts(types.APIAccountFilters{URLs: []string{prediction.PostAuthorURL}}, nil, 1, 0)
 	if err != nil {
 		return fmt.Errorf("%w: %v", types.ErrStorageErrorRetrievingAccounts, err)
 	}
 	if len(accounts) == 0 {
-		return fmt.Errorf("Daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
+		return fmt.Errorf("daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
 	}
 	account := accounts[0]
 

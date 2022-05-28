@@ -244,7 +244,7 @@ func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, start
 	case 30 * 60 * 24:
 		q.Add("interval", "1M")
 	default:
-		return klinesResult{}, errors.New("Unsupported interval minutes")
+		return klinesResult{}, errors.New("unsupported interval minutes")
 	}
 
 	q.Add("limit", "1000")

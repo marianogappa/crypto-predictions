@@ -49,27 +49,27 @@ func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, 
 
 	chURL, err := url.Parse(channel.URL)
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's URL: %v", err)
+		return mfTypes.PostMetadata{}, fmt.Errorf("error parsing channel's URL: %v", err)
 	}
 
 	chThumbDefURL, err := url.Parse(channel.ThumbnailDefaultURL)
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's Default Thumbnail URL: %v", err)
+		return mfTypes.PostMetadata{}, fmt.Errorf("error parsing channel's Default Thumbnail URL: %v", err)
 	}
 
 	chThumbMediumURL, err := url.Parse(channel.ThumbnailMediumURL)
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's Medium Thumbnail URL: %v", err)
+		return mfTypes.PostMetadata{}, fmt.Errorf("error parsing channel's Medium Thumbnail URL: %v", err)
 	}
 
 	chThumbHighURL, err := url.Parse(channel.ThumbnailHighURL)
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's High Thumbnail URL: %v", err)
+		return mfTypes.PostMetadata{}, fmt.Errorf("error parsing channel's High Thumbnail URL: %v", err)
 	}
 
 	chPublishedAt, err := channel.PublishedAt.Time()
 	if err != nil {
-		return mfTypes.PostMetadata{}, fmt.Errorf("Error parsing channel's PublishedAt: %v", err)
+		return mfTypes.PostMetadata{}, fmt.Errorf("error parsing channel's PublishedAt: %v", err)
 	}
 
 	return mfTypes.PostMetadata{

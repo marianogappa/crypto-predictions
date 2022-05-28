@@ -338,7 +338,7 @@ func TestTickIteratorUsesCache(t *testing.T) {
 	tick, err = it1.NextTick()
 	require.Nil(t, err)
 	require.Equal(t, tick, tick3)
-	tick, err = it1.NextTick()
+	_, err = it1.NextTick()
 	require.Equal(t, types.ErrOutOfCandlesticks, err)
 
 	require.Len(t, testCandlestickProvider1.calls, 2)

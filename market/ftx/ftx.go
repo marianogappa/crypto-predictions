@@ -16,9 +16,9 @@ func NewFTX() *FTX {
 	return &FTX{apiURL: "https://ftx.com/api/"}
 }
 
-func (f *FTX) overrideAPIURL(apiURL string) {
-	f.apiURL = apiURL
-}
+// func (f *FTX) overrideAPIURL(apiURL string) {
+// 	f.apiURL = apiURL
+// }
 
 func (f *FTX) RequestCandlesticks(operand types.Operand, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
 	res, err := f.getKlines(operand.BaseAsset, operand.QuoteAsset, startTimeTs, intervalMinutes)

@@ -334,7 +334,7 @@ func TestStreamRetry_ExponentialBackoff(t *testing.T) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch reqCount {
 		case 0:
-			http.Error(w, "Service Unavailable", 503)
+			http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
 		default:
 			// Only allow first request
 			http.Error(w, "Stream API not available!", 500)
@@ -368,7 +368,7 @@ func TestStreamRetry_AggressiveBackoff(t *testing.T) {
 		case 0:
 			http.Error(w, "Enhance Your Calm", 420)
 		case 1:
-			http.Error(w, "Too Many Requests", 429)
+			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 		default:
 			// Only allow first request
 			http.Error(w, "Stream API not available!", 500)

@@ -83,7 +83,7 @@ func (b *pgWhereBuilder) addFilters(fs []filterable) *pgWhereBuilder {
 func (b *pgWhereBuilder) build() (string, []interface{}) {
 	count := 1
 	for i := range b.filterArr {
-		for strings.Index(b.filterArr[i], "∆") != -1 {
+		for strings.Contains(b.filterArr[i], "∆") {
 			b.filterArr[i] = strings.Replace(b.filterArr[i], "∆", fmt.Sprintf("$%v", count), 1)
 			count++
 		}

@@ -23,7 +23,7 @@ func (p PredictionPrettyPrinter) Default() string {
 			return p.predictionTypeCoinOperatorFloatDeadline()
 		}
 	// case types.PREDICTION_TYPE_COIN_WILL_RANGE:
-	// p.predictionTypeCoinWillRange()
+	// 	p.predictionTypeCoinWillRange()
 	case types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:
 		p.predictionTypeCoinWillReachBeforeItReaches()
 	case types.PREDICTION_TYPE_THE_FLIPPENING:
@@ -61,10 +61,10 @@ func (p PredictionPrettyPrinter) predictionTypeCoinOperatorFloatDeadline() strin
 	return fmt.Sprintf("%v %v %v %v", coin, operator, number, temporalPart)
 }
 
-func (p PredictionPrettyPrinter) predictionTypeCoinWillRange() string {
-	// TODO
-	return ""
-}
+// func (p PredictionPrettyPrinter) predictionTypeCoinWillRange() string {
+// 	// TODO
+// 	return ""
+// }
 
 func (p PredictionPrettyPrinter) predictionTypeCoinWillReachBeforeItReaches() string {
 	coin := parseOperand(p.prediction.Predict.Predict.Operands[0].Literal.Operands[0])

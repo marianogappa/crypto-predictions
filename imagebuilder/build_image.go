@@ -63,7 +63,7 @@ func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, ac
 
 func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account types.Account) (string, error) {
 	if r.chromePath == "" {
-		return "", errors.New("Daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set.")
+		return "", errors.New("daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set")
 	}
 
 	// Inputs
@@ -72,10 +72,10 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 		name = account.Name
 	}
 	if name == "" {
-		return "", errors.New("Daemon.buildImageAction: account has no handle nor name!")
+		return "", errors.New("daemon.buildImageAction: account has no handle nor name")
 	}
 	if len(account.Thumbnails) == 0 {
-		return "", errors.New("Daemon.buildImageAction: account has no thumbnails!")
+		return "", errors.New("daemon.buildImageAction: account has no thumbnails")
 	}
 	serializedAccount, err := compiler.NewAccountSerializer().Serialize(&account)
 	if err != nil {
@@ -115,7 +115,7 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 
 	htmlExists := waitFor(fileExists(randomHTMLPath), 3, 1*time.Second)
 	if !htmlExists {
-		return "", fmt.Errorf("Daemon.buildImageAction: templated html file was never created!")
+		return "", fmt.Errorf("Daemon.buildImageAction: templated html file was never created")
 	}
 
 	randomImagePath := fmt.Sprintf("deleteme_%v.png", uuid.NewString())
@@ -147,7 +147,7 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 
 	imageExists := waitFor(fileExists(randomImagePath), 3, 1*time.Second)
 	if !imageExists {
-		return "", fmt.Errorf("Daemon.buildImageAction: image was never created!")
+		return "", fmt.Errorf("Daemon.buildImageAction: image was never created")
 	}
 
 	return randomImagePath, nil

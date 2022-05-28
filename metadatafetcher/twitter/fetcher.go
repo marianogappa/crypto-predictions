@@ -32,17 +32,17 @@ func (f TwitterMetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 
 	userURL, err := url.Parse(fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle))
 	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("Error parsing user's URL: %v", err)
+		return types.PostMetadata{}, fmt.Errorf("error parsing user's URL: %v", err)
 	}
 
 	userProfileImgURL, err := url.Parse(tweet.ProfileImgUrl)
 	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("Error parsing user's profile image URL: %v", err)
+		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile image URL: %v", err)
 	}
 
 	userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgUrl, "_normal.", "_400x400.", -1))
 	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("Error parsing user's profile medium image URL: %v", err)
+		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile medium image URL: %v", err)
 	}
 
 	return types.PostMetadata{

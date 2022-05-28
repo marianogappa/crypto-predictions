@@ -68,7 +68,7 @@ func TestDirectMessageService_EventsNew(t *testing.T) {
 		assertMethod(t, "POST", r)
 		assertPostJSON(t, testDMEventNewInputJSON, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMEventShowJSON)
+		fmt.Fprint(w, testDMEventShowJSON)
 	})
 
 	client := NewClient(httpClient)
@@ -97,7 +97,7 @@ func TestDirectMessageService_EventsShow(t *testing.T) {
 		assertMethod(t, "GET", r)
 		assertQuery(t, map[string]string{"id": testDMEventID}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMEventShowJSON)
+		fmt.Fprint(w, testDMEventShowJSON)
 	})
 
 	client := NewClient(httpClient)
@@ -114,7 +114,7 @@ func TestDirectMessageService_EventsList(t *testing.T) {
 		assertMethod(t, "GET", r)
 		assertQuery(t, map[string]string{"count": "10"}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMEventListJSON)
+		fmt.Fprint(w, testDMEventListJSON)
 	})
 	expected := &DirectMessageEvents{
 		Events:     []DirectMessageEvent{testDMEvent},
@@ -155,7 +155,7 @@ func TestDirectMessageService_EventsDestroyError(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		// failure to delete event that doesn't exist
 		w.WriteHeader(404)
-		fmt.Fprintf(w, `{"errors":[{"code": 34, "message": "Sorry, that page does not exist"}]}`)
+		fmt.Fprint(w, `{"errors":[{"code": 34, "message": "Sorry, that page does not exist"}]}`)
 	})
 	expected := APIError{
 		Errors: []ErrorDetail{
@@ -181,7 +181,7 @@ func TestDirectMessageService_Show(t *testing.T) {
 		assertMethod(t, "GET", r)
 		assertQuery(t, map[string]string{"id": testDMIDStr}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMJSON)
+		fmt.Fprint(w, testDMJSON)
 	})
 
 	client := NewClient(httpClient)
@@ -198,7 +198,7 @@ func TestDirectMessageService_Get(t *testing.T) {
 		assertMethod(t, "GET", r)
 		assertQuery(t, map[string]string{"since_id": "589147592367431680", "count": "1"}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `[`+testDMJSON+`]`)
+		fmt.Fprint(w, `[`+testDMJSON+`]`)
 	})
 
 	client := NewClient(httpClient)
@@ -217,7 +217,7 @@ func TestDirectMessageService_Sent(t *testing.T) {
 		assertMethod(t, "GET", r)
 		assertQuery(t, map[string]string{"since_id": "589147592367431680", "count": "1"}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `[`+testDMJSON+`]`)
+		fmt.Fprint(w, `[`+testDMJSON+`]`)
 	})
 
 	client := NewClient(httpClient)
@@ -236,7 +236,7 @@ func TestDirectMessageService_New(t *testing.T) {
 		assertMethod(t, "POST", r)
 		assertPostForm(t, map[string]string{"screen_name": "theseancook", "text": "hello world"}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMJSON)
+		fmt.Fprint(w, testDMJSON)
 	})
 
 	client := NewClient(httpClient)
@@ -254,7 +254,7 @@ func TestDirectMessageService_Destroy(t *testing.T) {
 		assertMethod(t, "POST", r)
 		assertPostForm(t, map[string]string{"id": testDMIDStr}, r)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, testDMJSON)
+		fmt.Fprint(w, testDMJSON)
 	})
 
 	client := NewClient(httpClient)
