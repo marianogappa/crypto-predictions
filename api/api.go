@@ -100,6 +100,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 		gzip.Middleware,
 	)
 
+	s.Get("/", a.apiHealthcheck())
 	s.Get("/predictions", a.apiGetPredictions())
 	s.Get("/pages/prediction/{url}", a.apiGetPagesPrediction())
 	s.Post("/predictions", a.apiPostPrediction())
