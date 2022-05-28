@@ -1,1 +1,1 @@
-web: PREDICTIONS_BACKOFFICE_PORT=$PORT bin/predictions -api -backoffice
+web: PREDICTIONS_API_PORT=$PORT bin/predictions -api -backoffice
