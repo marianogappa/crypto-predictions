@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
+	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
@@ -79,14 +79,14 @@ func TestAPI(t *testing.T) {
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}
-			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, embed.FS{})
+			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, imagebuilder.PredictionImageBuilder{})
 			l, err := a.Listen("localhost:0")
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
 			url := l.Addr().String()
 			go a.BlockinglyServe(l)
-			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, embed.FS{})
+			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, imagebuilder.PredictionImageBuilder{})
 
 			ts.test(t, url, memoryStateStorage, testMarket, daemon, mFetcher)
 		})
