@@ -107,7 +107,7 @@ func main() {
 
 		// Resolve all urls, ports & configs from environment variables, with defaults.
 		apiPort        = envOrInt("PREDICTIONS_API_PORT", 2345)
-		apiUrl         = envOrStr("PREDICTIONS_API_URL", fmt.Sprintf("http://localhost:%v", apiPort))
+		apiUrl         = envOrStr("PREDICTIONS_API_URL", fmt.Sprintf("http://0.0.0.0:%v", apiPort))
 		backOfficePort = envOrInt("PREDICTIONS_BACKOFFICE_PORT", 1234)
 		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 60*time.Second)
 	)
