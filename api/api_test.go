@@ -80,12 +80,12 @@ func TestAPI(t *testing.T) {
 				}, err: nil},
 			}
 			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, imagebuilder.PredictionImageBuilder{})
-			l, err := a.Listen("localhost:0")
+			l, err := a.listen("localhost:0")
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
 			url := l.Addr().String()
-			go a.BlockinglyServe(l)
+			go a.blockinglyServe(l)
 			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, imagebuilder.PredictionImageBuilder{})
 
 			ts.test(t, url, memoryStateStorage, testMarket, daemon, mFetcher)

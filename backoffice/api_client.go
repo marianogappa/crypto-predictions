@@ -7,16 +7,16 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
-type APIClient struct {
+type apiClient struct {
 	apiURL string
 	debug  bool
 }
 
-func NewAPIClient(apiURL string) *APIClient {
-	return &APIClient{apiURL: apiURL}
+func newAPIClient(apiURL string) *apiClient {
+	return &apiClient{apiURL: apiURL}
 }
 
-func (c *APIClient) SetDebug(b bool) {
+func (c *apiClient) setDebug(b bool) {
 	c.debug = b
 }
 
@@ -25,7 +25,7 @@ type newBody struct {
 	Store      bool   `json:"store"`
 }
 
-func (c APIClient) New(pred []byte, store bool) parsedResponse {
+func (c apiClient) new(pred []byte, store bool) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -44,7 +44,7 @@ type getBody struct {
 	OrderBys []string         `json:"orderBys"`
 }
 
-func (c APIClient) Get(body getBody) parsedResponse {
+func (c apiClient) get(body getBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "GET",
 		BaseUrl:       c.apiURL,
@@ -58,7 +58,7 @@ func (c APIClient) Get(body getBody) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) PredictionPage(body getBody) parsedResponse {
+func (c apiClient) predictionPage(body getBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -76,7 +76,7 @@ type predictionImageBody struct {
 	UUID string `json:"uuid"`
 }
 
-func (c APIClient) PredictionImage(body predictionImageBody) parsedResponse {
+func (c apiClient) predictionImage(body predictionImageBody) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "GET",
 		BaseUrl:       c.apiURL,
@@ -90,7 +90,7 @@ func (c APIClient) PredictionImage(body predictionImageBody) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) PausePrediction(uuid string) parsedResponse {
+func (c apiClient) pausePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -104,7 +104,7 @@ func (c APIClient) PausePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) UnpausePrediction(uuid string) parsedResponse {
+func (c apiClient) unpausePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -118,7 +118,7 @@ func (c APIClient) UnpausePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) HidePrediction(uuid string) parsedResponse {
+func (c apiClient) hidePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -132,7 +132,7 @@ func (c APIClient) HidePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) UnhidePrediction(uuid string) parsedResponse {
+func (c apiClient) unhidePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -146,7 +146,7 @@ func (c APIClient) UnhidePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) DeletePrediction(uuid string) parsedResponse {
+func (c apiClient) deletePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -160,7 +160,7 @@ func (c APIClient) DeletePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) UndeletePrediction(uuid string) parsedResponse {
+func (c apiClient) undeletePrediction(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -174,7 +174,7 @@ func (c APIClient) UndeletePrediction(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) RefreshAccount(uuid string) parsedResponse {
+func (c apiClient) refreshAccount(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,
@@ -188,7 +188,7 @@ func (c APIClient) RefreshAccount(uuid string) parsedResponse {
 	return request.MakeRequest(reqData, c.debug)
 }
 
-func (c APIClient) ClearState(uuid string) parsedResponse {
+func (c apiClient) clearState(uuid string) parsedResponse {
 	reqData := request.Request[response, parsedResponse]{
 		HttpMethod:    "POST",
 		BaseUrl:       c.apiURL,

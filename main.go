@@ -37,7 +37,7 @@ var (
 
 func main() {
 	flag.Parse()
-	loadEnvsFromConfigJson()
+	loadEnvsFromConfigJSON()
 
 	// Parse flags and figure out what components need to run.
 	var (
@@ -108,7 +108,7 @@ func main() {
 
 		// Resolve all urls, ports & configs from environment variables, with defaults.
 		apiPort        = envOrInt("PREDICTIONS_API_PORT", 2345)
-		apiUrl         = envOrStr("PREDICTIONS_API_URL", fmt.Sprintf("http://0.0.0.0:%v", apiPort))
+		apiURL         = envOrStr("PREDICTIONS_API_URL", fmt.Sprintf("http://0.0.0.0:%v", apiPort))
 		backOfficePort = envOrInt("PREDICTIONS_BACKOFFICE_PORT", 1234)
 		daemonDuration = envOrDur("PREDICTIONS_DAEMON_DURATION", 60*time.Second)
 	)
@@ -122,11 +122,11 @@ func main() {
 
 	// Run all components.
 	if runAPI {
-		go api.MustBlockinglyListenAndServe(apiUrl)
+		go api.MustBlockinglyListenAndServe(apiURL)
 	}
 
 	if runBackOffice {
-		go backOffice.MustBlockinglyServe(backOfficePort, apiUrl)
+		go backOffice.MustBlockinglyServe(backOfficePort, apiURL)
 	}
 
 	if !runDaemonOnce && runDaemon {
@@ -163,7 +163,7 @@ func envOrDur(s string, or time.Duration) time.Duration {
 	return d
 }
 
-func loadEnvsFromConfigJson() {
+func loadEnvsFromConfigJSON() {
 	file, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		return

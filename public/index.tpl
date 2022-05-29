@@ -36,9 +36,11 @@
         .topRight {
             /* border: 1px solid red; */
             display: flex;
-            flex-direction: column;
-            flex-basis: 100%;
             flex: 1;
+        }
+
+        .topRight {
+            margin-top: 49px;
         }
 
 
@@ -118,13 +120,22 @@
             background-size: cover;
         }
 
+        .filler {
+            flex-grow: 1;
+        }
+
         .predictionResult {
             font-size: 50px;
             color: white;
             font-family: Roboto, sans-serif;
             font-weight: bolder;
-            text-align: right;
-            margin-top: 49px;
+        }
+
+        #predictionResultImage {
+            height: 50px;
+            width: 50px;
+            margin-left: 15px;
+            margin-top: 3px;
         }
 
         .overlay {
@@ -196,7 +207,6 @@
     </style>
     <link href='//fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <!-- <script type="text/javascript" src="data.js"></script> -->
     <script type="text/javascript">
         const prediction = {{.Prediction }}
         const account = {{.Account }}
@@ -335,6 +345,7 @@
 
                     const label = document.querySelector('#overlayUpperGreenBoxLabel')
                     label.innerText = `Goal`
+
                     const endedAtPadding = endedAtLineAt ? 15 : 0
                     label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                     label.style.height = 'auto'
@@ -352,6 +363,7 @@
 
                         const label = document.querySelector('#overlayUpperGreenYellowBoxLabel')
                         label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
+
                         const endedAtPadding = endedAtLineAt ? 15 : 0
                         label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                         label.style.height = 'auto'
@@ -372,6 +384,7 @@
 
                     const label = document.querySelector('#overlayLowerGreenBoxLabel')
                     label.innerText = `Goal`
+
                     const endedAtPadding = endedAtLineAt ? 15 : 0
                     label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                     label.style.height = 'auto'
@@ -389,6 +402,7 @@
 
                         const label = document.querySelector('#overlayLowerGreenYellowBoxLabel')
                         label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
+
                         const endedAtPadding = endedAtLineAt ? 15 : 0
                         label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                         label.style.height = 'auto'
@@ -409,6 +423,7 @@
 
                     const label = document.querySelector('#overlayUpperRedBoxLabel')
                     label.innerText = `Goal`
+
                     const endedAtPadding = endedAtLineAt ? 15 : 0
                     label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                     label.style.height = 'auto'
@@ -426,6 +441,7 @@
 
                         const label = document.querySelector('#overlayUpperRedYellowBoxLabel')
                         label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
+
                         const endedAtPadding = endedAtLineAt ? 15 : 0
                         label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                         label.style.height = 'auto'
@@ -446,6 +462,7 @@
 
                     const label = document.querySelector('#overlayLowerRedBoxLabel')
                     label.innerText = `Goal`
+
                     const endedAtPadding = endedAtLineAt ? 15 : 0
                     label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                     label.style.height = 'auto'
@@ -463,6 +480,7 @@
 
                         const label = document.querySelector('#overlayLowerRedYellowBoxLabel')
                         label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
+
                         const endedAtPadding = endedAtLineAt ? 15 : 0
                         label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
                         label.style.height = 'auto'
@@ -481,9 +499,9 @@
                     e.style.height = `${chartArea.height}px`
 
                     const label = document.querySelector('#overlayEndedAtLabel')
-                    label.innerText = `🏁`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
+                    label.src = `chequered-flag_1f3c1.png`
+                    label.style.height = '20px'
+                    label.style.width = '20px'
                     label.style.left = `${x - (label.clientWidth / 2) + 1}px`;
                     label.style.top = `${chartArea.top - label.clientHeight}px`
                 }
@@ -497,9 +515,9 @@
                     e.style.height = `${chartArea.height}px`
 
                     const label = document.querySelector('#overlayPostedAtLineLabel')
-                    label.innerText = `👀`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
+                    label.src = `eyes_1f440.png`
+                    label.style.height = '20px'
+                    label.style.width = '20px'
                     label.style.left = `${x - (label.clientWidth / 2) + 1}px`;
                     label.style.top = `${chartArea.top - label.clientHeight}px`
                 }
@@ -523,7 +541,9 @@
             <span class="postAuthor"></span>
         </div>
         <div class="topRight">
+            <span class="filler"></span>
             <span class="predictionResult"></span>
+            <img id="predictionResultImage" />
         </div>
     </div>
     <div class="chartWithMarkerOverlay">
@@ -549,10 +569,10 @@
         <div class="overlay" id="overlayLowerRedYellowBoxLabel"></div>
 
         <div class="overlay" id="overlayPostedAtLine"></div>
-        <div class="overlay" id="overlayPostedAtLineLabel"></div>
+        <img class="overlay" id="overlayPostedAtLineLabel" />
 
         <div class="overlay" id="overlayEndedAtLine"></div>
-        <div class="overlay" id="overlayEndedAtLabel"></div>
+        <img class="overlay" id="overlayEndedAtLabel" />
 
         <!-- <div class="overlay-marker-1 overlay-marker">
             <span>▲ ENTRY</span>
@@ -571,11 +591,14 @@
         document.querySelector('.bubble').innerText = prediction.predictionText;
 
         if (prediction.state.status !== 'FINISHED') {
-            document.querySelector('.predictionResult').innerText = 'NOW TRACKING 👀';
+            document.querySelector('.predictionResult').innerHTML = 'NOW TRACKING';
+            document.querySelector('#predictionResultImage').src = 'eyes_1f440.png';
         } else if (prediction.state.value === 'CORRECT') {
-            document.querySelector('.predictionResult').innerText = 'CORRECT ✅';
+            document.querySelector('.predictionResult').innerHTML = 'CORRECT';
+            document.querySelector('#predictionResultImage').src = 'check-mark-button_2705.png';
         } else {
-            document.querySelector('.predictionResult').innerText = 'INCORRECT ❌';
+            document.querySelector('.predictionResult').innerHTML = 'INCORRECT';
+            document.querySelector('#predictionResultImage').src = 'cross-mark_274c.png';
         }
 
         if (account.handle) {

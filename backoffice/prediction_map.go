@@ -12,14 +12,14 @@ import (
 
 func predictionToMap(p types.Prediction) map[string]interface{} {
 	urlType := "UNKNOWN"
-	urlSiteSpecificId := ""
+	urlSiteSpecificID := ""
 	u, err := url.Parse(p.PostUrl)
 	if err == nil {
 		hostname := u.Hostname()
 		switch {
 		case strings.Contains(hostname, "youtube"):
 			urlType = "YOUTUBE"
-			urlSiteSpecificId = u.Query().Get("v")
+			urlSiteSpecificID = u.Query().Get("v")
 		case strings.Contains(hostname, "twitter"):
 			urlType = "TWITTER"
 		}
@@ -43,7 +43,7 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 		"Reporter":          p.Reporter,
 		"PrettyPrint":       printer.NewPredictionPrettyPrinter(p).Default(),
 		"URLType":           urlType,
-		"URLSiteSpecificId": urlSiteSpecificId,
+		"URLSiteSpecificId": urlSiteSpecificID,
 		"Type":              p.Type.String(),
 	}
 	return m

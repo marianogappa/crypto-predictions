@@ -7,7 +7,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	var anyError = errors.New("any error for now...")
+	var anyError = errors.New("any error for now... ")
 
 	tss := []struct {
 		name     string

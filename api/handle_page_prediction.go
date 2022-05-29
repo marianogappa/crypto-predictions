@@ -263,16 +263,20 @@ func (mapOfCompilerPrediction) PrepareJSONSchema(schema *jsonschema.Schema) erro
 	return nil
 }
 
+// UUID type exists only to provide examples on the Swagger docs
 type UUID string
 
+// PrepareJSONSchema provides examples on the Swagger docs
 func (UUID) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithFormat("uuid").WithExamples("c6ea7af5-0a29-48ae-a6cc-271545b3a53c", "1129a8c0-0189-491c-be4e-4a0aec5eeb23")
 
 	return nil
 }
 
+// URL type exists only to provide examples on the Swagger docs
 type URL string
 
+// PrepareJSONSchema provides examples on the Swagger docs
 func (URL) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithFormat("uri").WithExamples("https://twitter.com/Sheldon_Sniper")
 

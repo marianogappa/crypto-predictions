@@ -8,7 +8,7 @@ import (
 	"github.com/swaggest/usecase"
 )
 
-type apiReqUuidPath struct {
+type apiReqUUIDPath struct {
 	UUID string   `path:"uuid" required:"true" format:"uuid"`
 	_    struct{} `query:"_" additionalProperties:"false"`
 }
@@ -37,7 +37,7 @@ func (a *API) predictionStorageActionWithUUID(uuid string, fn func(string) error
 }
 
 func (a *API) apiPredictionStorageActionWithUUID(fn func(string) error, title string) usecase.Interactor {
-	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUUIDPath, output *apiResponse[apiResStored]) error {
 		out := a.predictionStorageActionWithUUID(input.UUID, fn)
 		*output = out
 		return nil
@@ -49,7 +49,7 @@ func (a *API) apiPredictionStorageActionWithUUID(fn func(string) error, title st
 }
 
 func (a *API) apiPredictionRefetchAccount() usecase.Interactor {
-	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUUIDPath, output *apiResponse[apiResStored]) error {
 		out := a.predictionRefetchAccount(input.UUID)
 		*output = out
 		return nil
@@ -88,7 +88,7 @@ func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
 }
 
 func (a *API) apiPredictionClearState() usecase.Interactor {
-	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUuidPath, output *apiResponse[apiResStored]) error {
+	u := usecase.NewInteractor(func(ctx context.Context, input apiReqUUIDPath, output *apiResponse[apiResStored]) error {
 		out := a.predictionClearState(input.UUID)
 		*output = out
 		return nil

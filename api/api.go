@@ -30,6 +30,7 @@ import (
 	swgui "github.com/swaggest/swgui/v4"
 )
 
+// API is the main API struct.
 type API struct {
 	mux          *web.Service
 	mkt          market.IMarket
@@ -40,6 +41,7 @@ type API struct {
 	imageBuilder imagebuilder.PredictionImageBuilder
 }
 
+// NewAPI is the constructor for the API.
 func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher, imgBuilder imagebuilder.PredictionImageBuilder) *API {
 	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher, imageBuilder: imgBuilder}
 
@@ -122,8 +124,9 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 	return a
 }
 
-func (c *API) SetDebug(b bool) {
-	c.debug = b
+// SetDebug enables debug logging across the entire API.
+func (a *API) SetDebug(b bool) {
+	a.debug = b
 }
 
 type apiResponse[D any] struct {
@@ -147,26 +150,27 @@ func failWith[D any](errType, err error, zero D) apiResponse[D] {
 	}
 }
 
+// MustBlockinglyListenAndServe serves the API.
 func (a *API) MustBlockinglyListenAndServe(apiURL string) {
 	// If url starts with https?://, remove that part for the listener address
-	rawUrlParts := strings.Split(apiURL, "//")
-	listenUrl := rawUrlParts[len(rawUrlParts)-1]
+	rawURLParts := strings.Split(apiURL, "//")
+	listenURL := rawURLParts[len(rawURLParts)-1]
 
-	l, err := a.Listen(listenUrl)
+	l, err := a.listen(listenURL)
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
-	err = a.BlockinglyServe(l)
+	err = a.blockinglyServe(l)
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
 }
 
-func (a *API) Listen(url string) (net.Listener, error) {
+func (a *API) listen(url string) (net.Listener, error) {
 	return net.Listen("tcp", url)
 }
 
-func (a *API) BlockinglyServe(l net.Listener) error {
+func (a *API) blockinglyServe(l net.Listener) error {
 	log.Info().Str("docs", fmt.Sprintf("%v/docs", l.Addr().String())).Msgf("API listening on %v", l.Addr().String())
 	return http.Serve(l, a.mux)
 }

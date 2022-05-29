@@ -49,25 +49,29 @@ func loadTemplates(files embed.FS) error {
 	return nil
 }
 
-type backOfficeUI struct {
-	apiClient *APIClient
+// UI is the main struct for the BackOffice component.
+type UI struct {
+	apiClient *apiClient
 	files     embed.FS
 	debug     bool
 }
 
-func NewBackOfficeUI(files embed.FS) *backOfficeUI {
-	return &backOfficeUI{files: files}
+// NewBackOfficeUI is the constructor for the BackOffice component.
+func NewBackOfficeUI(files embed.FS) *UI {
+	return &UI{files: files}
 }
 
-func (s *backOfficeUI) SetDebug(b bool) {
+// SetDebug enables/disables debugging logs across the BackOffice component.
+func (s *UI) SetDebug(b bool) {
 	s.debug = b
 }
 
-func (s backOfficeUI) MustBlockinglyServe(port int, apiUrl string) {
-	s.apiClient = NewAPIClient(apiUrl)
+// MustBlockinglyServe serves the BackOffice component.
+func (s UI) MustBlockinglyServe(port int, apiURL string) {
+	s.apiClient = newAPIClient(apiURL)
 
 	if s.debug {
-		s.apiClient.SetDebug(s.debug)
+		s.apiClient.setDebug(s.debug)
 	}
 
 	err := loadTemplates(s.files)
@@ -95,7 +99,7 @@ func trim(ss []string) []string {
 	return ns
 }
 
-func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
@@ -109,7 +113,7 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal().Msg("Couldn't find index.hmtl")
 	}
 
-	res := s.apiClient.Get(getBody{Filters: types.APIFilters{
+	res := s.apiClient.get(getBody{Filters: types.APIFilters{
 		AuthorHandles:         trim(strings.Split(rawAuthors, ",")),
 		UUIDs:                 trim(strings.Split(rawUUIDs, ",")),
 		PredictionStateValues: trim(strings.Split(rawStatuses, ",")),
@@ -146,7 +150,7 @@ func (s backOfficeUI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, data)
 }
 
-func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) {
+func (s UI) predictionHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
@@ -164,32 +168,32 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	var res parsedResponse
 	switch action {
 	case "pause":
-		res = s.apiClient.PausePrediction(uuid)
+		res = s.apiClient.pausePrediction(uuid)
 	case "unpause":
-		res = s.apiClient.UnpausePrediction(uuid)
+		res = s.apiClient.unpausePrediction(uuid)
 	case "hide":
-		res = s.apiClient.HidePrediction(uuid)
+		res = s.apiClient.hidePrediction(uuid)
 	case "unhide":
-		res = s.apiClient.UnhidePrediction(uuid)
+		res = s.apiClient.unhidePrediction(uuid)
 	case "delete":
-		res = s.apiClient.DeletePrediction(uuid)
+		res = s.apiClient.deletePrediction(uuid)
 	case "undelete":
-		res = s.apiClient.UndeletePrediction(uuid)
+		res = s.apiClient.undeletePrediction(uuid)
 	case "refreshAccount":
-		res = s.apiClient.RefreshAccount(uuid)
+		res = s.apiClient.refreshAccount(uuid)
 	case "clearState":
-		res = s.apiClient.ClearState(uuid)
+		res = s.apiClient.clearState(uuid)
 	default:
 		res.Status = 200
 	}
 
 	if res.Status == 200 {
-		res = s.apiClient.Get(getBody{Filters: types.APIFilters{
+		res = s.apiClient.get(getBody{Filters: types.APIFilters{
 			UUIDs: []string{uuid},
 		}})
 	}
 
-	base64ImageRes := s.apiClient.PredictionImage(predictionImageBody{
+	base64ImageRes := s.apiClient.predictionImage(predictionImageBody{
 		UUID: uuid,
 	})
 
@@ -212,7 +216,7 @@ func (s backOfficeUI) predictionHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Request) {
+func (s UI) predictionPageHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
@@ -223,7 +227,7 @@ func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Reque
 		log.Fatal().Msg("Couldn't find prediction.html")
 	}
 
-	res := s.apiClient.PredictionPage(getBody{Filters: types.APIFilters{
+	res := s.apiClient.predictionPage(getBody{Filters: types.APIFilters{
 		URLs: []string{url},
 	}})
 
@@ -248,7 +252,7 @@ func (s backOfficeUI) predictionPageHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
+func (s UI) putHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
@@ -271,7 +275,7 @@ func (s backOfficeUI) putHandler(w http.ResponseWriter, r *http.Request) {
 			store = true
 		}
 
-		resp := s.apiClient.New([]byte(rawString), store)
+		resp := s.apiClient.new([]byte(rawString), store)
 
 		data["Err"] = resp.ErrorMessage
 		data["Status"] = resp.Status

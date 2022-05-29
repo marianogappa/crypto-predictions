@@ -56,11 +56,13 @@ func (n Node) isExpression() bool {
 	return true
 }
 
+// BoolExprParser is the main struct for parsing bool expressions.
 type BoolExprParser struct {
 	s string
 	i int
 }
 
+// NewExprParser is the constructor for parsing bool expressions.
 func NewExprParser(s string) *BoolExprParser {
 	return &BoolExprParser{s: s, i: 0}
 }
@@ -72,6 +74,7 @@ func (p *BoolExprParser) error(message string, args ...interface{}) error {
 	return fmt.Errorf(fmt.Sprintf("parsing '%v[%v]%v': %v", p.s[:p.i], string(p.s[p.i]), p.s[p.i:], message), args...)
 }
 
+// Parse parses a bool expression.
 func (p *BoolExprParser) Parse() (Node, error) {
 	p.s = strings.ToLower(p.s)
 	p.i = 0
@@ -124,15 +127,14 @@ func (p *BoolExprParser) popAndOrChain(node Node) (Node, error) {
 					return node, nil
 				}
 				return Node{TT: operator, Token: strings.ToLower(operator.String()), Nodes: nodes}, nil
-			} else {
-				if nextNode.isExpression() || (nextNode.TT != AND && nextNode.TT != OR) {
-					return Node{}, p.error("expected literal AND/OR literal but found '%v'", nextNode.Token)
-				}
-				if operator != UNKNOWN && nextNode.TT != operator {
-					return Node{}, p.error("expected literal %v but found literal %v", operator, nextNode.TT)
-				}
-				operator = nextNode.TT
 			}
+			if nextNode.isExpression() || (nextNode.TT != AND && nextNode.TT != OR) {
+				return Node{}, p.error("expected literal AND/OR literal but found '%v'", nextNode.Token)
+			}
+			if operator != UNKNOWN && nextNode.TT != operator {
+				return Node{}, p.error("expected literal %v but found literal %v", operator, nextNode.TT)
+			}
+			operator = nextNode.TT
 		} else {
 			if !nextNode.isExpression() {
 				return Node{}, p.error("expected EXPRESSION but found '%v'", node.Token)
