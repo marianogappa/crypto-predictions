@@ -11,21 +11,24 @@ import (
 	coreTypes "github.com/marianogappa/predictions/types"
 )
 
-type TwitterMetadataFetcher struct {
+// MetadataFetcher is the main struct for fetching metadata from Twitter.
+type MetadataFetcher struct {
 	apiURL string
 }
 
-func NewMetadataFetcher(apiURL string) TwitterMetadataFetcher {
-	return TwitterMetadataFetcher{apiURL}
+// NewMetadataFetcher is constructor for fetching metadata from Twitter.
+func NewMetadataFetcher(apiURL string) MetadataFetcher {
+	return MetadataFetcher{apiURL}
 }
 
-func (f TwitterMetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
+// Fetch requests metadata from Twitter API for the specified URL.
+func (f MetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 	path := strings.Split(u.Path, "/")
 	if len(path) != 4 || path[0] != "" || path[2] != "status" {
 		return types.PostMetadata{}, fmt.Errorf("invalid path for Twitter metadata fetching: %v", path)
 	}
 
-	tweet, err := NewTwitter(f.apiURL).GetTweetByID(path[3])
+	tweet, err := NewTwitter(f.apiURL).getTweetByID(path[3])
 	if err != nil {
 		return types.PostMetadata{}, err
 	}
@@ -35,12 +38,12 @@ func (f TwitterMetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 		return types.PostMetadata{}, fmt.Errorf("error parsing user's URL: %v", err)
 	}
 
-	userProfileImgURL, err := url.Parse(tweet.ProfileImgUrl)
+	userProfileImgURL, err := url.Parse(tweet.ProfileImgURL)
 	if err != nil {
 		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile image URL: %v", err)
 	}
 
-	userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgUrl, "_normal.", "_400x400.", -1))
+	userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgURL, "_normal.", "_400x400.", -1))
 	if err != nil {
 		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile medium image URL: %v", err)
 	}
@@ -63,7 +66,8 @@ func (f TwitterMetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 	}, nil
 }
 
-func (f TwitterMetadataFetcher) IsCorrectFetcher(url *url.URL) bool {
+// IsCorrectFetcher answers if this fetcher is the correct one for the specified URL.
+func (f MetadataFetcher) IsCorrectFetcher(url *url.URL) bool {
 	host, _, err := net.SplitHostPort(url.Host)
 	if err != nil {
 		host = url.Host

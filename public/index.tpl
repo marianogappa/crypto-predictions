@@ -13,7 +13,7 @@
         .footnote {
             /* border: 1px solid red; */
             color: white;
-            font-family: Roboto, sans-serif;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
             font-size: 12px;
             text-align: center;
         }
@@ -72,7 +72,7 @@
             font-size: 12px;
             color: white;
             top: 221px;
-            font-family: Roboto, sans-serif;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
             font-weight: bolder;
             width: 220px;
             text-align: center;
@@ -82,7 +82,7 @@
         }
 
         .bubble {
-            font-family: sans-serif;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
             font-size: 18px;
             line-height: 24px;
             width: 300px;
@@ -127,15 +127,15 @@
         .predictionResult {
             font-size: 50px;
             color: white;
-            font-family: Roboto, sans-serif;
-            font-weight: bolder;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            /* font-weight: bolder; */
         }
 
         #predictionResultImage {
             height: 50px;
             width: 50px;
             margin-left: 15px;
-            margin-top: 3px;
+            margin-top: 7px;
         }
 
         .overlay {
@@ -193,7 +193,7 @@
         #overlayLowerRedYellowBoxLabel,
         #overlayLowerRedBoxLabel {
             color: white;
-            font-family: 'Roboto', sans-serif;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
             font-size: 11px;
         }
 
@@ -205,7 +205,6 @@
             border: 1px solid white;
         }
     </style>
-    <link href='//fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         const prediction = {{.Prediction }}

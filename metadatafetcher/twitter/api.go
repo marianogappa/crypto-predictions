@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	ErrTwitterOauth1CredentialsRequired = errors.New("the following env variables are required in order to post tweets: PREDICTIONS_TWITTER_CONSUMER_KEY, PREDICTIONS_TWITTER_CONSUMER_SECRET, PREDICTIONS_TWITTER_ACCESS_TOKEN, PREDICTIONS_TWITTER_ACCESS_SECRET")
+	errTwitterOauth1CredentialsRequired = errors.New("the following env variables are required in order to post tweets: PREDICTIONS_TWITTER_CONSUMER_KEY, PREDICTIONS_TWITTER_CONSUMER_SECRET, PREDICTIONS_TWITTER_ACCESS_TOKEN, PREDICTIONS_TWITTER_ACCESS_SECRET")
 )
 
+// Twitter is the main struct for the Twitter component that interacts with Twitter via the Twitter API
 type Twitter struct {
 	apiKey         string
 	apiSecret      string
@@ -30,6 +31,7 @@ type Twitter struct {
 	api *twitter.Client
 }
 
+// NewTwitter is the constructor for the Twitter component that interacts with Twitter via the Twitter API
 func NewTwitter(apiURL string) Twitter {
 	if apiURL == "" {
 		apiURL = "https://api.twitter.com/2"
@@ -54,6 +56,7 @@ func NewTwitter(apiURL string) Twitter {
 	return t
 }
 
+// Tweet represents a Twitter Tweet
 type Tweet struct {
 	TweetText      string
 	TweetID        string
@@ -61,7 +64,7 @@ type Tweet struct {
 	UserID         string
 	UserName       string
 	UserHandle     string
-	ProfileImgUrl  string
+	ProfileImgURL  string
 	UserCreatedAt  time.Time
 	FollowersCount int
 	Verified       bool
@@ -70,7 +73,7 @@ type Tweet struct {
 }
 
 type responseData struct {
-	AuthorId  string `json:"author_id"`
+	AuthorID  string `json:"author_id"`
 	Text      string `json:"text"`
 	ID        string `json:"id"`
 	CreatedAt string `json:"created_at"`
@@ -87,7 +90,7 @@ type responseIncludesUsers struct {
 	Username      string                             `json:"username"`
 	Verified      bool                               `json:"verified"`
 	CreatedAt     types.ISO8601                      `json:"created_at"`
-	ProfileImgUrl string                             `json:"profile_image_url"`
+	ProfileImgURL string                             `json:"profile_image_url"`
 	PublicMetrics responseIncludesUsersPublicMetrics `json:"public_metrics"`
 }
 
@@ -121,7 +124,7 @@ func responseToTweet(r response) (Tweet, error) {
 		UserHandle:     r.Includes.Users[0].Username,
 		UserCreatedAt:  userCreatedAt,
 		Verified:       r.Includes.Users[0].Verified,
-		ProfileImgUrl:  r.Includes.Users[0].ProfileImgUrl,
+		ProfileImgURL:  r.Includes.Users[0].ProfileImgURL,
 		FollowersCount: r.Includes.Users[0].PublicMetrics.FollowersCount,
 	}, nil
 }
@@ -130,7 +133,7 @@ func parseError(err error) Tweet {
 	return Tweet{err: err}
 }
 
-func (t Twitter) GetTweetByID(id string) (Tweet, error) {
+func (t Twitter) getTweetByID(id string) (Tweet, error) {
 	req := request.Request[response, Tweet]{
 		BaseUrl: t.apiURL,
 		Path:    fmt.Sprintf("tweets/%v?tweet.fields=created_at&user.fields=created_at,name,profile_image_url,public_metrics,verified,username&expansions=author_id,geo.place_id", id),
@@ -150,12 +153,14 @@ func (t Twitter) GetTweetByID(id string) (Tweet, error) {
 	return tweet, nil
 }
 
+// Tweet posts a Tweet to Twitter.
+//
 // Remember that if inReplyToStatusID is set, the text must contain @username, where the username is the
 // handle whose tweet this tweet is replying to:
 // https://developer.twitter.com/en/docs/twitter-api/v1/tweets/post-and-engage/api-reference/post-statuses-update
 func (t Twitter) Tweet(text, imageFilename string, inReplyToStatusID int) (string, error) {
 	if t.consumerKey == "" || t.consumerSecret == "" || t.accessToken == "" || t.accessSecret == "" {
-		return "", ErrTwitterOauth1CredentialsRequired
+		return "", errTwitterOauth1CredentialsRequired
 	}
 
 	mediaIDs := []int64{}
@@ -180,7 +185,7 @@ func (t Twitter) Tweet(text, imageFilename string, inReplyToStatusID int) (strin
 
 func (t Twitter) uploadMedia(imageFilename string) (int64, error) {
 	if t.consumerKey == "" || t.consumerSecret == "" || t.accessToken == "" || t.accessSecret == "" {
-		return 0, ErrTwitterOauth1CredentialsRequired
+		return 0, errTwitterOauth1CredentialsRequired
 	}
 
 	fileToBeUploaded := imageFilename
