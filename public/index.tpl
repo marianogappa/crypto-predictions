@@ -4,16 +4,6 @@
 <head>
     <meta charset="utf-8">
     <style>
-        /* roboto-regular - latin */
-        @font-face {
-        font-family: 'Roboto';
-        font-style: normal;
-        font-weight: 400;
-        src: local(''),
-            url('roboto-v30-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
-            url('roboto-v30-latin-regular.woff') format('woff'), /* Modern Browsers */
-        }
-
         .chartWithMarkerOverlay {
             position: relative;
             margin-top: -60px;
@@ -204,6 +194,7 @@
             border: 1px solid white;
         }
     </style>
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!-- <script type="text/javascript" src="data.js"></script> -->
     <script type="text/javascript">

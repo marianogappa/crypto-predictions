@@ -128,7 +128,13 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 		r.chromePath,
 		"--headless",
 		"--disable-gpu",
+
+		// Otherwise on Ubuntu 20 (Heroku) it complains when generating the file (writing to filesystem)
 		"--no-sandbox",
+
+		// Otherwise on Ubuntu 20 (Heroku) the image comes out blurry
+		"--force-device-scale-factor=2",
+
 		fmt.Sprintf(`--screenshot=%v`, randomImagePath),
 		randomHTMLPath,
 		"--window-size=1203,678",

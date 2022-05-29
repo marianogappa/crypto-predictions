@@ -112,11 +112,14 @@ func MakeRequest[A, B any](reqData Request[A, B], debug bool) B {
 
 	res, err := reqData.ParseResponse(rp)
 	if err != nil {
+		if debug {
+			log.Info().Msgf("APIClient.MakeRequest: error parsing response from api: %v\n", err)
+		}
 		return reqData.ParseError(fmt.Errorf("%w: %v", ErrAPIClientFailedToParseResponse, err))
 	}
 
 	if debug {
-		log.Info().Msgf("APIClient.MakeRequest: response from API: %+v, error: %v\n", res, err)
+		log.Info().Msg("APIClient.MakeRequest: successfully parsed response from api")
 	}
 
 	return res
