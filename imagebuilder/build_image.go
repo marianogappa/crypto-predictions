@@ -128,6 +128,7 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 		r.chromePath,
 		"--headless",
 		"--disable-gpu",
+		"--no-sandbox",
 		fmt.Sprintf(`--screenshot=%v`, randomImagePath),
 		randomHTMLPath,
 		"--window-size=1203,678",

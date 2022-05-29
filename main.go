@@ -94,7 +94,8 @@ func main() {
 		metadataFetcher = metadatafetcher.NewMetadataFetcher()
 
 		// The predictionImageBuilder builds images for actioning prediction event posts, e.g. created, finalised.
-		predictionImageBuilder = imagebuilder.NewPredictionImageBuilder(market, files, envOrStr("PREDICTIONS_CHROME_PATH", ""))
+		chromePath             = envOrStr("PREDICTIONS_CHROME_PATH", envOrStr("GOOGLE_CHROME_BIN", ""))
+		predictionImageBuilder = imagebuilder.NewPredictionImageBuilder(market, files, chromePath)
 
 		// The API component is responsible for CRUDing predictions and related entities.
 		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, predictionImageBuilder)
