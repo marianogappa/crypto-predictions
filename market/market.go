@@ -18,10 +18,12 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+// IMarket only exists so that tests can use a test iterator.
 type IMarket interface {
 	GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error)
 }
 
+// Market struct implements the crypto market.
 type Market struct {
 	cache                      *cache.MemoryCache
 	timeNowFunc                func() time.Time
@@ -34,13 +36,14 @@ var (
 	errEmptyBaseAsset = errors.New("base asset must be supplied in order to create Tick Iterator")
 )
 
+// NewMarket constructs a market.
 func NewMarket(cacheSizes map[time.Duration]int) Market {
 	exchanges := map[string]common.Exchange{
-		common.BINANCE:              binance.NewBinance(),
-		common.FTX:                  ftx.NewFTX(),
-		common.COINBASE:             coinbase.NewCoinbase(),
-		common.KUCOIN:               kucoin.NewKucoin(),
-		common.BINANCE_USDM_FUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
+		common.BINANCE:            binance.NewBinance(),
+		common.FTX:                ftx.NewFTX(),
+		common.COINBASE:           coinbase.NewCoinbase(),
+		common.KUCOIN:             kucoin.NewKucoin(),
+		common.BINANCEUSDMFUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
 	}
 	supportedVariableProviders := map[string]struct{}{}
 	for exchangeName := range exchanges {
@@ -57,6 +60,8 @@ func NewMarket(cacheSizes map[time.Duration]int) Market {
 	return Market{cache: cache, timeNowFunc: time.Now, exchanges: exchanges, supportedVariableProviders: supportedVariableProviders}
 }
 
+// SetDebug sets debug logging across all exchanges and the Market struct itself. Useful to know how many times an
+// exchange is being requested.
 func (m *Market) SetDebug(debug bool) {
 	m.debug = debug
 	for _, exchange := range m.exchanges {
@@ -64,6 +69,7 @@ func (m *Market) SetDebug(debug bool) {
 	}
 }
 
+// GetIterator returns a market iterator for a given operand at a given time and for a given candlestick interval.
 func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
 	switch operand.Type {
 	case types.COIN:
@@ -94,6 +100,7 @@ func (m Market) getMarketcapIterator(operand types.Operand, initialISO8601 types
 	return iterator.NewIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext, 60*24)
 }
 
+// CalculateCacheHitRatio returns the hit ratio of the cache of the market. Used to see if the cache is useful.
 func (m Market) CalculateCacheHitRatio() float64 {
 	if m.cache.CacheRequests == 0 {
 		return 0

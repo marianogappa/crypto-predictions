@@ -1,4 +1,4 @@
-// The cache package implements an in-memory LRU cache layer between crypto exchanges and the CandlestickIterators.
+// Package cache implements an in-memory LRU cache layer between crypto exchanges and the CandlestickIterators.
 //
 // It solves this problem: if there are 1000 predictions about BTC/USDT that need the current value of the market
 // pair right now, (1) it would take 1000*(network request against exchange) to get the same value 1000 times, and
@@ -51,12 +51,28 @@ type MemoryCache struct {
 }
 
 var (
-	ErrCacheNotConfiguredForCandlestickInterval     = errors.New("cache not configured for candlestick interval")
+	// ErrCacheNotConfiguredForCandlestickInterval is returned when a Put operation tries to store candlesticks for
+	// a candlestick interval not configured in the cache constructor.
+	ErrCacheNotConfiguredForCandlestickInterval = errors.New("cache not configured for candlestick interval")
+
+	// ErrTimestampMustBeMultipleOfCandlestickInterval is returned when a Put operation supplies candlesticks with
+	// timestamps that are not multiples of the interval, or have gaps within the supplied slice.
 	ErrTimestampMustBeMultipleOfCandlestickInterval = errors.New("timestamp must be multiple of candlestick interval")
-	ErrReceivedCandlestickWithZeroValue             = errors.New("received candlestick with zero value on either of OHLC components")
-	ErrReceivedNonSubsequentCandlestick             = errors.New("received non-subsequent candlestick")
-	ErrInvalidISO8601                               = errors.New("invalid ISO8601")
-	ErrCacheMiss                                    = errors.New("cache miss")
+
+	// ErrReceivedCandlestickWithZeroValue is returned when a Put operation supplies candlesticks with any of its 4
+	// price values being the number 0. This is considered an error; sorry LUNA :shrugs:.
+	ErrReceivedCandlestickWithZeroValue = errors.New("received candlestick with zero value on either of OHLC components")
+
+	// ErrReceivedNonSubsequentCandlestick is returned when a Put operation supplies candlesticks with gaps within the
+	// supplied slice.
+	ErrReceivedNonSubsequentCandlestick = errors.New("received non-subsequent candlestick")
+
+	// ErrInvalidISO8601 is returned when a Get operation supplies an invalid string for the start datetime.
+	ErrInvalidISO8601 = errors.New("invalid ISO8601")
+
+	// ErrCacheMiss is returned by a Get operation to signify that there are no available cache entries for the
+	// requested metric and datetime.
+	ErrCacheMiss = errors.New("cache miss")
 )
 
 // NewMemoryCache instantiates the in-memory LRU cache layer that this package exposes.
@@ -127,6 +143,8 @@ func (c *MemoryCache) Get(metric Metric, initialISO8601 types.ISO8601) ([]types.
 	return c.get(metric, startingTimestamp)
 }
 
+// Metric is the one namespace for candlestick sequences. It contains an arbitrary name (but used as the provider and
+// market being cached) and the candlestick interval for the candlesticks.
 type Metric struct {
 	Name                string
 	CandlestickInterval time.Duration

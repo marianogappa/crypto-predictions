@@ -8,27 +8,38 @@ import (
 	"github.com/swaggest/jsonschema-go"
 )
 
+// PredictionSummary contains all necessary information about the prediction to make a candlestick chart of it.
 type PredictionSummary struct {
-	CandlestickMap           map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
-	Coin                     string                         `json:"coin,omitempty"`
-	OtherCoin                string                         `json:"otherCoin,omitempty"`
-	Goal                     types.JsonFloat64              `json:"goal,omitempty"`
-	GoalWithError            types.JsonFloat64              `json:"goalWithError,omitempty"`
-	RangeLow                 types.JsonFloat64              `json:"rangeLow,omitempty"`
-	RangeLowWithError        types.JsonFloat64              `json:"rangeLowWithError,omitempty"`
-	RangeHigh                types.JsonFloat64              `json:"rangeHigh,omitempty"`
-	RangeHighWithError       types.JsonFloat64              `json:"rangeHighWithError,omitempty"`
-	WillReach                types.JsonFloat64              `json:"willReach,omitempty"`
-	WillReachWithError       types.JsonFloat64              `json:"willReachWithError,omitempty"`
-	BeforeItReaches          types.JsonFloat64              `json:"beforeItReaches,omitempty"`
-	BeforeItReachesWithError types.JsonFloat64              `json:"beforeItReachesWithError,omitempty"`
-	ErrorMarginRatio         types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
-	Operator                 string                         `json:"operator,omitempty"`
-	Deadline                 types.ISO8601                  `json:"deadline,omitempty"`
-	EndedAt                  types.ISO8601                  `json:"endedAt,omitempty"`
-	PredictionType           string                         `json:"predictionType,omitempty"`
+	// Only in "PredictionTheFlippening" type
+	OtherCoin string `json:"otherCoin,omitempty"`
+
+	// In basic prediction type
+	Goal          types.JsonFloat64 `json:"goal,omitempty"`
+	GoalWithError types.JsonFloat64 `json:"goalWithError,omitempty"`
+
+	// Only in "PredictionWillRange type"
+	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
+	RangeLowWithError  types.JsonFloat64 `json:"rangeLowWithError,omitempty"`
+	RangeHigh          types.JsonFloat64 `json:"rangeHigh,omitempty"`
+	RangeHighWithError types.JsonFloat64 `json:"rangeHighWithError,omitempty"`
+
+	// Only in "PredictionWillReachBeforeItReaches type"
+	WillReach                types.JsonFloat64 `json:"willReach,omitempty"`
+	WillReachWithError       types.JsonFloat64 `json:"willReachWithError,omitempty"`
+	BeforeItReaches          types.JsonFloat64 `json:"beforeItReaches,omitempty"`
+	BeforeItReachesWithError types.JsonFloat64 `json:"beforeItReachesWithError,omitempty"`
+
+	// In all prediction types
+	CandlestickMap   map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
+	Coin             string                         `json:"coin,omitempty"`
+	ErrorMarginRatio types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
+	Operator         string                         `json:"operator,omitempty"`
+	Deadline         types.ISO8601                  `json:"deadline,omitempty"`
+	EndedAt          types.ISO8601                  `json:"endedAt,omitempty"`
+	PredictionType   string                         `json:"predictionType,omitempty"`
 }
 
+// PrepareJSONSchema provides an example of the structure for Swagger docs
 func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
 	schema.WithExamples(PredictionSummary{
 		CandlestickMap: map[string][]types.Candlestick{
@@ -37,16 +48,20 @@ func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
 				{Timestamp: 1651162017, OpenPrice: 39500, HighestPrice: 39550, LowestPrice: 39200, ClosePrice: 39020},
 			},
 		},
-		Coin:           "BINANCE:COIN:BTC-USDT",
-		Goal:           45000,
-		Operator:       ">=",
-		Deadline:       "2022-06-24T07:51:06Z",
-		PredictionType: "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
+		Coin:             "BINANCE:COIN:BTC-USDT",
+		Goal:             45000,
+		GoalWithError:    43650,
+		ErrorMarginRatio: 0.03,
+		Operator:         ">=",
+		Deadline:         "2022-06-24T07:51:06Z",
+		EndedAt:          "2022-06-24T07:51:06Z",
+		PredictionType:   "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
 	})
 
 	return nil
 }
 
+// BuildPredictionMarketSummary builds a PredictionSummary from a prediction. It uses a market to get candlesticks.
 func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
 	switch p.Type {
 	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:

@@ -24,7 +24,7 @@ func (r errorResponse) toError() error {
 	if r.Code == 0 && r.Msg == "" {
 		return nil
 	}
-	if r.Code == ERR_INVALID_SYMBOL {
+	if r.Code == eRRINVALIDSYMBOL {
 		return types.ErrInvalidMarketPair
 	}
 	return fmt.Errorf("binance returned error code! Code: %v, Message: %v", r.Code, r.Msg)

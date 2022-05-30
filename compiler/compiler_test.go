@@ -24,7 +24,7 @@ func tpToISO(s string) types.ISO8601 {
 }
 
 func TestParseDuration(t *testing.T) {
-	var anyError = errors.New("any error for now...")
+	var anyError = errors.New("any error for now... ")
 
 	tss := []struct {
 		name     string

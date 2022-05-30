@@ -1,4 +1,4 @@
-// The common package contains the input and output types of the signal checking function.
+// Package common contains shared interfaces and code across the market super-package.
 package common
 
 import (
@@ -8,15 +8,23 @@ import (
 )
 
 const (
-	BINANCE              = "binance"
-	FTX                  = "ftx"
-	COINBASE             = "coinbase"
-	HUOBI                = "huobi"
-	KRAKEN               = "kraken"
-	KUCOIN               = "kucoin"
-	BINANCE_USDM_FUTURES = "binanceusdmfutures"
+	// BINANCE is an enumesque string value representing the BINANCE exchange
+	BINANCE = "binance"
+	// FTX is an enumesque string value representing the FTX exchange
+	FTX = "ftx"
+	// COINBASE is an enumesque string value representing the COINBASE exchange
+	COINBASE = "coinbase"
+	// HUOBI is an enumesque string value representing the HUOBI exchange
+	HUOBI = "huobi"
+	// KRAKEN is an enumesque string value representing the KRAKEN exchange
+	KRAKEN = "kraken"
+	// KUCOIN is an enumesque string value representing the KUCOIN exchange
+	KUCOIN = "kucoin"
+	// BINANCEUSDMFUTURES is an enumesque string value representing the BINANCEUSDMFUTURES exchange
+	BINANCEUSDMFUTURES = "binanceusdmfutures"
 )
 
+// Exchange is the interface for a crypto exchange.
 type Exchange interface {
 	CandlestickProvider
 	SetDebug(debug bool)
@@ -47,6 +55,7 @@ type CandlestickProvider interface {
 	GetPatience() time.Duration
 }
 
+// CandlesticksToTicks takes a candlestick slice and turns it into a slice of ticks, using their close prices.
 func CandlesticksToTicks(cs []types.Candlestick) []types.Tick {
 	ts := make([]types.Tick, len(cs))
 	for i := 0; i < len(cs); i++ {
@@ -55,6 +64,9 @@ func CandlesticksToTicks(cs []types.Candlestick) []types.Tick {
 	return ts
 }
 
+// PatchCandlestickHoles takes a slice of candlesticks and it patches any holes in it, either at the beginning or within
+// any pair of candlesticks whose difference in seconds doesn't match the supplied "durSecs", by cloning the latest
+// available candlestick "on the left", or the first candlestick (i.e. "on the right") if it's at the beginning.
 func PatchCandlestickHoles(cs []types.Candlestick, startTimeTs, durSecs int) []types.Candlestick {
 	startTimeTs = NormalizeTimestamp(time.Unix(int64(startTimeTs), 0), time.Duration(durSecs)*time.Second, "TODO_PROVIDER", false)
 	lastTs := startTimeTs - durSecs
@@ -65,23 +77,28 @@ func PatchCandlestickHoles(cs []types.Candlestick, startTimeTs, durSecs int) []t
 		return cs
 	}
 
-	fixedCss := []types.Candlestick{}
+	fixedCSS := []types.Candlestick{}
 	for _, candlestick := range cs {
 		if candlestick.Timestamp == lastTs+durSecs {
-			fixedCss = append(fixedCss, candlestick)
+			fixedCSS = append(fixedCSS, candlestick)
 			lastTs = candlestick.Timestamp
 			continue
 		}
 		for candlestick.Timestamp >= lastTs+durSecs {
 			clonedCandlestick := candlestick
 			clonedCandlestick.Timestamp = lastTs + durSecs
-			fixedCss = append(fixedCss, clonedCandlestick)
+			fixedCSS = append(fixedCSS, clonedCandlestick)
 			lastTs += durSecs
 		}
 	}
-	return fixedCss
+	return fixedCSS
 }
 
+// NormalizeTimestamp takes a time and a candlestick interval, and normalizes the timestamp by returning the immediately
+// next multiple of that time as defined by .Truncate(candlestickInterval), unless the time already satisfies it.
+//
+// It also optionally returns the next time (i.e. it appends a candlestick interval to it).
+//
 // TODO: this function only currently supports 1m, 5m, 15m, 1h & 1d intervals. Using other intervals will
 // result in silently incorrect behaviour due to exchanges behaving differently. Please review api_klines files for
 // documented differences in behaviour.

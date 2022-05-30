@@ -10,7 +10,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type IteratorImpl struct {
+// Impl is the struct for the market Iterator.
+type Impl struct {
 	candlesticks        []types.Candlestick
 	lastTs              int
 	candlestickCache    *cache.MemoryCache
@@ -21,7 +22,8 @@ type IteratorImpl struct {
 	metric              cache.Metric
 }
 
-func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*IteratorImpl, error) {
+// NewIterator constructs a market Iterator.
+func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*Impl, error) {
 	startTm, err := startISO8601.Time()
 	if err != nil {
 		return nil, cache.ErrInvalidISO8601
@@ -30,7 +32,7 @@ func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickC
 	startTs := common.NormalizeTimestamp(startTm, time.Duration(intervalMinutes)*time.Minute, "TODO_PROVIDER", startFromNext)
 	metric := cache.Metric{Name: operand.Str, CandlestickInterval: time.Duration(intervalMinutes) * time.Minute}
 
-	return &IteratorImpl{
+	return &Impl{
 		operand:             operand,
 		candlestickCache:    candlestickCache,
 		candlestickProvider: candlestickProvider,
@@ -42,7 +44,16 @@ func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickC
 	}, nil
 }
 
-func (t *IteratorImpl) NextTick() (types.Tick, error) {
+// NextTick is the "Next" iterator function, providing the next available Tick (as opposed to Candlestick).
+//
+// It can fail for many reasons because it depends on requesting to an exchange, which means it could fail if the
+// Internet cable got mauled by a cat.
+//
+// Some common failure reasons:
+//
+// - ErrNoNewTicksYet: timestamp is already in the present.
+// - ErrExchangeReturnedNoTicks: exchange got the request and returned no results.
+func (t *Impl) NextTick() (types.Tick, error) {
 	cs, err := t.NextCandlestick()
 	if err != nil {
 		return types.Tick{}, err
@@ -50,7 +61,16 @@ func (t *IteratorImpl) NextTick() (types.Tick, error) {
 	return types.Tick{Timestamp: cs.Timestamp, Value: cs.ClosePrice}, nil
 }
 
-func (t *IteratorImpl) NextCandlestick() (types.Candlestick, error) {
+// NextCandlestick is the "Next" iterator function, providing the next available Candlestick (as opposed to Tick).
+//
+// It can fail for many reasons because it depends on requesting to an exchange, which means it could fail if the
+// Internet cable got mauled by a cat.
+//
+// Some common failure reasons:
+//
+// - ErrNoNewTicksYet: timestamp is already in the present.
+// - ErrExchangeReturnedNoTicks: exchange got the request and returned no results.
+func (t *Impl) NextCandlestick() (types.Candlestick, error) {
 	// If the candlesticks buffer is empty, try to get candlesticks from the cache.
 	if len(t.candlesticks) == 0 && t.candlestickCache != nil {
 		ticks, err := t.candlestickCache.Get(t.metric, t.nextISO8601())
@@ -108,23 +128,23 @@ func (t *IteratorImpl) NextCandlestick() (types.Candlestick, error) {
 	return candlestick, nil
 }
 
-func (t *IteratorImpl) nextISO8601() types.ISO8601 {
+func (t *Impl) nextISO8601() types.ISO8601 {
 	return types.ISO8601(t.nextTime().Format(time.RFC3339))
 }
 
-func (t *IteratorImpl) nextTime() time.Time {
+func (t *Impl) nextTime() time.Time {
 	return time.Unix(int64(t.nextTs()), 0)
 }
 
-func (t *IteratorImpl) nextTs() int {
+func (t *Impl) nextTs() int {
 	return t.lastTs + t.candlestickDurationSecs()
 }
 
-func (t *IteratorImpl) candlestickDurationSecs() int {
+func (t *Impl) candlestickDurationSecs() int {
 	return t.intervalMinutes * 60
 }
 
-func (t *IteratorImpl) pruneOlderCandlesticks(candlesticks []types.Candlestick) []types.Candlestick {
+func (t *Impl) pruneOlderCandlesticks(candlesticks []types.Candlestick) []types.Candlestick {
 	nextTs := t.nextTs()
 	for _, tick := range candlesticks {
 		if tick.Timestamp < nextTs {
