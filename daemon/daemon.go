@@ -23,12 +23,14 @@ type Daemon struct {
 	store            statestorage.StateStorage
 	market           market.IMarket
 	predImageBuilder imagebuilder.PredictionImageBuilder
+	enableTweeting   bool
+	enableReplying   bool
 
 	errs []error
 }
 
-func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder) *Daemon {
-	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder}
+func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool) *Daemon {
+	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder, enableTweeting: enableTweeting, enableReplying: enableReplying}
 }
 
 func (r *Daemon) BlockinglyRunEvery(dur time.Duration) {
@@ -68,7 +70,7 @@ func (r *Daemon) MaybeActionPredictionCreated(prediction types.Prediction, nowTs
 	if prediction.State.Status != types.UNSTARTED {
 		return
 	}
-	err := r.ActionPrediction(prediction, ACTION_TYPE_PREDICTION_CREATED, nowTs)
+	err := r.ActionPrediction(prediction, actionTypePredictionCreated, nowTs)
 	r.AddErrs(&prediction, err)
 }
 
@@ -100,7 +102,7 @@ func (r *Daemon) MaybeActionPredictionFinal(prediction types.Prediction, nowTs i
 	log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 
 	if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
-		err := r.ActionPrediction(prediction, ACTION_TYPE_BECAME_FINAL, nowTs)
+		err := r.ActionPrediction(prediction, actionTypeBecameFinal, nowTs)
 		r.AddErrs(&prediction, err)
 	}
 }

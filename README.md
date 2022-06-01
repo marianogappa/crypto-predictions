@@ -84,6 +84,14 @@ If memory is not a problem, the higher the better!
 - `PREDICTIONS_MARKET_CACHE_SIZE_1_HOUR`: defaults to 1000
 - `PREDICTIONS_MARKET_CACHE_SIZE_1_DAY`: defaults to 1000
 
+#### Tweeting configuration
+
+By default, the system does not Tweet anything. By setting the first env, it will post tweets as the configured account.
+By setting both envs, it will attempt to reply to prediction tweets rather than just posting.
+
+- `PREDICTIONS_DAEMON_ENABLE_TWEETING`: unset by default, set it to any value to enable
+- `PREDICTIONS_DAEMON_ENABLE_REPLYING`: unset by default, set it to any value to enable
+
 ## Components
 
 **API**
