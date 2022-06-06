@@ -86,7 +86,7 @@ func TestAPI(t *testing.T) {
 			}
 			url := l.Addr().String()
 			go a.blockinglyServe(l)
-			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, imagebuilder.PredictionImageBuilder{})
+			daemon := daemon.NewDaemon(testMarket, memoryStateStorage, imagebuilder.PredictionImageBuilder{}, false, false)
 
 			ts.test(t, url, memoryStateStorage, testMarket, daemon, mFetcher)
 		})
