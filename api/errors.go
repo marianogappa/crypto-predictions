@@ -6,27 +6,44 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+// ErrorContent struct contains necessary data to return an error compliant with the API spec.
 type ErrorContent struct {
 	StatusCode int    `json:"status"`
 	Message    string `json:"message,omitempty"`
 	ErrorCode  string `json:"errorCode,omitempty"`
 }
 
-func (c ErrorContent) Status() int    { return c.StatusCode }
+// Status returns the error's status code.
+func (c ErrorContent) Status() int { return c.StatusCode }
+
+// String returns the error's message.
 func (c ErrorContent) String() string { return c.Message }
-func (c ErrorContent) Error() string  { return c.Message }
-func (c ErrorContent) Unwrap() error  { return errors.New(c.Message) }
+
+// Error returns the error's message.
+func (c ErrorContent) Error() string { return c.Message }
+
+// Unwrap returns an error with the error's message.
+func (c ErrorContent) Unwrap() error { return errors.New(c.Message) }
 
 var (
-	ErrInvalidRequestBody                = errors.New("invalid request body")
-	ErrInvalidRequestJSON                = errors.New("invalid request JSON")
+	// ErrInvalidRequestBody is returned by the API when the received request has an invalid body.
+	ErrInvalidRequestBody = errors.New("invalid request body")
+	// ErrInvalidRequestJSON is returned by the API when the received request has a valid body containing invalid JSON.
+	ErrInvalidRequestJSON = errors.New("invalid request JSON")
+	// ErrStorageErrorRetrievingPredictions is returned by the API when something went wrong retrieving a prediction.
 	ErrStorageErrorRetrievingPredictions = errors.New("storage had error retrieving predictions")
-	ErrStorageErrorStoringPrediction     = errors.New("storage had error storing predictions")
-	ErrStorageErrorStoringAccount        = errors.New("storage had error storing accounts")
-	ErrFailedToSerializePredictions      = errors.New("failed to serialize predictions")
-	ErrFailedToSerializeAccount          = errors.New("failed to serialize account")
-	ErrFailedToCompilePrediction         = errors.New("failed to compile prediction")
-	ErrPredictionNotFound                = errors.New("prediction not found")
+	// ErrStorageErrorStoringPrediction is returned by the API when something went wrong storing a prediction.
+	ErrStorageErrorStoringPrediction = errors.New("storage had error storing predictions")
+	// ErrStorageErrorStoringAccount is returned by the API when something went wrong storing an account.
+	ErrStorageErrorStoringAccount = errors.New("storage had error storing accounts")
+	// ErrFailedToSerializePredictions is returned by the API when something went wrong serializing a prediction.
+	ErrFailedToSerializePredictions = errors.New("failed to serialize predictions")
+	// ErrFailedToSerializeAccount is returned by the API when something went wrong serializing an account.
+	ErrFailedToSerializeAccount = errors.New("failed to serialize account")
+	// ErrFailedToCompilePrediction is returned by the API when something went wrong compiling a prediction from a string.
+	ErrFailedToCompilePrediction = errors.New("failed to compile prediction")
+	// ErrPredictionNotFound is returned by the API when an unknown prediction was requested.
+	ErrPredictionNotFound = errors.New("prediction not found")
 
 	errToResponse = map[error]ErrorContent{
 		types.ErrUnknownOperandType:                 {StatusCode: 400, ErrorCode: "ErrUnknownOperandType", Message: "unknown value for operandType"},
