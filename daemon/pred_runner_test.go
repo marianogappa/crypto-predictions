@@ -244,7 +244,7 @@ func TestNewPredRunner(t *testing.T) {
 	for _, ts := range tss {
 		t.Run(ts.name, func(t *testing.T) {
 			tm := &testMarket{}
-			_, errs := NewPredRunner(&ts.prediction, tm, ts.nowTs)
+			_, errs := NewPredEvolver(&ts.prediction, tm, ts.nowTs)
 			if len(errs) > 0 && !ts.isError {
 				t.Logf("should not have errored but these errors happened: %v", errs)
 				t.FailNow()

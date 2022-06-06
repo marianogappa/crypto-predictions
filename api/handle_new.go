@@ -55,7 +55,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 
 	// If the state is empty, run one tick to see if the prediction is decided at start time. If so, it's invalid.
 	if pred.State == (types.PredictionState{}) {
-		predRunner, errs := daemon.NewPredRunner(&pred, a.mkt, int(a.NowFunc().Unix()))
+		predRunner, errs := daemon.NewPredEvolver(&pred, a.mkt, int(a.NowFunc().Unix()))
 		if len(errs) == 0 {
 			predRunnerErrs := predRunner.Run(true)
 			for _, err := range predRunnerErrs {

@@ -1,28 +1,22 @@
 package daemon
 
 import (
-	"errors"
-
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 )
 
-var (
-	ErrNoMorePredictions = errors.New("no more predictions")
-)
-
-type EvolvablePredictionsScanner struct {
+type evolvablePredictionsScanner struct {
 	store       statestorage.StateStorage
 	predictions []types.Prediction
 	lastUUID    string
 	Error       error
 }
 
-func NewEvolvablePredictionsScanner(store statestorage.StateStorage) *EvolvablePredictionsScanner {
-	return &EvolvablePredictionsScanner{store: store}
+func newEvolvablePredictionsScanner(store statestorage.StateStorage) *evolvablePredictionsScanner {
+	return &evolvablePredictionsScanner{store: store}
 }
 
-func (it *EvolvablePredictionsScanner) query() ([]types.Prediction, error) {
+func (it *evolvablePredictionsScanner) query() ([]types.Prediction, error) {
 	filters := types.APIFilters{
 		PredictionStateValues: []string{
 			types.ONGOING_PRE_PREDICTION.String(),
@@ -51,7 +45,7 @@ func (it *EvolvablePredictionsScanner) query() ([]types.Prediction, error) {
 	return preds, nil
 }
 
-func (it *EvolvablePredictionsScanner) Scan(prediction *types.Prediction) bool {
+func (it *evolvablePredictionsScanner) Scan(prediction *types.Prediction) bool {
 	it.Error = nil
 	if len(it.predictions) == 0 {
 		var err error

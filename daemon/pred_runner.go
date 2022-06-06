@@ -10,7 +10,8 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
-type PredRunner struct {
+// PredEvolver is the struct that evolves a prediction's state upon reading market data.
+type PredEvolver struct {
 	prediction *types.Prediction
 	tickers    map[string]map[string]types.Iterator
 }
@@ -19,9 +20,10 @@ var (
 	errPredictionAtFinalStateAtCreation = errors.New("prediction is in final state at creation time")
 )
 
-func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredRunner, []error) {
+// NewPredEvolver is the constructor for PredEvolver.
+func NewPredEvolver(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredEvolver, []error) {
 	errs := []error{}
-	result := PredRunner{prediction: prediction, tickers: make(map[string]map[string]types.Iterator)}
+	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]types.Iterator)}
 
 	predStateValue := prediction.Evaluate()
 	if predStateValue != types.ONGOING_PRE_PREDICTION && predStateValue != types.ONGOING_PREDICTION {
@@ -45,13 +47,14 @@ func NewPredRunner(prediction *types.Prediction, m market.IMarket, nowTs int) (*
 	}
 
 	if len(errs) > 0 {
-		log.Info().Msgf("newPredRunner: errors creating new PredRunner: %v\n", errs)
+		log.Info().Msgf("newPredEvolver: errors creating new PredRunner: %v\n", errs)
 	}
 
 	return &result, errs
 }
 
-func (r *PredRunner) Run(once bool) []error {
+// Run evolves the prediction until it hits an error, or there's no more recent market data, or the prediction finishes.
+func (r *PredEvolver) Run(once bool) []error {
 	var (
 		errs            = []error{}
 		stuckConditions = map[string]struct{}{}
@@ -67,7 +70,7 @@ func (r *PredRunner) Run(once bool) []error {
 			}
 		}
 		if once {
-			return errs
+			break
 		}
 		conds = r.actionableNonStuckUndecidedConditions(stuckConditions)
 	}
@@ -75,7 +78,7 @@ func (r *PredRunner) Run(once bool) []error {
 	return errs
 }
 
-func (r *PredRunner) runCondition(cond *types.Condition) error {
+func (r *PredEvolver) runCondition(cond *types.Condition) error {
 	ticks := map[string]types.Tick{}
 	for key, ticker := range r.tickers[cond.Name] {
 		tick, err := ticker.NextTick()
@@ -88,7 +91,7 @@ func (r *PredRunner) runCondition(cond *types.Condition) error {
 	return cond.Run(ticks)
 }
 
-func (r *PredRunner) actionableNonStuckUndecidedConditions(stuckConditions map[string]struct{}) []*types.Condition {
+func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[string]struct{}) []*types.Condition {
 	conds := []*types.Condition{}
 	for _, cond := range r.prediction.ActionableUndecidedConditions() {
 		if _, ok := stuckConditions[cond.Name]; !ok {
