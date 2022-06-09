@@ -12,6 +12,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/market"
@@ -42,7 +43,14 @@ type API struct {
 }
 
 // NewAPI is the constructor for the API.
-func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metadatafetcher.MetadataFetcher, imgBuilder imagebuilder.PredictionImageBuilder) *API {
+func NewAPI(
+	mkt market.IMarket,
+	store statestorage.StateStorage,
+	mFetcher metadatafetcher.MetadataFetcher,
+	imgBuilder imagebuilder.PredictionImageBuilder,
+	basicAuthUser string,
+	basicAuthPass string,
+) *API {
 	a := &API{mkt: mkt, store: store, NowFunc: time.Now, mFetcher: mFetcher, imageBuilder: imgBuilder}
 
 	apiSchema := &openapi.Collector{}
@@ -103,22 +111,28 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 		corsMiddleware,
 	)
 
-	s.Get("/", a.apiHealthcheck())
-	s.Get("/predictions", a.apiGetPredictions())
-	s.Get("/pages/prediction/{url}", a.apiGetPagesPrediction())
-	s.Post("/predictions", a.apiPostPrediction())
-	s.Get("/predictions/{uuid}/image", a.apiGetPredictionImage())
-	s.Post("/predictions/{uuid}/pause", a.apiPredictionStorageActionWithUUID(a.store.PausePrediction, "Paused predictions are not updated by daemon until unpaused. They are still returned by GET calls."))
-	s.Post("/predictions/{uuid}/unpause", a.apiPredictionStorageActionWithUUID(a.store.UnpausePrediction, "Upausing makes daemon resume updating predictions."))
-	s.Post("/predictions/{uuid}/hide", a.apiPredictionStorageActionWithUUID(a.store.HidePrediction, "Hidden predictions are not visible to any GET calls (unless showHidden is set), but they are still updated by daemon."))
-	s.Post("/predictions/{uuid}/unhide", a.apiPredictionStorageActionWithUUID(a.store.UnhidePrediction, "Unhiding makes predictions visible to GET calls."))
-	s.Post("/predictions/{uuid}/delete", a.apiPredictionStorageActionWithUUID(a.store.DeletePrediction, "Deleted predictions are not visible to any GET calls (unless showDeleted is set), nor updated by daemon."))
-	s.Post("/predictions/{uuid}/undelete", a.apiPredictionStorageActionWithUUID(a.store.UndeletePrediction, "Undeleting predictions makes them visible to GET calls and updateable by daemon."))
-	s.Post("/predictions/{uuid}/refetchAccount", a.apiPredictionRefetchAccount())
-	s.Post("/predictions/{uuid}/clearState", a.apiPredictionClearState())
-	s.Post("/maintenance/{action}", a.apiMaintenance())
+	// Prepare middleware with suitable security schema.
+	// It will perform actual security check for every relevant request.
+	adminAuth := middleware.BasicAuth("Admin Access", map[string]string{basicAuthUser: basicAuthPass})
 
-	s.Docs("/docs", swgui.New)
+	s.Get("/pages/prediction/{url}", a.apiGetPagesPrediction())
+	s.Group(func(r chi.Router) {
+		r.Use(adminAuth, nethttp.HTTPBasicSecurityMiddleware(apiSchema, "Admin", "Admin access"))
+		r.Method(http.MethodGet, "/", nethttp.NewHandler(a.apiHealthcheck()))
+		r.Method(http.MethodGet, "/predictions", nethttp.NewHandler(a.apiGetPredictions()))
+		r.Method(http.MethodPost, "/predictions", nethttp.NewHandler(a.apiPostPrediction()))
+		r.Method(http.MethodGet, "/predictions/{uuid}/image", nethttp.NewHandler(a.apiGetPredictionImage()))
+		r.Method(http.MethodPost, "/predictions/{uuid}/pause", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.PausePrediction, "Paused predictions are not updated by daemon until unpaused. They are still returned by GET calls.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/unpause", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.UnpausePrediction, "Upausing makes daemon resume updating predictions.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/hide", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.HidePrediction, "Hidden predictions are not visible to any GET calls (unless showHidden is set), but they are still updated by daemon.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/unhide", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.UnhidePrediction, "Unhiding makes predictions visible to GET calls.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/delete", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.DeletePrediction, "Deleted predictions are not visible to any GET calls (unless showDeleted is set), nor updated by daemon.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/undelete", nethttp.NewHandler(a.apiPredictionStorageActionWithUUID(a.store.UndeletePrediction, "Undeleting predictions makes them visible to GET calls and updateable by daemon.")))
+		r.Method(http.MethodPost, "/predictions/{uuid}/refetchAccount", nethttp.NewHandler(a.apiPredictionRefetchAccount()))
+		r.Method(http.MethodPost, "/predictions/{uuid}/clearState", nethttp.NewHandler(a.apiPredictionClearState()))
+		r.Method(http.MethodPost, "/maintenance/{action}", nethttp.NewHandler(a.apiMaintenance()))
+		s.Docs("/docs", swgui.New)
+	})
 
 	a.mux = s
 

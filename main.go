@@ -97,8 +97,12 @@ func main() {
 		chromePath             = envOrStr("PREDICTIONS_CHROME_PATH", envOrStr("GOOGLE_CHROME_BIN", ""))
 		predictionImageBuilder = imagebuilder.NewPredictionImageBuilder(market, files, chromePath)
 
+		// All endpoints across the API and the BackOffice (except for /predictions/pages) are behind BasicAuth.
+		basicAuthUser = envOrStr("PREDICTIONS_BASIC_AUTH_USER", "admin")
+		basicAuthPass = envOrStr("PREDICTIONS_BASIC_AUTH_PASS", "admin")
+
 		// The API component is responsible for CRUDing predictions and related entities.
-		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, predictionImageBuilder)
+		api = api.NewAPI(market, postgresDBStorage, *metadataFetcher, predictionImageBuilder, basicAuthUser, basicAuthPass)
 
 		// The Daemon component is responsible for continuously running prediction state machines against market data.
 		enableTweeting = envOrStr("PREDICTIONS_DAEMON_ENABLE_TWEETING", "") != ""
@@ -106,7 +110,7 @@ func main() {
 		daemon         = daemon.NewDaemon(market, postgresDBStorage, predictionImageBuilder, enableTweeting, enableReplying)
 
 		// The BackOffice component is a UI for admins to maintain the predictions system.
-		backOffice = backoffice.NewBackOfficeUI(files)
+		backOffice = backoffice.NewBackOfficeUI(files, basicAuthUser, basicAuthPass)
 
 		// Resolve all urls, ports & configs from environment variables, with defaults.
 		apiPort        = envOrInt("PREDICTIONS_API_PORT", 2345)

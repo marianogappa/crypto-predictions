@@ -1,6 +1,7 @@
 package backoffice
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/marianogappa/predictions/request"
@@ -8,12 +9,14 @@ import (
 )
 
 type apiClient struct {
-	apiURL string
-	debug  bool
+	apiURL        string
+	debug         bool
+	basicAuthUser string
+	basicAuthPass string
 }
 
-func newAPIClient(apiURL string) *apiClient {
-	return &apiClient{apiURL: apiURL}
+func newAPIClient(apiURL, basicAuthUser, basicAuthPass string) *apiClient {
+	return &apiClient{apiURL: apiURL, basicAuthUser: basicAuthUser, basicAuthPass: basicAuthPass}
 }
 
 func (c *apiClient) setDebug(b bool) {
@@ -35,6 +38,7 @@ func (c apiClient) new(pred []byte, store bool) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -54,6 +58,7 @@ func (c apiClient) get(body getBody) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -86,6 +91,7 @@ func (c apiClient) predictionImage(body predictionImageBody) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -100,6 +106,7 @@ func (c apiClient) pausePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -114,6 +121,7 @@ func (c apiClient) unpausePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -128,6 +136,7 @@ func (c apiClient) hidePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -142,6 +151,7 @@ func (c apiClient) unhidePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -156,6 +166,7 @@ func (c apiClient) deletePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -170,6 +181,7 @@ func (c apiClient) undeletePrediction(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -184,6 +196,7 @@ func (c apiClient) refreshAccount(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
 }
@@ -198,6 +211,11 @@ func (c apiClient) clearState(uuid string) parsedResponse {
 		ParseResponse: parseResponse,
 		ParseError:    parseError,
 	}
+	reqData.Headers = map[string]string{"Authorization": c.basicAuthValue()}
 
 	return request.MakeRequest(reqData, c.debug)
+}
+
+func (c apiClient) basicAuthValue() string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", c.basicAuthUser, c.basicAuthPass)))
 }

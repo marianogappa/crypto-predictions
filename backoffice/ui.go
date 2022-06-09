@@ -51,14 +51,16 @@ func loadTemplates(files embed.FS) error {
 
 // UI is the main struct for the BackOffice component.
 type UI struct {
-	apiClient *apiClient
-	files     embed.FS
-	debug     bool
+	apiClient     *apiClient
+	files         embed.FS
+	debug         bool
+	basicAuthUser string
+	basicAuthPass string
 }
 
 // NewBackOfficeUI is the constructor for the BackOffice component.
-func NewBackOfficeUI(files embed.FS) *UI {
-	return &UI{files: files}
+func NewBackOfficeUI(files embed.FS, basicAuthUser, basicAuthPass string) *UI {
+	return &UI{files: files, basicAuthUser: basicAuthUser, basicAuthPass: basicAuthPass}
 }
 
 // SetDebug enables/disables debugging logs across the BackOffice component.
@@ -68,7 +70,7 @@ func (s *UI) SetDebug(b bool) {
 
 // MustBlockinglyServe serves the BackOffice component.
 func (s UI) MustBlockinglyServe(port int, apiURL string) {
-	s.apiClient = newAPIClient(apiURL)
+	s.apiClient = newAPIClient(apiURL, s.basicAuthUser, s.basicAuthPass)
 
 	if s.debug {
 		s.apiClient.setDebug(s.debug)
@@ -78,11 +80,11 @@ func (s UI) MustBlockinglyServe(port int, apiURL string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
-	http.HandleFunc("/", s.indexHandler)
-	http.HandleFunc("/add", s.putHandler)
-	http.HandleFunc("/prediction", s.predictionHandler)
-	http.HandleFunc("/predictionPage", s.predictionPageHandler)
-	// http.HandleFunc("/reRunAll", s.reRunAllHandler)
+	s.handleFunc("/", s.indexHandler)
+	s.handleFunc("/add", s.putHandler)
+	s.handleFunc("/prediction", s.predictionHandler)
+	s.handleFunc("/predictionPage", s.predictionPageHandler)
+	// s.handleFunc("/reRunAll", s.reRunAllHandler)
 
 	addr := fmt.Sprintf(":%v", port)
 	log.Info().Msgf("BackOffice listening on %v", addr)
@@ -298,4 +300,29 @@ func (s UI) putHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal().Err(err).Msg("")
 		}
 	}
+}
+
+func (s UI) handleFunc(pattern string, fn http.HandlerFunc) {
+	http.HandleFunc(pattern, basicAuthHandler(s.basicAuthUser, s.basicAuthPass, "BackOffice", fn))
+}
+
+func basicAuthHandler(user, pass, realm string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if checkBasicAuth(r, user, pass) {
+			next(w, r)
+			return
+		}
+
+		w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s"`, realm))
+		w.WriteHeader(401)
+		w.Write([]byte("401 Unauthorized\n"))
+	}
+}
+
+func checkBasicAuth(r *http.Request, user, pass string) bool {
+	u, p, ok := r.BasicAuth()
+	if !ok {
+		return false
+	}
+	return u == user && p == pass
 }

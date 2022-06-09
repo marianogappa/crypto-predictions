@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -79,7 +80,7 @@ func TestAPI(t *testing.T) {
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}
-			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, imagebuilder.PredictionImageBuilder{})
+			a := NewAPI(testMarket, memoryStateStorage, *mFetcher, imagebuilder.PredictionImageBuilder{}, "admin", "admin")
 			l, err := a.listen("localhost:0")
 			if err != nil {
 				t.Fatalf(err.Error())
@@ -117,6 +118,7 @@ func makeGetRequest(query map[string][]string, url string) (apiResponse[apiResGe
 		req.URL.RawQuery = values.Encode()
 	}
 
+	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("admin:admin"))))
 	resp, err := client.Do(req)
 	if err != nil {
 		return apiResponse[apiResGetPredictions]{}, err
@@ -138,6 +140,7 @@ func makeGetRequest(query map[string][]string, url string) (apiResponse[apiResGe
 func makeNewRequest(reqBody string, url string) (apiResponse[apiResPostPrediction], error) {
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/predictions", url), bytes.NewBuffer([]byte(reqBody)))
 	client := &http.Client{Timeout: 10 * time.Second}
+	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("admin:admin"))))
 	resp, err := client.Do(req)
 	if err != nil {
 		return apiResponse[apiResPostPrediction]{}, err

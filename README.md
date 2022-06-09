@@ -60,6 +60,13 @@ If you provide the path to a Chrome binary, it will be used to produce images to
 - `PREDICTIONS_POSTGRES_DATABASE`: defaults to current user.
 - `PREDICTIONS_POSTGRES_HOST`: defaults to localhost.
 
+#### Security configuration
+
+All non-public endpoints (i.e. all except /pages/prediction at this point) are behind BasicAuth.
+
+- `PREDICTIONS_BASIC_AUTH_USER`: defaults to "admin"
+- `PREDICTIONS_BASIC_AUTH_PASS`: defaults to "admin"
+
 #### Components configuration
 
 - `PREDICTIONS_API_PORT`: defaults to 2345. In the special case of running BackOffice but not API, setting this or the URL is required.
