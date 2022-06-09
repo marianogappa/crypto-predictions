@@ -112,27 +112,43 @@ func (s MemoryStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Accoun
 }
 
 // TODO to implement these it's necessary to either wrap predictions in row objects or add fields onto Predictions
+
+// PausePrediction pauses a prediction
 func (s MemoryStateStorage) PausePrediction(uuid string) error {
 	return nil
 }
+
+// UnpausePrediction unpauses a prediction.
 func (s MemoryStateStorage) UnpausePrediction(uuid string) error {
 	return nil
 }
+
+// HidePrediction hides a prediction.
 func (s MemoryStateStorage) HidePrediction(uuid string) error {
 	return nil
 }
+
+// UnhidePrediction unhides a prediction.
 func (s MemoryStateStorage) UnhidePrediction(uuid string) error {
 	return nil
 }
+
+// DeletePrediction deletes a prediction.
 func (s MemoryStateStorage) DeletePrediction(uuid string) error {
 	return nil
 }
+
+// UndeletePrediction undeletes a prediction.
 func (s MemoryStateStorage) UndeletePrediction(uuid string) error {
 	return nil
 }
+
+// PredictionInteractionExists answers if there was a Tweet for the given (prediction, actionType).
 func (s MemoryStateStorage) PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error) {
 	return true, nil
 }
+
+// InsertPredictionInteraction notes down the fact that a Tweet for the given (prediction, actionType) happened.
 func (s MemoryStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
 	return nil
 }
