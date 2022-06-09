@@ -100,6 +100,7 @@ func NewAPI(mkt market.IMarket, store statestorage.StateStorage, mFetcher metada
 		},
 		restResponse.EncoderMiddleware,
 		gzip.Middleware,
+		corsMiddleware,
 	)
 
 	s.Get("/", a.apiHealthcheck())
@@ -173,4 +174,20 @@ func (a *API) listen(url string) (net.Listener, error) {
 func (a *API) blockinglyServe(l net.Listener) error {
 	log.Info().Str("docs", fmt.Sprintf("%v/docs", l.Addr().String())).Msgf("API listening on %v", l.Addr().String())
 	return http.Serve(l, a.mux)
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(204)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
