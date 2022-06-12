@@ -6,14 +6,38 @@ import (
 	"time"
 )
 
+// Condition represents a boolean condition that looks like "BTC/USDT >= 45000 within 3 weeks".
+//
+// A Prediction is composed by one or more Conditions.
+//
+// Each Condition is assigned a free-form string name (i.e. a variable name) within the Given block,
+// represented here by the Name property.
+//
+// Conditions have timestamps for the moment they should start to be evaluated, and the deadline for the condition to
+// be met, represented by FromTs and ToTs. Often, when people make predictions, they expect them to become true after
+// a period of time from the moment they make the prediction, in which case ToDuration represents that period, but
+// ToTs still computes the timestamp as a result of adding the period to FromTs. Review compiler.parseDuration for an
+// exhaustive definition of valid values of ToDuration.
+//
+// Often, people consider predictions that _almost_ became true to be true nonetheless. Because of this reason,
+// ErrorMarginRatio allows a Condition to become CORRECT when the literal number in the boolean condition evaluated is
+// not yet satisfying the condition, but it's ErrorMarginRatio% away from satisfying it.
+//
+// Conditions are evolved by calling Condition.Run and supplying market Ticks, which are the closing prices of market
+// candlesticks at 1 minute intervals. The Condition's State contains the results of that evolution, that is, whether
+// the Condition has finished evolving and reached a final state, what were the latest ticks supplied, etc.
+//
+// Conditions start as UNDECIDED and can only change as a result of invoking Condition.Run. Subsequent invocations of
+// Condition.Run will make the Value become TRUE if the boolean condition becomes true, or FALSE if the supplied Tick's
+// timestamp exceeds the Condition's ToTs without the boolean condition becoming true.
 type Condition struct {
 	Name             string
 	Operator         string
 	Operands         []Operand
-	FromTs           int // won't work for dynamic
-	ToTs             int // won't work for dynamic
+	FromTs           int // TODO: won't work for dynamic
+	ToTs             int // TODO: won't work for dynamic
 	ToDuration       string
-	Assumed          []string
+	Assumed          []string // unused for now
 	State            ConditionState
 	ErrorMarginRatio float64
 }
@@ -123,14 +147,20 @@ func (c *Condition) Run(ticks map[string]Tick) error {
 	return nil
 }
 
+// Evaluate is a non-mutating function that returns the Value of a Condition, that is, if the Condition has reached
+// a final value (i.e. TRUE, FALSE) or not (i.e. UNDECIDED).
 func (c Condition) Evaluate() ConditionStateValue {
 	return c.State.Value
 }
 
+// ClearState is a mutating function that empties the State of a Condition, allowing it to start from scratch.
+// It is meant to be used as a Back Office operation, when the admin identifies a problem with the evolving of a
+// prediction and wants to restart it from scratch and let it evolve again.
 func (c *Condition) ClearState() {
 	c.State = ConditionState{}
 }
 
+// NonNumberOperands returns the slice of Operands of a Condition that are either COINs or MARKETCAPs, but not NUMBERs.
 func (c *Condition) NonNumberOperands() []Operand {
 	ops := []Operand{}
 	for _, op := range c.Operands {
@@ -140,4 +170,24 @@ func (c *Condition) NonNumberOperands() []Operand {
 		ops = append(ops, op)
 	}
 	return ops
+}
+
+// Clone returns a deep copy of Condition that does not share any memory with the original struct.
+func (c Condition) Clone() Condition {
+	clonedOperands := make([]Operand, len(c.Operands))
+	for i, op := range c.Operands {
+		clonedOperands[i] = op
+	}
+
+	return Condition{
+		Name:             c.Name,
+		Operator:         c.Operator,
+		Operands:         clonedOperands,
+		FromTs:           c.FromTs,
+		ToTs:             c.ToTs,
+		ToDuration:       c.ToDuration,
+		Assumed:          c.Assumed,
+		State:            c.State.Clone(),
+		ErrorMarginRatio: c.ErrorMarginRatio,
+	}
 }

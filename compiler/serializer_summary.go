@@ -13,9 +13,10 @@ type PredictionSummary struct {
 	// Only in "PredictionTheFlippening" type
 	OtherCoin string `json:"otherCoin,omitempty"`
 
-	// In basic prediction type
-	Goal          types.JsonFloat64 `json:"goal,omitempty"`
-	GoalWithError types.JsonFloat64 `json:"goalWithError,omitempty"`
+	// Only in "PredictionTypeCoinOperatorFloatDeadline" type
+	Goal                                    types.JsonFloat64 `json:"goal,omitempty"`
+	GoalWithError                           types.JsonFloat64 `json:"goalWithError,omitempty"`
+	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
 
 	// Only in "PredictionWillRange type"
 	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
@@ -48,14 +49,15 @@ func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
 				{Timestamp: 1651162017, OpenPrice: 39500, HighestPrice: 39550, LowestPrice: 39200, ClosePrice: 39020},
 			},
 		},
-		Coin:             "BINANCE:COIN:BTC-USDT",
-		Goal:             45000,
-		GoalWithError:    43650,
-		ErrorMarginRatio: 0.03,
-		Operator:         ">=",
-		Deadline:         "2022-06-24T07:51:06Z",
-		EndedAt:          "2022-06-24T07:51:06Z",
-		PredictionType:   "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
+		Coin:                                    "BINANCE:COIN:BTC-USDT",
+		Goal:                                    45000,
+		GoalWithError:                           43650,
+		ErrorMarginRatio:                        0.03,
+		Operator:                                ">=",
+		Deadline:                                "2022-06-24T07:51:06Z",
+		EndedAt:                                 "2022-06-24T07:51:06Z",
+		EndedAtTruncatedDueToResultInvalidation: "2022-06-23T00:00:00Z",
+		PredictionType:                          "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
 	})
 
 	return nil
@@ -99,15 +101,16 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 	}
 
 	return PredictionSummary{
-		PredictionType:   p.Type.String(),
-		CandlestickMap:   candlesticks,
-		Operator:         typedPred.Operator(),
-		Goal:             typedPred.Goal(),
-		GoalWithError:    typedPred.GoalWithError(),
-		ErrorMarginRatio: types.JsonFloat64(typedPred.ErrorMarginRatio()),
-		Deadline:         types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
-		EndedAt:          types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
-		Coin:             opStr,
+		PredictionType:                          p.Type.String(),
+		CandlestickMap:                          candlesticks,
+		Operator:                                typedPred.Operator(),
+		Goal:                                    typedPred.Goal(),
+		GoalWithError:                           typedPred.GoalWithError(),
+		ErrorMarginRatio:                        types.JsonFloat64(typedPred.ErrorMarginRatio()),
+		Deadline:                                types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
+		EndedAt:                                 types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
+		EndedAtTruncatedDueToResultInvalidation: types.ISO8601(typedPred.EndTimeTruncatedDueToResultInvalidation(candlesticks[opStr]).Format(time.RFC3339)),
+		Coin:                                    opStr,
 	}, nil
 }
 

@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 type PredictionTypeCoinWillReachBeforeItReaches struct {
 	P Prediction
@@ -98,6 +101,52 @@ func (p PredictionTypeCoinOperatorFloatDeadline) EndTime() time.Time {
 		return deadline
 	}
 	return time.Unix(int64(p.P.State.LastTs), 0)
+}
+
+func (p PredictionTypeCoinOperatorFloatDeadline) EndTimeTruncatedDueToResultInvalidation(candlesticks []Candlestick) time.Time {
+	return endTimeTruncatedDueToResultInvalidation(p.P, p.P.Predict.Predict.Literal.Clone(), p.EndTime(), candlesticks)
+}
+
+func endTimeTruncatedDueToResultInvalidation(p Prediction, condition Condition, endTime time.Time, candlesticks []Candlestick) time.Time {
+	if p.State.Status != FINISHED || p.State.Value != INCORRECT || len(candlesticks) < 2 {
+		return endTime
+	}
+
+	// If prediction is FINISHED with value INCORRECT, there could be a big problem in the chart!
+	// If the last candlestick extends over after endTime, it could happen that the prediction became true after it.
+	// This will result in showing a chart where the prediction looks correct!
+	// So, let's check if that's the case by evolving the prediction with the last candlestick.
+	condition.ClearState()
+	condition.FromTs = 0
+	condition.ToTs = math.MaxInt // We must ignore the deadline
+
+	var (
+		coin                   = condition.Operands[0].Str
+		lastCandlestick        = candlesticks[len(candlesticks)-1]
+		penultimateCandlestick = candlesticks[len(candlesticks)-2]
+		lastTimestamp          = lastCandlestick.Timestamp
+		penultimateTimestamp   = penultimateCandlestick.Timestamp
+		diffSeconds            = lastTimestamp - penultimateTimestamp
+		nextTimestamp          = lastTimestamp + diffSeconds // Tick timestamp must be in the future
+		lowTick                = Tick{Timestamp: nextTimestamp, Value: lastCandlestick.LowestPrice}
+		highTick               = Tick{Timestamp: nextTimestamp + 1, Value: lastCandlestick.HighestPrice}
+	)
+
+	_ = condition.Run(map[string]Tick{coin: lowTick})
+	_ = condition.Run(map[string]Tick{coin: highTick})
+
+	if condition.Evaluate() != TRUE {
+		return endTime
+	}
+
+	// Condition became TRUE after evolving it with the last candlestick! This means that the chart is going to look
+	// wrong! To mitigate it, move back the end time between the last two candlesticks.
+	var (
+		midTimestamp = (lastTimestamp + penultimateTimestamp) / 2
+		midTime      = time.Unix(int64(midTimestamp), 0)
+	)
+
+	return midTime
 }
 
 type PredictionTypeCoinWillRange struct {

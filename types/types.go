@@ -59,13 +59,20 @@ var (
 	ErrStorageErrorRetrievingAccounts = errors.New("storage had error retrieving accounts")
 )
 
+// Operand represents an operand in a Condition. It can be one of three things:
+//
+// 1) a COIN, which represents a market e.g. BTC/USDT
+// 2) a MARKETCAP, which represents the market capitalization of a crypto asset e.g. the marketcap of BTC
+// 3) a NUMBER, which represents a literal number e.g. 1.234
+//
+// Operands are used in expressions together with an Operator to declare a Condition, e.g. BTC/USDT >= 45000.
 type Operand struct {
 	Type       OperandType
-	Provider   string
-	QuoteAsset string
-	BaseAsset  string
-	Number     JsonFloat64
-	Str        string
+	Provider   string      // e.g. "BINANCE", "KUCOIN", must be empty if Type == NUMBER
+	BaseAsset  string      // e.g. "BTC" in BTC/USDT, must be empty if Type == NUMBER
+	QuoteAsset string      // e.g. "USDT" in BTC/USDT, must be empty if Type in {MARKETCAP, NUMBER}
+	Number     JsonFloat64 // e.g. "1.234", must be empty if Type != NUMBER
+	Str        string      // e.g. "COIN:BINANCE:BTC-USDT", "MARKETCAP:MESSARI:BTC", "1.234"
 }
 
 type OperandType int
@@ -101,11 +108,34 @@ func (v OperandType) String() string {
 	}
 }
 
+// ConditionState maintains the state of a condition as it is evolved by calling Condition.Run with Ticks.
+//
+// - LastTs is the last timestamp for the last Ticks supplied in the last Condition.Run invocation.
+//
+// - LastTicks are the last Ticks supplied in the last Condition.Run invocation.
+//
+// - Status determines if the Condition has finished evolving or not, and Value determines its result. When Status
+//   is not FINISHED, Value must be UNDECIDED.
 type ConditionState struct {
 	Status    ConditionStatus
 	LastTs    int
 	LastTicks map[string]Tick
 	Value     ConditionStateValue
+}
+
+// Clone returns a deep copy of ConditionState that does not share any memory with the original struct.
+func (s ConditionState) Clone() ConditionState {
+	clonedLastTicks := make(map[string]Tick, len(s.LastTicks))
+	for k, v := range s.LastTicks {
+		clonedLastTicks[k] = v
+	}
+
+	return ConditionState{
+		Status:    s.Status,
+		LastTs:    s.LastTs,
+		LastTicks: clonedLastTicks,
+		Value:     s.Value,
+	}
 }
 
 type BoolOperator int

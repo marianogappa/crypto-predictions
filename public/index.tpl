@@ -310,9 +310,10 @@
 
             const firstCoinCandles = prediction.summary.candlestickMap[Object.keys(prediction.summary.candlestickMap)[0]]
 
-            const deadlineTs = prediction.summary.endedAt ? new Date(prediction.summary.endedAt).getTime() / 1000 : null
+            const deadlineStr = prediction.summary.endedAtTruncatedDueToResultInvalidation ? prediction.summary.endedAtTruncatedDueToResultInvalidation : prediction.summary.endedAt
+            const deadlineTs = deadlineStr ? new Date(deadlineStr).getTime() / 1000 : null
             if (deadlineTs && prediction.state.status === 'FINISHED') {
-                endedAtLineAt = new Date(prediction.summary.endedAt)
+                endedAtLineAt = new Date(deadlineStr)
             }
 
             const postedAtTs = new Date(prediction.postedAt).getTime() / 1000
@@ -329,7 +330,16 @@
                 let width = `${chartArea.width}px`
                 if (postedAtLineAt) {
                     left = `${cli.getXLocation(postedAtLineAt)}px`
+
+                    // In principle, extend all green/red boxes up to the end of the chart
                     width = `${chartArea.width - (cli.getXLocation(postedAtLineAt) - chartArea.left)}px`
+                    // But if there's an endedAtLine, all green/red boxes should stop at that line instead
+                    if (endedAtLineAt) {
+                        width = `${cli.getXLocation(endedAtLineAt) - cli.getXLocation(postedAtLineAt)}px`
+                    }
+                } else if (endedAtLineAt) {
+                    // If there's an endedAtLine, all green/red boxes should stop at that line instead
+                    width = `${cli.getXLocation(endedAtLineAt) - chartArea.left}px`
                 }
 
                 // Show upper green box, line and label
