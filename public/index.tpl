@@ -597,6 +597,7 @@
         innacurate.</div>
     <script type="text/javascript">
         document.querySelector('.happyface').setAttribute("src", account.thumbnails[account.thumbnails.length - 1]);
+        document.querySelector('.happyface').setAttribute("onerror", "if (this.src != 'default_account_image.png') this.src = 'default_account_image.png'");
         document.querySelector('.bubble').innerText = prediction.predictionText;
 
         if (prediction.state.status !== 'FINISHED') {
