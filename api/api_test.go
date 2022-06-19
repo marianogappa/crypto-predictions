@@ -119,7 +119,7 @@ func makeGetRequest(query map[string][]string, url string) (apiResponse[apiResGe
 		req.URL.RawQuery = values.Encode()
 	}
 
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("admin:admin"))))
+	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:admin")))
 	resp, err := client.Do(req)
 	if err != nil {
 		return apiResponse[apiResGetPredictions]{}, err
@@ -141,7 +141,7 @@ func makeGetRequest(query map[string][]string, url string) (apiResponse[apiResGe
 func makeNewRequest(reqBody string, url string) (apiResponse[apiResPostPrediction], error) {
 	req, _ := http.NewRequest("POST", fmt.Sprintf("http://%v/predictions", url), bytes.NewBuffer([]byte(reqBody)))
 	client := &http.Client{Timeout: 10 * time.Second}
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("admin:admin"))))
+	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:admin")))
 	resp, err := client.Do(req)
 	if err != nil {
 		return apiResponse[apiResPostPrediction]{}, err

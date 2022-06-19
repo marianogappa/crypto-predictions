@@ -175,9 +175,7 @@ func (c *Condition) NonNumberOperands() []Operand {
 // Clone returns a deep copy of Condition that does not share any memory with the original struct.
 func (c Condition) Clone() Condition {
 	clonedOperands := make([]Operand, len(c.Operands))
-	for i, op := range c.Operands {
-		clonedOperands[i] = op
-	}
+	copy(clonedOperands, c.Operands)
 
 	return Condition{
 		Name:             c.Name,

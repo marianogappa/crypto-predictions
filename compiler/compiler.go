@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -98,6 +99,10 @@ func compilePostURL(raw Prediction, prediction *types.Prediction, account *types
 }
 
 func compileMetadata(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+	// N.B. This is not necessary but staticcheck complains that account is overwritten before first use.
+	if account != nil {
+		return errors.New("predictionCompiler.compile: received a non-nil account when about to compile metadata")
+	}
 	if mf == nil && (raw.PostAuthor == "" || raw.PostAuthorURL == "") {
 		return types.ErrEmptyPostAuthor
 	}
@@ -111,6 +116,10 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 			return err
 		}
 		account = &metadata.Author
+		// N.B. This is not necessary but staticcheck complains that account is never used.
+		if account.Handle == "" {
+			return errors.New("predictionCompiler.compile: failed to fetch metadata, but without an error")
+		}
 		if raw.PostAuthor == "" {
 			raw.PostAuthor = metadata.Author.Handle
 		}
