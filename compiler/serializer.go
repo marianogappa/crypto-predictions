@@ -12,14 +12,19 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// PredictionSerializer is the component that serializes a Prediction to a string representation, to be persisted or
+// returned in an API call.
 type PredictionSerializer struct {
 	mkt *market.IMarket
 }
 
+// NewPredictionSerializer constructs a PredictionSerializer.
 func NewPredictionSerializer(market *market.IMarket) PredictionSerializer {
 	return PredictionSerializer{mkt: market}
 }
 
+// PreSerialize serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing it to a
+// JSON []byte.
 func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
@@ -37,7 +42,7 @@ func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, err
 		PostAuthor:      p.PostAuthor,
 		PostAuthorURL:   p.PostAuthorURL,
 		PostedAt:        p.PostedAt,
-		PostUrl:         p.PostUrl,
+		PostURL:         p.PostUrl,
 		Given:           marshalGiven(p.Given),
 		PrePredict:      pp,
 		Predict:         pd,
@@ -46,6 +51,8 @@ func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, err
 	}, nil
 }
 
+// Serialize serializes a Prediction to a JSON []byte. It is meant to be used for persisting, but must not be used
+// by the API. There's a separate PreSerializeForAPI method for that purpose.
 func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	pre, err := s.PreSerialize(p)
 	if err != nil {
@@ -54,6 +61,8 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	return json.Marshal(pre)
 }
 
+// PreSerializeForAPI serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing
+// it to a JSON []byte. It is meant to be used only by the API.
 func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSummary bool) (Prediction, error) {
 	pred := Prediction{
 		UUID:            p.UUID,
@@ -63,7 +72,7 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSum
 		PostAuthor:      p.PostAuthor,
 		PostAuthorURL:   p.PostAuthorURL,
 		PostedAt:        p.PostedAt,
-		PostUrl:         p.PostUrl,
+		PostURL:         p.PostUrl,
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
 		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
@@ -82,6 +91,7 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSum
 	return pred, nil
 }
 
+// SerializeForAPI serializes a Prediction to a JSON []byte. It is meant to be used only by the API.
 func (s PredictionSerializer) SerializeForAPI(p *types.Prediction, includeSummary bool) ([]byte, error) {
 	pred, err := s.PreSerializeForAPI(p, includeSummary)
 	if err != nil {
@@ -214,13 +224,16 @@ func marshalPredictionState(ps types.PredictionState) PredictionState {
 	}
 }
 
-type AccountSerializer struct {
-}
+// AccountSerializer is the component that serializes an Account to a string representation, to be persisted or returned
+// in an API call.
+type AccountSerializer struct{}
 
+// NewAccountSerializer constructs an AccountSerializer.
 func NewAccountSerializer() AccountSerializer {
 	return AccountSerializer{}
 }
 
+// Account is the struct that represents a post author's social media account.
 type Account struct {
 	URL           string   `json:"url"`
 	AccountType   string   `json:"accountType"`
@@ -232,6 +245,8 @@ type Account struct {
 	CreatedAt     string   `json:"createdAt,omitempty"`
 }
 
+// PreSerialize serializes an Account to a compiler.Account, but doesn't take the extra step of serializing it to a
+// JSON []byte.
 func (s AccountSerializer) PreSerialize(p *types.Account) (Account, error) {
 	thumbs := []string{}
 	for _, thumb := range p.Thumbnails {
@@ -254,6 +269,8 @@ func (s AccountSerializer) PreSerialize(p *types.Account) (Account, error) {
 		CreatedAt:     createdAt,
 	}, nil
 }
+
+// Serialize serializes an Account to a JSON []byte.
 func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
 	acc, err := s.PreSerialize(p)
 	if err != nil {

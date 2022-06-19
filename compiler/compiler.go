@@ -90,10 +90,10 @@ func compileCreatedAt(raw Prediction, prediction *types.Prediction, account *typ
 }
 
 func compilePostURL(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
-	if raw.PostUrl == "" {
+	if raw.PostURL == "" {
 		return types.ErrEmptyPostURL
 	}
-	prediction.PostUrl = raw.PostUrl
+	prediction.PostUrl = raw.PostURL
 	return nil
 }
 
@@ -105,8 +105,8 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 		return types.ErrEmptyPostedAt
 	}
 	if mf != nil && (raw.PostAuthor == "" || raw.PostedAt == "" || raw.PostAuthorURL == "") {
-		log.Info().Msgf("Fetching metadata for %v\n", raw.PostUrl)
-		metadata, err := mf.Fetch(raw.PostUrl)
+		log.Info().Msgf("Fetching metadata for %v\n", raw.PostURL)
+		metadata, err := mf.Fetch(raw.PostURL)
 		if err != nil {
 			return err
 		}

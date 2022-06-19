@@ -131,7 +131,7 @@ func (compilerPrediction) PrepareJSONSchema(schema *jsonschema.Schema) error {
 		PostAuthor:    "rovercrc",
 		PostAuthorURL: "",
 		PostedAt:      "2022-03-24T15:02:48.000Z",
-		PostUrl:       "https://twitter.com/rovercrc/status/1507010047737405444",
+		PostURL:       "https://twitter.com/rovercrc/status/1507010047737405444",
 		Given: map[string]compiler.Condition{
 			"a": {
 				Condition:   "COIN:BINANCE:BTC-USDT >= 29000",

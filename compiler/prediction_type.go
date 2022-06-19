@@ -53,6 +53,27 @@ var (
 				pred.Predict.Predict.Operands[0].Literal.Operands[0] == pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[0] &&
 				pred.Predict.Predict.Operands[0].Literal.Operator != pred.Predict.Predict.Operands[1].Operands[0].Literal.Operator
 		},
+		types.PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES: func(pred types.Prediction) bool {
+			return pred.PrePredict.Predict == nil &&
+				pred.PrePredict.AnnulledIf == nil &&
+				pred.PrePredict.WrongIf == nil &&
+				pred.Predict.AnnulledIf == nil &&
+				pred.Predict.WrongIf == nil &&
+				pred.Predict.Predict.Operator == types.AND &&
+				len(pred.Predict.Predict.Operands) == 2 &&
+				pred.Predict.Predict.Operands[0].Operator == types.LITERAL &&
+				len(pred.Predict.Predict.Operands[0].Literal.Operands) == 2 &&
+				pred.Predict.Predict.Operands[0].Literal.Operands[0].Type == types.COIN &&
+				pred.Predict.Predict.Operands[0].Literal.Operands[1].Type == types.NUMBER &&
+				pred.Predict.Predict.Operands[1].Operator == types.NOT &&
+				len(pred.Predict.Predict.Operands[1].Operands) == 1 &&
+				pred.Predict.Predict.Operands[1].Operands[0].Operator == types.LITERAL &&
+				len(pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands) == 2 &&
+				pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[0].Type == types.COIN &&
+				pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[1].Type == types.NUMBER &&
+				pred.Predict.Predict.Operands[0].Literal.Operands[0] == pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[0] &&
+				pred.Predict.Predict.Operands[0].Literal.Operator != pred.Predict.Predict.Operands[1].Operands[0].Literal.Operator
+		},
 		types.PREDICTION_TYPE_THE_FLIPPENING: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf == nil && pred.Predict.WrongIf == nil &&
