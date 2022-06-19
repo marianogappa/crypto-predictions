@@ -11,51 +11,127 @@ import (
 )
 
 var (
-	ErrUnknownOperandType                 = errors.New("unknown value for operandType")
-	ErrUnknownBoolOperator                = errors.New("unknown value for BoolOperator")
-	ErrUnknownConditionStatus             = errors.New("invalid state: unknown value for ConditionStatus")
-	ErrUnknownPredictionStateValue        = errors.New("invalid state: unknown value for PredictionStateValue")
-	ErrInvalidOperand                     = errors.New("invalid operand")
-	ErrEmptyQuoteAsset                    = errors.New("quote asset cannot be empty")
-	ErrNonEmptyQuoteAssetOnNonCoin        = errors.New("quote asset must be empty for non-coin operand types")
-	ErrEqualBaseQuoteAssets               = errors.New("base asset cannot be equal to quote asset")
-	ErrInvalidDuration                    = errors.New("invalid duration")
-	ErrInvalidFromISO8601                 = errors.New("invalid FromISO8601")
-	ErrInvalidToISO8601                   = errors.New("invalid ToISO8601")
-	ErrOneOfToISO8601ToDurationRequired   = errors.New("one of ToISO8601 or ToDuration is required")
-	ErrInvalidConditionSyntax             = errors.New("invalid condition syntax")
-	ErrUnknownConditionOperator           = errors.New("unknown condition operator: supported are [>|<|>=|<=|BETWEEN...AND]")
-	ErrErrorMarginRatioAbove30            = errors.New("error margin ratio above 30%% is not allowed")
-	ErrInvalidJSON                        = errors.New("invalid JSON")
-	ErrEmptyPostURL                       = errors.New("postUrl cannot be empty")
-	ErrEmptyReporter                      = errors.New("reporter cannot be empty")
-	ErrEmptyPostAuthor                    = errors.New("postAuthor cannot be empty")
-	ErrEmptyPostedAt                      = errors.New("postedAt cannot be empty")
-	ErrInvalidPostedAt                    = errors.New("postedAt must be a valid ISO8601 timestamp")
-	ErrEmptyPredict                       = errors.New("main predict clause cannot be empty")
-	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
-	ErrBoolExprSyntaxError                = errors.New("syntax error in bool expression")
-	ErrPredictionFinishedAtStartTime      = errors.New("prediction is finished at start time")
-	ErrUnknownAPIOrderBy                  = errors.New("unknown API order by")
+	// ErrUnknownOperandType means: unknown value for operandType
+	ErrUnknownOperandType = errors.New("unknown value for operandType")
 
-	ErrOutOfTicks         = errors.New("out of ticks")
-	ErrOutOfCandlesticks  = errors.New("exchange ran out of candlesticks")
-	ErrOutOfTrades        = errors.New("exchange ran out of trades")
-	ErrInvalidMarketPair  = errors.New("market pair or asset does not exist on exchange")
-	ErrRateLimit          = errors.New("exchange asked us to enhance our calm")
-	ErrInvalidExchange    = errors.New("the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'")
-	ErrBaseAssetRequired  = errors.New("base asset is required (e.g. BTC)")
+	// ErrUnknownBoolOperator means: unknown value for BoolOperator
+	ErrUnknownBoolOperator = errors.New("unknown value for BoolOperator")
+
+	// ErrUnknownConditionStatus means: invalid state: unknown value for ConditionStatus
+	ErrUnknownConditionStatus = errors.New("invalid state: unknown value for ConditionStatus")
+
+	// ErrUnknownPredictionStateValue means: invalid state: unknown value for PredictionStateValue
+	ErrUnknownPredictionStateValue = errors.New("invalid state: unknown value for PredictionStateValue")
+
+	// ErrInvalidOperand means: invalid operand
+	ErrInvalidOperand = errors.New("invalid operand")
+
+	// ErrEmptyQuoteAsset means: quote asset cannot be empty
+	ErrEmptyQuoteAsset = errors.New("quote asset cannot be empty")
+
+	// ErrNonEmptyQuoteAssetOnNonCoin means: quote asset must be empty for non-coin operand types
+	ErrNonEmptyQuoteAssetOnNonCoin = errors.New("quote asset must be empty for non-coin operand types")
+
+	// ErrEqualBaseQuoteAssets means: base asset cannot be equal to quote asset
+	ErrEqualBaseQuoteAssets = errors.New("base asset cannot be equal to quote asset")
+
+	// ErrInvalidDuration means: invalid duration
+	ErrInvalidDuration = errors.New("invalid duration")
+
+	// ErrInvalidFromISO8601 means: invalid FromISO8601
+	ErrInvalidFromISO8601 = errors.New("invalid FromISO8601")
+
+	// ErrInvalidToISO8601 means: invalid ToISO8601
+	ErrInvalidToISO8601 = errors.New("invalid ToISO8601")
+
+	// ErrOneOfToISO8601ToDurationRequired means: one of ToISO8601 or ToDuration is required
+	ErrOneOfToISO8601ToDurationRequired = errors.New("one of ToISO8601 or ToDuration is required")
+
+	// ErrInvalidConditionSyntax means: invalid condition syntax
+	ErrInvalidConditionSyntax = errors.New("invalid condition syntax")
+
+	// ErrUnknownConditionOperator means: unknown condition operator: supported are [>|<|>=|<=|BETWEEN...AND]
+	ErrUnknownConditionOperator = errors.New("unknown condition operator: supported are [>|<|>=|<=|BETWEEN...AND]")
+
+	// ErrErrorMarginRatioAbove30 means: error margin ratio above 30%% is not allowed
+	ErrErrorMarginRatioAbove30 = errors.New("error margin ratio above 30%% is not allowed")
+
+	// ErrInvalidJSON means: invalid JSON
+	ErrInvalidJSON = errors.New("invalid JSON")
+
+	// ErrEmptyPostURL means: postUrl cannot be empty
+	ErrEmptyPostURL = errors.New("postUrl cannot be empty")
+
+	// ErrEmptyReporter means: reporter cannot be empty
+	ErrEmptyReporter = errors.New("reporter cannot be empty")
+
+	// ErrEmptyPostAuthor means: postAuthor cannot be empty
+	ErrEmptyPostAuthor = errors.New("postAuthor cannot be empty")
+
+	// ErrEmptyPostedAt means: postedAt cannot be empty
+	ErrEmptyPostedAt = errors.New("postedAt cannot be empty")
+
+	// ErrInvalidPostedAt means: postedAt must be a valid ISO8601 timestamp
+	ErrInvalidPostedAt = errors.New("postedAt must be a valid ISO8601 timestamp")
+
+	// ErrEmptyPredict means: main predict clause cannot be empty
+	ErrEmptyPredict = errors.New("main predict clause cannot be empty")
+
+	// ErrMissingRequiredPrePredictPredictIf means: pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause
+	ErrMissingRequiredPrePredictPredictIf = errors.New("pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause")
+
+	// ErrBoolExprSyntaxError means: syntax error in bool expression
+	ErrBoolExprSyntaxError = errors.New("syntax error in bool expression")
+
+	// ErrPredictionFinishedAtStartTime means: prediction is finished at start time
+	ErrPredictionFinishedAtStartTime = errors.New("prediction is finished at start time")
+
+	// ErrUnknownAPIOrderBy means: unknown API order by
+	ErrUnknownAPIOrderBy = errors.New("unknown API order by")
+
+	// ErrOutOfTicks means: out of ticks
+	ErrOutOfTicks = errors.New("out of ticks")
+
+	// ErrOutOfCandlesticks means: exchange ran out of candlesticks
+	ErrOutOfCandlesticks = errors.New("exchange ran out of candlesticks")
+
+	// ErrOutOfTrades means: exchange ran out of trades
+	ErrOutOfTrades = errors.New("exchange ran out of trades")
+
+	// ErrInvalidMarketPair means: market pair or asset does not exist on exchange
+	ErrInvalidMarketPair = errors.New("market pair or asset does not exist on exchange")
+
+	// ErrRateLimit means: exchange asked us to enhance our calm
+	ErrRateLimit = errors.New("exchange asked us to enhance our calm")
+
+	// ErrInvalidExchange means: the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'
+	ErrInvalidExchange = errors.New("the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'")
+
+	// ErrBaseAssetRequired means: base asset is required (e.g. BTC)
+	ErrBaseAssetRequired = errors.New("base asset is required (e.g. BTC)")
+
+	// ErrQuoteAssetRequired means: quote asset is required (e.g. USDT)
 	ErrQuoteAssetRequired = errors.New("quote asset is required (e.g. USDT)")
 
 	// From TickIterator
-	ErrNoNewTicksYet                 = errors.New("no new ticks yet")
-	ErrExchangeReturnedNoTicks       = errors.New("exchange returned no ticks")
+
+	// ErrNoNewTicksYet means: no new ticks yet
+	ErrNoNewTicksYet = errors.New("no new ticks yet")
+
+	// ErrExchangeReturnedNoTicks means: exchange returned no ticks
+	ErrExchangeReturnedNoTicks = errors.New("exchange returned no ticks")
+
+	// ErrExchangeReturnedOutOfSyncTick means: exchange returned out of sync tick
 	ErrExchangeReturnedOutOfSyncTick = errors.New("exchange returned out of sync tick")
 
 	// From PatchTickHoles
+
+	// ErrOutOfSyncTimestampPatchingHoles means: out of sync timestamp found patching holes
 	ErrOutOfSyncTimestampPatchingHoles = errors.New("out of sync timestamp found patching holes")
 
 	// From storage
+
+	// ErrStorageErrorRetrievingAccounts means: storage had error retrieving accounts
 	ErrStorageErrorRetrievingAccounts = errors.New("storage had error retrieving accounts")
 )
 

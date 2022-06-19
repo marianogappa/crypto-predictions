@@ -34,6 +34,30 @@ func TestPredictionType(t *testing.T) {
 			expected: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
 		},
 		{
+			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES",
+			pred: `{
+				"postUrl": "https://www.youtube.com/watch?v=JWVrWmuSHic&t=88",
+				"reporter": "admin",
+				"given": {
+				  "main": {
+					"condition": "COIN:BINANCE:BTC-USDT >= 100000",
+					"toDuration": "eoy",
+					"errorMarginRatio": 0.03
+				  },
+				  "a": {
+					"condition": "COIN:BINANCE:BTC-USDT <= 30000",
+					"toDuration": "eoy"
+				  }
+				},
+				"predict": {
+				  "predict": "main",
+				  "annulledIf": "a",
+				  "ignoreUndecidedIfPredictIsDefined": true
+				}
+			  }`,
+			expected: types.PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES,
+		},
+		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_RANGE",
 			pred: `{
 				"reporter": "admin",

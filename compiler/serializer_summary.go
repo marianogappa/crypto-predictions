@@ -18,6 +18,9 @@ type PredictionSummary struct {
 	GoalWithError                           types.JsonFloat64 `json:"goalWithError,omitempty"`
 	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
 
+	// Only in "PredictionTypeCoinWillReachInvalidatedIfItReaches"
+	InvalidatedIfItReaches types.JsonFloat64 `json:"invalidatedIfItReaches,omitempty"`
+
 	// Only in "PredictionWillRange type"
 	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
 	RangeLowWithError  types.JsonFloat64 `json:"rangeLowWithError,omitempty"`
@@ -68,6 +71,8 @@ func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (
 	switch p.Type {
 	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
 		return s.predictionTypeCoinOperatorFloatDeadline(p)
+	case types.PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES:
+		return s.predictionTypeCoinWillReachInvalidatedIfItReaches(p)
 	case types.PREDICTION_TYPE_COIN_WILL_RANGE:
 		return s.predictionTypeCoinWillRange(p)
 	case types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:
@@ -106,6 +111,43 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 		Operator:                                typedPred.Operator(),
 		Goal:                                    typedPred.Goal(),
 		GoalWithError:                           typedPred.GoalWithError(),
+		ErrorMarginRatio:                        types.JsonFloat64(typedPred.ErrorMarginRatio()),
+		Deadline:                                types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
+		EndedAt:                                 types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
+		EndedAtTruncatedDueToResultInvalidation: types.ISO8601(typedPred.EndTimeTruncatedDueToResultInvalidation(candlesticks[opStr]).Format(time.RFC3339)),
+		Coin:                                    opStr,
+	}, nil
+}
+
+func (s PredictionSerializer) predictionTypeCoinWillReachInvalidatedIfItReaches(p types.Prediction) (PredictionSummary, error) {
+	typedPred := types.PredictionTypeCoinWillReachInvalidatedIfItReaches{P: p}
+
+	chartParams, err := getCandlestickChartParams(p)
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+
+	candlesticks := map[string][]types.Candlestick{}
+	opStr := typedPred.Coin().Str
+	it, err := (*s.mkt).GetIterator(typedPred.Coin(), chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
+	if err != nil {
+		return PredictionSummary{}, err
+	}
+	for i := 0; i < chartParams.candlestickCount; i++ {
+		candlestick, err := it.NextCandlestick()
+		if err != nil {
+			return PredictionSummary{}, err
+		}
+		candlesticks[opStr] = append(candlesticks[opStr], candlestick)
+	}
+
+	return PredictionSummary{
+		PredictionType:                          p.Type.String(),
+		CandlestickMap:                          candlesticks,
+		Operator:                                typedPred.Operator(),
+		Goal:                                    typedPred.Goal(),
+		GoalWithError:                           typedPred.GoalWithError(),
+		InvalidatedIfItReaches:                  typedPred.InvalidatedIfItReaches(),
 		ErrorMarginRatio:                        types.JsonFloat64(typedPred.ErrorMarginRatio()),
 		Deadline:                                types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
 		EndedAt:                                 types.ISO8601(typedPred.EndTime().Format(time.RFC3339)),
