@@ -198,7 +198,7 @@ func TestMapOperand(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(ts.raw, func(t *testing.T) {
-			actual, actualErr := MapOperandForTests(ts.raw)
+			actual, actualErr := mapOperandForTests(ts.raw)
 
 			if actualErr != nil && ts.err == nil {
 				t.Logf("expected no error but had '%v'", actualErr)
@@ -585,7 +585,7 @@ func TestCompile(t *testing.T) {
 		{
 			name:                 "Metadata fetcher returns error",
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
-			postMetadataFetchErr: errors.New("error for test"),
+			postMetadataFetchErr: types.ErrEmptyPostAuthor,
 			err:                  types.ErrEmptyPostAuthor,
 			expected:             types.Prediction{},
 		},

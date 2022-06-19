@@ -226,7 +226,7 @@ func TestPredictionType(t *testing.T) {
 			pred, _, err := pc.Compile([]byte(ts.pred))
 			require.Nil(t, err)
 
-			actual := CalculatePredictionType(pred)
+			actual := calculatePredictionType(pred)
 			require.Equal(t, ts.expected, actual)
 		})
 	}

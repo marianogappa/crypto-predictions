@@ -74,9 +74,10 @@ func TestAPI(t *testing.T) {
 			memoryStateStorage := statestorage.NewMemoryStateStorage()
 			testMarket := newTestMarket(nil)
 			mFetcher := metadatafetcher.NewMetadataFetcher()
+			postAuthorURL, _ := url.Parse("https://twitter.com/CryptoCapo_")
 			mFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
 				testFetcher{isCorrectFetcher: true, postMetadata: fetcherTypes.PostMetadata{
-					Author:        types.Account{Handle: "test author"},
+					Author:        types.Account{Handle: "test author", URL: postAuthorURL},
 					PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 				}, err: nil},
 			}
