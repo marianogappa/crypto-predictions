@@ -2,6 +2,9 @@ package statestorage
 
 import "github.com/marianogappa/predictions/types"
 
+// StateStorage is the interface to the storage-layer. Currently the two implementations are Postgres & Memory.
+// It might be wise to keep this interface, because Postgres might be convenient but it's a terrible choice for
+// this engine's persistence needs.
 type StateStorage interface {
 	GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error)
 	GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error)

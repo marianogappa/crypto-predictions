@@ -3,12 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/metadatafetcher"
+	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
+	"github.com/rs/zerolog/log"
 	"github.com/swaggest/usecase"
 )
 
@@ -27,6 +28,8 @@ func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] 
 	switch req.Action {
 	case "ensureAllPredictionsHavePostAuthorURL":
 		return a.ensureAllPredictionsHavePostAuthorURL(req)
+	case "recalculatePredictionTypeOnAllPredictions":
+		return a.recalculatePredictionTypeOnAllPredictions(req)
 	default:
 		return apiResponse[apiResMaintenance]{Status: 400, Data: apiResMaintenance{Success: false, Message: "action does not exist"}}
 	}
@@ -64,20 +67,45 @@ func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiRe
 		}
 
 		if newPred.PostAuthorURL == "" {
-			failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: metadata fetcher could not resolve postAuthorURL from postURL: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResMaintenance{})
+			return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: metadata fetcher could not resolve postAuthorURL from postURL: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResMaintenance{})
 		}
-
-		log.Println(newPred.PostAuthorURL)
 
 		predsToUpdate = append(predsToUpdate, &newPred)
 	}
 
 	_, err = a.store.UpsertPredictions(predsToUpdate)
 	if err != nil {
-		failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})
+		return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})
 	}
 
 	msg := fmt.Sprintf("Upserted %v new postAuthorURLs!", len(predsToUpdate))
+
+	return apiResponse[apiResMaintenance]{Status: 200, Data: apiResMaintenance{Success: true, Message: msg}}
+}
+
+func (a *API) recalculatePredictionTypeOnAllPredictions(req apiReqMaintenance) apiResponse[apiResMaintenance] {
+	scanner := statestorage.NewAllPredictionsScanner(a.store)
+	var fixedCount, totalCount int
+
+	var prediction types.Prediction
+	for scanner.Scan(&prediction) {
+		totalCount++
+		predType := compiler.CalculatePredictionType(prediction)
+		if predType == prediction.Type {
+			continue
+		}
+
+		log.Info().Msgf("Changing prediction %v from %v to %v", prediction.PostUrl, prediction.Type, predType)
+		prediction.Type = predType
+		if _, err := a.store.UpsertPredictions([]*types.Prediction{&prediction}); err != nil {
+			return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})
+		}
+		fixedCount++
+	}
+	if scanner.Error != nil {
+		return failWith(ErrStorageErrorRetrievingPredictions, fmt.Errorf("%w: failed to retrieve predictions: %v", ErrStorageErrorRetrievingPredictions, scanner.Error), apiResMaintenance{})
+	}
+	msg := fmt.Sprintf("Fixed %v out of %v predictions' types!", fixedCount, totalCount)
 
 	return apiResponse[apiResMaintenance]{Status: 200, Data: apiResMaintenance{Success: true, Message: msg}}
 }

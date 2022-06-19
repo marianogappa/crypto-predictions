@@ -7,12 +7,14 @@ import (
 
 // TODO implement paused/deleted/hidden filters
 
+// MemoryStateStorage is the memory-level StateStorage implementation.
 type MemoryStateStorage struct {
 	Predictions                 map[string]types.Prediction
 	PredictionStateValueChanges map[string]types.PredictionStateValueChange
 	Accounts                    map[string]types.Account
 }
 
+// NewMemoryStateStorage constructs a MemoryStateStorage.
 func NewMemoryStateStorage() MemoryStateStorage {
 	return MemoryStateStorage{
 		Predictions:                 map[string]types.Prediction{},
@@ -21,14 +23,7 @@ func NewMemoryStateStorage() MemoryStateStorage {
 	}
 }
 
-func sliceToMap(ss []string) map[string]struct{} {
-	m := map[string]struct{}{}
-	for _, s := range ss {
-		m[s] = struct{}{}
-	}
-	return m
-}
-
+// GetPredictions SELECTs predictions from the memory store.
 func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error) {
 	authors := sliceToMap(filters.AuthorHandles)
 	stateStatuses := sliceToMap(filters.PredictionStateStatus)
@@ -61,6 +56,7 @@ func (s MemoryStateStorage) GetPredictions(filters types.APIFilters, orderBys []
 	return res, nil
 }
 
+// GetAccounts SELECTs accounts from the memory store.
 func (s MemoryStateStorage) GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error) {
 	handles := sliceToMap(filters.Handles)
 	urls := sliceToMap(filters.URLs)
@@ -85,6 +81,7 @@ func (s MemoryStateStorage) GetAccounts(filters types.APIAccountFilters, orderBy
 	return res, nil
 }
 
+// UpsertPredictions upserts predictions to the memory store.
 func (s MemoryStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.Prediction, error) {
 	for i, prediction := range ps {
 		if prediction.UUID == "" {
@@ -95,11 +92,13 @@ func (s MemoryStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.
 	return ps, nil
 }
 
+// LogPredictionStateValueChange logs the fact that a prediction changed PredictionStateValue to the memory store.
 func (s MemoryStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
 	s.PredictionStateValueChanges[c.PK()] = c
 	return nil
 }
 
+// UpsertAccounts upserts accounts to the memory store.
 func (s MemoryStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Account, error) {
 	for _, a := range as {
 		if a == nil {
@@ -151,4 +150,12 @@ func (s MemoryStateStorage) PredictionInteractionExists(predictionUUID, postURL,
 // InsertPredictionInteraction notes down the fact that a Tweet for the given (prediction, actionType) happened.
 func (s MemoryStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
 	return nil
+}
+
+func sliceToMap(ss []string) map[string]struct{} {
+	m := map[string]struct{}{}
+	for _, s := range ss {
+		m[s] = struct{}{}
+	}
+	return m
 }

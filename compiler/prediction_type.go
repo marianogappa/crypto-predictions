@@ -4,8 +4,8 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
-// calculatePredictionType infers the prediction type by looking at its structure.
-func calculatePredictionType(pred types.Prediction) types.PredictionType {
+// CalculatePredictionType infers the prediction type by looking at its structure.
+func CalculatePredictionType(pred types.Prediction) types.PredictionType {
 	for predictionType, is := range predictionTypes {
 		if is(pred) {
 			return predictionType

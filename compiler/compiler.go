@@ -156,7 +156,7 @@ func compileGiven(raw Prediction, prediction *types.Prediction, account *types.A
 func compilePredictionType(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	prediction.Type = types.PredictionTypeFromString(raw.Type)
 	if prediction.Type == types.PREDICTION_TYPE_UNSUPPORTED {
-		prediction.Type = calculatePredictionType(*prediction)
+		prediction.Type = CalculatePredictionType(*prediction)
 	}
 	return nil
 }

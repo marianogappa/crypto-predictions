@@ -49,11 +49,11 @@ func (r *Daemon) BlockinglyRunEvery(dur time.Duration) {
 	}
 }
 
-// Run sequentially evolves all evolvable predictions
+// Run sequentially evolves all evolvable predictions.
 func (r *Daemon) Run(nowTs int) []error {
 	r.errs = []error{}
 	var (
-		predictionsScanner = newEvolvablePredictionsScanner(r.store)
+		predictionsScanner = statestorage.NewEvolvablePredictionsScanner(r.store)
 		prediction         types.Prediction
 	)
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
+
+	// Storage engine
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
@@ -17,6 +19,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// PostgresConf is the configuration for the Postgres instance.
 type PostgresConf struct {
 	User     string
 	Host     string
@@ -24,6 +27,8 @@ type PostgresConf struct {
 	Port     string
 	Database string
 }
+
+// PostgresDBStateStorage is the Postgres implementation of StateStorage.
 type PostgresDBStateStorage struct {
 	db    *sql.DB
 	debug bool
@@ -32,6 +37,7 @@ type PostgresDBStateStorage struct {
 //go:embed migrations/*.sql
 var fs embed.FS
 
+// MustNewPostgresDBStateStorage constructs a PostgresDBStateStorage. May fatal.
 func MustNewPostgresDBStateStorage(c PostgresConf) *PostgresDBStateStorage {
 	p, err := NewPostgresDBStateStorage(c)
 	if err != nil {
@@ -41,6 +47,7 @@ func MustNewPostgresDBStateStorage(c PostgresConf) *PostgresDBStateStorage {
 	return &p
 }
 
+// NewPostgresDBStateStorage constructs a PostgresDBStateStorage.
 func NewPostgresDBStateStorage(c PostgresConf) (PostgresDBStateStorage, error) {
 	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable", c.User, c.Pass, c.Host, c.Port, c.Database)
 
@@ -65,6 +72,7 @@ func NewPostgresDBStateStorage(c PostgresConf) (PostgresDBStateStorage, error) {
 	return PostgresDBStateStorage{db: db}, nil
 }
 
+// SetDebug sets the debug logging setting across the storage layer.
 func (s *PostgresDBStateStorage) SetDebug(debug bool) {
 	s.debug = debug
 }
@@ -91,6 +99,7 @@ func predictionsBuildOrderBy(orderBys []string) string {
 	return strings.Join(resultArr, ", ")
 }
 
+// GetPredictions SELECTs predictions from the database.
 func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error) {
 	where, args := (&pgWhereBuilder{}).addFilters([]filterable{
 		pgPredictionsAuthorHandles{filters.AuthorHandles},
@@ -163,6 +172,7 @@ func accountsBuildOrderBy(orderBys []string) string {
 	return strings.Join(resultArr, ", ")
 }
 
+// GetAccounts SELECTs accounts from the database.
 func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error) {
 	where, args := (&pgWhereBuilder{}).addFilters([]filterable{
 		pgAccountsHandles{filters.Handles},
@@ -225,6 +235,7 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 	return result, nil
 }
 
+// UpsertPredictions UPSERTs predictions to the database.
 func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.Prediction, error) {
 	if len(ps) == 0 {
 		return ps, nil
@@ -246,6 +257,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 	return ps, err
 }
 
+// PausePrediction sets a prediction to paused on the database. Paused predictions are visible but don't evolve.
 func (s PostgresDBStateStorage) PausePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET paused = true WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -261,6 +273,7 @@ func (s PostgresDBStateStorage) PausePrediction(uuid string) error {
 	return nil
 }
 
+// UnpausePrediction sets a prediction to unpaused on the database. Paused predictions are visible but don't evolve.
 func (s PostgresDBStateStorage) UnpausePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET paused = false WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -276,6 +289,7 @@ func (s PostgresDBStateStorage) UnpausePrediction(uuid string) error {
 	return nil
 }
 
+// HidePrediction sets a prediction to hidden on the database. Hidden predictions are invisible but still evolve.
 func (s PostgresDBStateStorage) HidePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET hidden = true WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -291,6 +305,7 @@ func (s PostgresDBStateStorage) HidePrediction(uuid string) error {
 	return nil
 }
 
+// UnhidePrediction sets a prediction to visible on the database. Hidden predictions are invisible but still evolve.
 func (s PostgresDBStateStorage) UnhidePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET hidden = false WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -306,6 +321,7 @@ func (s PostgresDBStateStorage) UnhidePrediction(uuid string) error {
 	return nil
 }
 
+// DeletePrediction sets a prediction to deleted on the database. Deleted predictions are invisible and don't evolve.
 func (s *PostgresDBStateStorage) DeletePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET deleted = true WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -321,6 +337,7 @@ func (s *PostgresDBStateStorage) DeletePrediction(uuid string) error {
 	return nil
 }
 
+// UndeletePrediction restores a deleted prediction on the database. Deleted predictions are invisible and don't evolve.
 func (s *PostgresDBStateStorage) UndeletePrediction(uuid string) error {
 	res, err := s.db.Exec("UPDATE predictions SET deleted = false WHERE uuid::text = $1", uuid)
 	if err != nil {
@@ -336,6 +353,7 @@ func (s *PostgresDBStateStorage) UndeletePrediction(uuid string) error {
 	return nil
 }
 
+// UpsertAccounts UPSERTs accounts to the database.
 func (s PostgresDBStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Account, error) {
 	if len(as) == 0 {
 		return as, nil
@@ -354,6 +372,7 @@ func (s PostgresDBStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Ac
 	return as, err
 }
 
+// LogPredictionStateValueChange logs the fact that a prediction changed PredictionStateValue to the database.
 func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
 	_, err := s.db.Exec(`
 		INSERT INTO prediction_state_value_change
@@ -365,6 +384,7 @@ func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.Prediction
 	return err
 }
 
+// PredictionInteractionExists checks the database to see if a predictions creation or finalization Tweet post happened.
 func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error) {
 	var exists bool
 	res, err := s.db.Query(`
@@ -380,6 +400,7 @@ func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, post
 	return exists, nil
 }
 
+// InsertPredictionInteraction logs the fact that a Tweet was sent when a prediction was created or finalized.
 func (s PostgresDBStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
 	_, err := s.db.Query(`
 	INSERT INTO prediction_interactions (uuid, prediction_uuid, post_url, action_type, interaction_post_url) VALUES ($1, $2, $3, $4, $5);
