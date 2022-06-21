@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	pq "github.com/lib/pq"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
@@ -246,7 +247,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		if ps[i].UUID == "" {
 			ps[i].UUID = uuid.NewString()
 		}
-		blob, err := compiler.NewPredictionSerializer(nil).Serialize(ps[i])
+		blob, err := serializer.NewPredictionSerializer(nil).Serialize(ps[i])
 		if err != nil {
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}

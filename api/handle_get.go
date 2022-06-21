@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/usecase"
@@ -66,7 +67,7 @@ func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPred
 		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPredictions{})
 	}
 
-	ps := compiler.NewPredictionSerializer(nil)
+	ps := serializer.NewPredictionSerializer(nil)
 	res := []compilerPrediction{}
 	for _, pred := range preds {
 		compPred, err := ps.PreSerialize(&pred)

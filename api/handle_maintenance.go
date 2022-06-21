@@ -7,6 +7,7 @@ import (
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/metadatafetcher"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
@@ -52,7 +53,7 @@ func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiRe
 			continue
 		}
 		// Re-compile prediction, this time with metadatafetcher, which will create an account and add additional fields to prediction
-		ps := compiler.NewPredictionSerializer(nil)
+		ps := serializer.NewPredictionSerializer(nil)
 		serialised, err := ps.Serialize(&pred)
 		if err != nil {
 			return failWith(ErrFailedToSerializePredictions, fmt.Errorf("%w: error serializing prediction: %v", ErrFailedToSerializePredictions, err), apiResMaintenance{})

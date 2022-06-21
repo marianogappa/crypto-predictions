@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/usecase"
@@ -39,7 +40,7 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 	}
 	pred := preds[0]
 
-	ps := compiler.NewPredictionSerializer(&a.mkt)
+	ps := serializer.NewPredictionSerializer(&a.mkt)
 	mainCompilerPred, err := ps.PreSerializeForAPI(&pred, true)
 	if err != nil {
 		return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
@@ -140,8 +141,8 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
 
-	accountsByURL := map[URL]compiler.Account{}
-	accountSerializer := compiler.NewAccountSerializer()
+	accountsByURL := map[URL]serializer.Account{}
+	accountSerializer := serializer.NewAccountSerializer()
 	for _, account := range allAccounts {
 		accountURL := account.URL.String()
 		compilerAcc, err := accountSerializer.PreSerialize(&account)
@@ -197,10 +198,10 @@ Gotchas for accounts:
 
 // Examples for Swagger docs
 
-type mapOfCompilerAccounts map[URL]compiler.Account
+type mapOfCompilerAccounts map[URL]serializer.Account
 
 func (mapOfCompilerAccounts) PrepareJSONSchema(schema *jsonschema.Schema) error {
-	schema.WithExamples(map[URL]compiler.Account{
+	schema.WithExamples(map[URL]serializer.Account{
 		URL("https://twitter.com/Sheldon_Sniper"): {
 			URL:           "https://twitter.com/Sheldon_Sniper",
 			AccountType:   "TWITTER",

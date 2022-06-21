@@ -1,4 +1,4 @@
-package compiler
+package serializer
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
@@ -25,16 +26,16 @@ func NewPredictionSerializer(market *market.IMarket) PredictionSerializer {
 
 // PreSerialize serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing it to a
 // JSON []byte.
-func (s PredictionSerializer) PreSerialize(p *types.Prediction) (Prediction, error) {
+func (s PredictionSerializer) PreSerialize(p *types.Prediction) (compiler.Prediction, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
-		return Prediction{}, err
+		return compiler.Prediction{}, err
 	}
 	pd, err := marshalPredict(p.Predict)
 	if err != nil {
-		return Prediction{}, err
+		return compiler.Prediction{}, err
 	}
-	return Prediction{
+	return compiler.Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
@@ -63,8 +64,8 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 
 // PreSerializeForAPI serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing
 // it to a JSON []byte. It is meant to be used only by the API.
-func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSummary bool) (Prediction, error) {
-	pred := Prediction{
+func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSummary bool) (compiler.Prediction, error) {
+	pred := compiler.Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
 		CreatedAt:       p.CreatedAt,
@@ -76,7 +77,7 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSum
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
 		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
-		Summary:         PredictionSummary{},
+		Summary:         compiler.PredictionSummary{},
 	}
 
 	if includeSummary && s.mkt != nil {
@@ -108,17 +109,17 @@ func marshalInnerCondition(c *types.Condition) string {
 	return fmt.Sprintf(`%v %v %v`, c.Operands[0].Str, c.Operator, c.Operands[1].Str)
 }
 
-func marshalGiven(given map[string]*types.Condition) map[string]Condition {
-	result := map[string]Condition{}
+func marshalGiven(given map[string]*types.Condition) map[string]compiler.Condition {
+	result := map[string]compiler.Condition{}
 	for key, cond := range given {
-		c := Condition{
+		c := compiler.Condition{
 			Condition:        marshalInnerCondition(cond),
 			FromISO8601:      types.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
 			ToISO8601:        types.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
 			ToDuration:       cond.ToDuration,
 			Assumed:          cond.Assumed,
 			ErrorMarginRatio: cond.ErrorMarginRatio,
-			State: ConditionState{
+			State: compiler.ConditionState{
 				Status:    cond.State.Status.String(),
 				LastTs:    cond.State.LastTs,
 				LastTicks: cond.State.LastTicks,
@@ -171,7 +172,7 @@ func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 	return nil, fmt.Errorf("marshalBoolExpr: unknown operator '%v'", b.Operator)
 }
 
-func marshalPrePredict(pp types.PrePredict) (*PrePredict, error) {
+func marshalPrePredict(pp types.PrePredict) (*compiler.PrePredict, error) {
 	wrongIf, err := marshalBoolExpr(pp.WrongIf, 0)
 	if err != nil {
 		return nil, err
@@ -184,7 +185,7 @@ func marshalPrePredict(pp types.PrePredict) (*PrePredict, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := &PrePredict{
+	result := &compiler.PrePredict{
 		WrongIf:                           wrongIf,
 		AnnulledIf:                        annulledIf,
 		Predict:                           predictIf,
@@ -194,20 +195,20 @@ func marshalPrePredict(pp types.PrePredict) (*PrePredict, error) {
 	return result, nil
 }
 
-func marshalPredict(p types.Predict) (Predict, error) {
+func marshalPredict(p types.Predict) (compiler.Predict, error) {
 	wrongIf, err := marshalBoolExpr(p.WrongIf, 0)
 	if err != nil {
-		return Predict{}, err
+		return compiler.Predict{}, err
 	}
 	annulledIf, err := marshalBoolExpr(p.AnnulledIf, 0)
 	if err != nil {
-		return Predict{}, err
+		return compiler.Predict{}, err
 	}
 	predictIf, err := marshalBoolExpr(&p.Predict, 0)
 	if err != nil {
-		return Predict{}, err
+		return compiler.Predict{}, err
 	}
-	result := Predict{
+	result := compiler.Predict{
 		WrongIf:                           wrongIf,
 		AnnulledIf:                        annulledIf,
 		Predict:                           *predictIf,
@@ -216,8 +217,8 @@ func marshalPredict(p types.Predict) (Predict, error) {
 	return result, nil
 }
 
-func marshalPredictionState(ps types.PredictionState) PredictionState {
-	return PredictionState{
+func marshalPredictionState(ps types.PredictionState) compiler.PredictionState {
+	return compiler.PredictionState{
 		Status: ps.Status.String(),
 		LastTs: ps.LastTs,
 		Value:  ps.Value.String(),

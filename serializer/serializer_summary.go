@@ -1,73 +1,15 @@
-package compiler
+package serializer
 
 import (
 	"errors"
 	"time"
 
+	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/types"
-	"github.com/swaggest/jsonschema-go"
 )
 
-// PredictionSummary contains all necessary information about the prediction to make a candlestick chart of it.
-type PredictionSummary struct {
-	// Only in "PredictionTheFlippening" type
-	OtherCoin string `json:"otherCoin,omitempty"`
-
-	// Only in "PredictionTypeCoinOperatorFloatDeadline" type
-	Goal                                    types.JsonFloat64 `json:"goal,omitempty"`
-	GoalWithError                           types.JsonFloat64 `json:"goalWithError,omitempty"`
-	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
-
-	// Only in "PredictionTypeCoinWillReachInvalidatedIfItReaches"
-	InvalidatedIfItReaches types.JsonFloat64 `json:"invalidatedIfItReaches,omitempty"`
-
-	// Only in "PredictionWillRange type"
-	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
-	RangeLowWithError  types.JsonFloat64 `json:"rangeLowWithError,omitempty"`
-	RangeHigh          types.JsonFloat64 `json:"rangeHigh,omitempty"`
-	RangeHighWithError types.JsonFloat64 `json:"rangeHighWithError,omitempty"`
-
-	// Only in "PredictionWillReachBeforeItReaches type"
-	WillReach                types.JsonFloat64 `json:"willReach,omitempty"`
-	WillReachWithError       types.JsonFloat64 `json:"willReachWithError,omitempty"`
-	BeforeItReaches          types.JsonFloat64 `json:"beforeItReaches,omitempty"`
-	BeforeItReachesWithError types.JsonFloat64 `json:"beforeItReachesWithError,omitempty"`
-
-	// In all prediction types
-	CandlestickMap   map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
-	Coin             string                         `json:"coin,omitempty"`
-	ErrorMarginRatio types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
-	Operator         string                         `json:"operator,omitempty"`
-	Deadline         types.ISO8601                  `json:"deadline,omitempty"`
-	EndedAt          types.ISO8601                  `json:"endedAt,omitempty"`
-	PredictionType   string                         `json:"predictionType,omitempty"`
-}
-
-// PrepareJSONSchema provides an example of the structure for Swagger docs
-func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
-	schema.WithExamples(PredictionSummary{
-		CandlestickMap: map[string][]types.Candlestick{
-			"BINANCE:COIN:BTC-USDT": {
-				{Timestamp: 1651161957, OpenPrice: 39000, HighestPrice: 39500, LowestPrice: 39000, ClosePrice: 39050},
-				{Timestamp: 1651162017, OpenPrice: 39500, HighestPrice: 39550, LowestPrice: 39200, ClosePrice: 39020},
-			},
-		},
-		Coin:                                    "BINANCE:COIN:BTC-USDT",
-		Goal:                                    45000,
-		GoalWithError:                           43650,
-		ErrorMarginRatio:                        0.03,
-		Operator:                                ">=",
-		Deadline:                                "2022-06-24T07:51:06Z",
-		EndedAt:                                 "2022-06-24T07:51:06Z",
-		EndedAtTruncatedDueToResultInvalidation: "2022-06-23T00:00:00Z",
-		PredictionType:                          "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
-	})
-
-	return nil
-}
-
 // BuildPredictionMarketSummary builds a PredictionSummary from a prediction. It uses a market to get candlesticks.
-func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (compiler.PredictionSummary, error) {
 	switch p.Type {
 	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
 		return s.predictionTypeCoinOperatorFloatDeadline(p)
@@ -80,32 +22,32 @@ func (s PredictionSerializer) BuildPredictionMarketSummary(p types.Prediction) (
 	case types.PREDICTION_TYPE_THE_FLIPPENING:
 		return s.predictionTypeTheFlippening(p)
 	}
-	return PredictionSummary{}, nil
+	return compiler.PredictionSummary{}, nil
 }
 
-func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Prediction) (compiler.PredictionSummary, error) {
 	typedPred := types.PredictionTypeCoinOperatorFloatDeadline{P: p}
 
 	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := typedPred.Coin().Str
 	it, err := (*s.mkt).GetIterator(typedPred.Coin(), chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr] = append(candlesticks[opStr], candlestick)
 	}
 
-	return PredictionSummary{
+	return compiler.PredictionSummary{
 		PredictionType:                          p.Type.String(),
 		CandlestickMap:                          candlesticks,
 		Operator:                                typedPred.Operator(),
@@ -119,29 +61,29 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p types.Pr
 	}, nil
 }
 
-func (s PredictionSerializer) predictionTypeCoinWillReachInvalidatedIfItReaches(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinWillReachInvalidatedIfItReaches(p types.Prediction) (compiler.PredictionSummary, error) {
 	typedPred := types.PredictionTypeCoinWillReachInvalidatedIfItReaches{P: p}
 
 	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := typedPred.Coin().Str
 	it, err := (*s.mkt).GetIterator(typedPred.Coin(), chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr] = append(candlesticks[opStr], candlestick)
 	}
 
-	return PredictionSummary{
+	return compiler.PredictionSummary{
 		PredictionType:                          p.Type.String(),
 		CandlestickMap:                          candlesticks,
 		Operator:                                typedPred.Operator(),
@@ -156,30 +98,30 @@ func (s PredictionSerializer) predictionTypeCoinWillReachInvalidatedIfItReaches(
 	}, nil
 }
 
-func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (compiler.PredictionSummary, error) {
 	typedPred := types.PredictionTypeCoinWillRange{P: p}
 	coin := typedPred.Coin()
 
 	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
 	it, err := (*s.mkt).GetIterator(coin, chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr] = append(candlesticks[opStr], candlestick)
 	}
 
-	return PredictionSummary{
+	return compiler.PredictionSummary{
 		PredictionType:     p.Type.String(),
 		CandlestickMap:     candlesticks,
 		Deadline:           types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
@@ -193,30 +135,30 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p types.Prediction) (P
 	}, nil
 }
 
-func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types.Prediction) (compiler.PredictionSummary, error) {
 	typedPred := types.PredictionTypeCoinWillReachBeforeItReaches{P: p}
 	coin := typedPred.Coin()
 
 	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr := coin.Str
 	it, err := (*s.mkt).GetIterator(coin, chartParams.startTimeISO8601(), false, chartParams.candlestickIntervalMinutes())
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
 		candlestick, err := it.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr] = append(candlesticks[opStr], candlestick)
 	}
 
-	return PredictionSummary{
+	return compiler.PredictionSummary{
 		PredictionType:           p.Type.String(),
 		CandlestickMap:           candlesticks,
 		Deadline:                 types.ISO8601(typedPred.Deadline().Format(time.RFC3339)),
@@ -230,7 +172,7 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p types
 	}, nil
 }
 
-func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (PredictionSummary, error) {
+func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (compiler.PredictionSummary, error) {
 	finalTs := time.Now().Truncate(time.Hour * 24)
 	if p.State.Status == types.FINISHED {
 		finalTs = time.Unix(int64(p.State.LastTs), 0)
@@ -245,19 +187,19 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 
 	chartParams, err := getCandlestickChartParams(p)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 
 	candlesticks := map[string][]types.Candlestick{}
 	opStr1 := marketCap1.Str
 	it1, err := (*s.mkt).GetIterator(marketCap1, chartParams.startTimeISO8601(), false, 60*24)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < 30; i++ {
 		candlestick, err := it1.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr1] = append(candlesticks[opStr1], candlestick)
 	}
@@ -265,17 +207,17 @@ func (s PredictionSerializer) predictionTypeTheFlippening(p types.Prediction) (P
 	opStr2 := marketCap2.Str
 	it2, err := (*s.mkt).GetIterator(marketCap2, initialISO8601, false, 60*24)
 	if err != nil {
-		return PredictionSummary{}, err
+		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < 30; i++ {
 		candlestick, err := it2.NextCandlestick()
 		if err != nil {
-			return PredictionSummary{}, err
+			return compiler.PredictionSummary{}, err
 		}
 		candlesticks[opStr2] = append(candlesticks[opStr2], candlestick)
 	}
 
-	return PredictionSummary{
+	return compiler.PredictionSummary{
 		PredictionType: p.Type.String(),
 		CandlestickMap: candlesticks,
 		Operator:       operator,

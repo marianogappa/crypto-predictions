@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
@@ -77,12 +77,12 @@ func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account 
 	if len(account.Thumbnails) == 0 {
 		return "", errors.New("daemon.buildImageAction: account has no thumbnails")
 	}
-	serializedAccount, err := compiler.NewAccountSerializer().Serialize(&account)
+	serializedAccount, err := serializer.NewAccountSerializer().Serialize(&account)
 	if err != nil {
 		return "", err
 	}
 
-	serializer := compiler.NewPredictionSerializer(&r.market)
+	serializer := serializer.NewPredictionSerializer(&r.market)
 	serializedPrediction, err := serializer.SerializeForAPI(&prediction, true)
 	if err != nil {
 		return "", err

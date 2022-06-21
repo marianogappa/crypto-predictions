@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"github.com/marianogappa/predictions/types"
+	"github.com/swaggest/jsonschema-go"
 )
 
 // ConditionState holds the state of evolving a condition using market data.
@@ -67,4 +68,62 @@ type Prediction struct {
 	// extra fields for API, but not for Postgres
 	PredictionText string            `json:"predictionText,omitempty" example:"COIN:BINANCE:BTC-USDT will hit 29000 by end of year"`
 	Summary        PredictionSummary `json:"summary,omitempty"`
+}
+
+// PredictionSummary contains all necessary information about the prediction to make a candlestick chart of it.
+type PredictionSummary struct {
+	// Only in "PredictionTheFlippening" type
+	OtherCoin string `json:"otherCoin,omitempty"`
+
+	// Only in "PredictionTypeCoinOperatorFloatDeadline" type
+	Goal                                    types.JsonFloat64 `json:"goal,omitempty"`
+	GoalWithError                           types.JsonFloat64 `json:"goalWithError,omitempty"`
+	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
+
+	// Only in "PredictionTypeCoinWillReachInvalidatedIfItReaches"
+	InvalidatedIfItReaches types.JsonFloat64 `json:"invalidatedIfItReaches,omitempty"`
+
+	// Only in "PredictionWillRange type"
+	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
+	RangeLowWithError  types.JsonFloat64 `json:"rangeLowWithError,omitempty"`
+	RangeHigh          types.JsonFloat64 `json:"rangeHigh,omitempty"`
+	RangeHighWithError types.JsonFloat64 `json:"rangeHighWithError,omitempty"`
+
+	// Only in "PredictionWillReachBeforeItReaches type"
+	WillReach                types.JsonFloat64 `json:"willReach,omitempty"`
+	WillReachWithError       types.JsonFloat64 `json:"willReachWithError,omitempty"`
+	BeforeItReaches          types.JsonFloat64 `json:"beforeItReaches,omitempty"`
+	BeforeItReachesWithError types.JsonFloat64 `json:"beforeItReachesWithError,omitempty"`
+
+	// In all prediction types
+	CandlestickMap   map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
+	Coin             string                         `json:"coin,omitempty"`
+	ErrorMarginRatio types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
+	Operator         string                         `json:"operator,omitempty"`
+	Deadline         types.ISO8601                  `json:"deadline,omitempty"`
+	EndedAt          types.ISO8601                  `json:"endedAt,omitempty"`
+	PredictionType   string                         `json:"predictionType,omitempty"`
+}
+
+// PrepareJSONSchema provides an example of the structure for Swagger docs
+func (PredictionSummary) PrepareJSONSchema(schema *jsonschema.Schema) error {
+	schema.WithExamples(PredictionSummary{
+		CandlestickMap: map[string][]types.Candlestick{
+			"BINANCE:COIN:BTC-USDT": {
+				{Timestamp: 1651161957, OpenPrice: 39000, HighestPrice: 39500, LowestPrice: 39000, ClosePrice: 39050},
+				{Timestamp: 1651162017, OpenPrice: 39500, HighestPrice: 39550, LowestPrice: 39200, ClosePrice: 39020},
+			},
+		},
+		Coin:                                    "BINANCE:COIN:BTC-USDT",
+		Goal:                                    45000,
+		GoalWithError:                           43650,
+		ErrorMarginRatio:                        0.03,
+		Operator:                                ">=",
+		Deadline:                                "2022-06-24T07:51:06Z",
+		EndedAt:                                 "2022-06-24T07:51:06Z",
+		EndedAtTruncatedDueToResultInvalidation: "2022-06-23T00:00:00Z",
+		PredictionType:                          "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
+	})
+
+	return nil
 }

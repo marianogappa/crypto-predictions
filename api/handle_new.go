@@ -6,6 +6,7 @@ import (
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
+	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggest/usecase"
@@ -87,7 +88,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 		}
 	}
 
-	res, err := compiler.NewPredictionSerializer(nil).PreSerialize(&pred)
+	res, err := serializer.NewPredictionSerializer(nil).PreSerialize(&pred)
 	if err != nil {
 		return failWith(ErrFailedToSerializePredictions, err, apiResPostPrediction{})
 	}

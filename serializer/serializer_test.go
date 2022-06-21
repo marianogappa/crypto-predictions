@@ -1,9 +1,10 @@
-package compiler
+package serializer
 
 import (
 	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
@@ -159,4 +160,14 @@ func TestSerialize(t *testing.T) {
 			}
 		})
 	}
+}
+
+func tpToISO(s string) types.ISO8601 {
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return types.ISO8601(t.Format(time.RFC3339))
+}
+
+func tp(s string) time.Time {
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return t
 }
