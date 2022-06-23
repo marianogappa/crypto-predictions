@@ -3,6 +3,10 @@
 
 <head>
     <meta charset="utf-8">
+    <script type="text/javascript">
+        const prediction = {{.Prediction }}
+        const account = {{.Account }}
+    </script>
     <style>
         .chartWithMarkerOverlay {
             position: relative;
@@ -13,7 +17,7 @@
         .footnote {
             /* border: 1px solid red; */
             color: white;
-            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', sans-serif;
             font-size: 12px;
             text-align: center;
         }
@@ -43,17 +47,6 @@
             margin-top: 49px;
         }
 
-
-        .overlay-marker {
-            font-size: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            background-color: black;
-            color: white;
-            position: absolute;
-            padding: 3px;
-            opacity: 0.5;
-        }
-
         html,
         body {
             width: 1200px;
@@ -72,7 +65,7 @@
             font-size: 12px;
             color: white;
             top: 221px;
-            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', sans-serif;
             font-weight: bolder;
             width: 220px;
             text-align: center;
@@ -82,7 +75,7 @@
         }
 
         .bubble {
-            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', sans-serif;
             font-size: 18px;
             line-height: 24px;
             width: 300px;
@@ -111,7 +104,7 @@
             bottom: -24px;
         }
 
-        .happyface {
+        .profileImage {
             border-radius: 50%;
             overflow: hidden;
             border: 5px solid #FFF;
@@ -127,15 +120,14 @@
         .predictionResult {
             font-size: 50px;
             color: white;
-            font-family: Verdana, Arial, Helvetica, sans-serif;
-            /* font-weight: bolder; */
+            font-family: 'Roboto', sans-serif;
         }
 
         #predictionResultImage {
             height: 50px;
             width: 50px;
             margin-left: 15px;
-            margin-top: 7px;
+            margin-top: -2px;
         }
 
         .overlay {
@@ -144,88 +136,56 @@
             width: 0;
         }
 
-        #overlayUpperGreenBox {
-            border-bottom: 1px dashed #00c30f;
-            background-color: rgba(0, 195, 15, .2);
+        .verticalLine {
+            border: 1px solid white;
         }
 
-        #overlayUpperGreenYellowBox {
-            border-bottom: 1px dashed yellow;
-            background-color: rgba(0, 195, 15, .2);
+        .postedAt,
+        .endedAt {
+            height: 20px;
+            width: 20px;
         }
 
-        #overlayUpperRedBox {
-            border-bottom: 1px dashed red;
-            background-color: rgba(255, 0, 0, .2);
+        .postedAt {
+            content: url('eyes_1f440.png');
         }
 
-        #overlayUpperRedYellowBox {
-            border-bottom: 1px dashed red;
-            background-color: rgba(255, 0, 0, .2);
+        .endedAt {
+            content: url('chequered-flag_1f3c1.png');
         }
 
-        #overlayLowerGreenBox {
+        .greenLine {
             border-top: 1px dashed #00c30f;
-            background-color: rgba(0, 195, 15, .2);
         }
 
-        #overlayLowerGreenYellowBox {
+        .yellowLine {
             border-top: 1px dashed yellow;
+        }
+
+        .redLine {
+            border-bottom: 1px dashed red;
+        }
+
+        .greenBox {
             background-color: rgba(0, 195, 15, .2);
         }
 
-        #overlayLowerRedBox {
-            border-top: 1px dashed red;
+        .yellowBox {
+            background-color: rgba(0, 195, 15, .2);
+        }
+
+        .redBox {
             background-color: rgba(255, 0, 0, .2);
         }
 
-        #overlayLowerRedYellowBox {
-            border-top: 1px dashed red;
-            background-color: rgba(255, 0, 0, .2);
-        }
-
-        #overlayUpperGreenYellowBoxLabel,
-        #overlayUpperGreenBoxLabel,
-        #overlayUpperRedYellowBoxLabel,
-        #overlayUpperRedBoxLabel,
-        #overlayLowerGreenYellowBoxLabel,
-        #overlayLowerGreenBoxLabel,
-        #overlayLowerRedYellowBoxLabel,
-        #overlayLowerRedBoxLabel {
+        .goalCaption {
             color: white;
-            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', sans-serif;
             font-size: 11px;
-        }
-
-        #overlayPostedAtLine {
-            border: 1px solid white;
-        }
-
-        #overlayEndedAtLine {
-            border: 1px solid white;
         }
     </style>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
-        const prediction = {{.Prediction }}
-        const account = {{.Account }}
-    </script>
-    <script type="text/javascript">
-        const events = [
-            {
-                "eventType": "entered",
-                "target": 1,
-                "price": 30860.77,
-                "at": "2021-06-22T15:22:00Z",
-                "takeProfitRatio": 0
-            },
-            {
-                "eventType": "invalidated",
-                "price": 34261.01,
-                "at": "2021-06-24T15:22:00Z",
-                "takeProfitRatio": 0.110180011711
-            }
-        ]
         function compileDataset() {
             const rawDataset = prediction.summary.candlestickMap[prediction.summary.coin]
             const dataset = []
@@ -234,12 +194,11 @@
         }
         const dataset = compileDataset()
 
-    </script>
-    <script type="text/javascript">
         google.charts.load('current', { 'packages': ['corechart'] });
         google.charts.setOnLoadCallback(drawChart);
 
         function drawChart() {
+            // Configure the chart's candlestick data columns (i.e. date, & OHLC prices)
             var data = new google.visualization.DataTable();
             data.addColumn('datetime')
             data.addColumn('number')
@@ -248,13 +207,12 @@
             data.addColumn('number')
             dataset.forEach(datapoint => data.addRow(datapoint))
 
-
+            // Google Chart options tweak the UI.
             var options = {
                 legend: 'none',
                 candlestick: {
                     fallingColor: { strokeWidth: 0, fill: '#a52714' }, // red
                     risingColor: { strokeWidth: 0, fill: '#0f9d58' },   // green
-                    // bar: { groupWidth: '100%' },
                 },
                 colors: ['#CCCCCC'],
                 backgroundColor: { fill: 'transparent' },
@@ -264,10 +222,6 @@
                     },
                     textStyle: { color: '#FFF', fontSize: 9 },
                     viewWindowMode: 'explicit',
-                    // viewWindow: {
-                    //   max:3000,
-                    //   min:500
-                    // }
                 },
                 hAxis: {
                     gridlines: {
@@ -277,265 +231,298 @@
                 }
             };
 
-            let upperGreenLineAt = null
-            let lowerGreenLineAt = null
-            let upperRedLineAt = null
-            let lowerRedLineAt = null
-            let postedAtLineAt = null
-            let endedAtLineAt = null
-            if (prediction.summary.goal && (prediction.summary.operator.startsWith('>'))) {
-                options.vAxis.maxValue = prediction.summary.goal * 1.01
-                upperGreenLineAt = [prediction.summary.goal, prediction.summary.goalWithError]
-            }
+            function calculateOverlaysBasedOnPredictionData(prediction, options) {
+                let upperGreenLineAt = null
+                let lowerGreenLineAt = null
+                let upperRedLineAt = null
+                let lowerRedLineAt = null
+                let postedAtLineAt = null
+                let endedAtLineAt = null
 
-            if (prediction.summary.goal && (prediction.summary.operator.startsWith('<'))) {
-                options.vAxis.minValue = prediction.summary.goal * 0.99
-                lowerGreenLineAt = [prediction.summary.goal, prediction.summary.goalWithError]
-            }
-
-            if (prediction.summary.rangeLow && prediction.summary.rangeHigh) {
-                options.vAxis.minValue = prediction.summary.rangeLow * 0.99
-                options.vAxis.maxValue = prediction.summary.rangeHigh * 1.01
-                lowerRedLineAt = [prediction.summary.rangeLow, prediction.summary.rangeLowWithError]
-                upperRedLineAt = [prediction.summary.rangeLow, prediction.summary.rangeHighWithError]
-            }
-
-            if (prediction.summary.willReach && prediction.summary.beforeItReaches) {
-                options.vAxis.minValue = Math.min(prediction.summary.willReach, prediction.summary.beforeItReaches) * 0.99
-                options.vAxis.maxValue = Math.max(prediction.summary.willReach, prediction.summary.beforeItReaches) * 1.01
-                // TODO
-                greenLineAt = prediction.summary.willReach
-                redLineAt = prediction.summary.beforeItReaches
-            }
-
-            const firstCoinCandles = prediction.summary.candlestickMap[Object.keys(prediction.summary.candlestickMap)[0]]
-
-            const deadlineStr = prediction.summary.endedAtTruncatedDueToResultInvalidation ? prediction.summary.endedAtTruncatedDueToResultInvalidation : prediction.summary.endedAt
-            const deadlineTs = deadlineStr ? new Date(deadlineStr).getTime() / 1000 : null
-            if (deadlineTs && prediction.state.status === 'FINISHED') {
-                endedAtLineAt = new Date(deadlineStr)
-            }
-
-            const postedAtTs = new Date(prediction.postedAt).getTime() / 1000
-            if (postedAtTs && postedAtTs >= firstCoinCandles[0].t && postedAtTs <= firstCoinCandles[firstCoinCandles.length - 1].t) {
-                postedAtLineAt = new Date(prediction.postedAt)
-            }
-
-
-            function placeMarkers(dataTable) {
-                var cli = this.getChartLayoutInterface();
-                var chartArea = cli.getChartAreaBoundingBox();
-
-                let left = `${chartArea.left}px`
-                let width = `${chartArea.width}px`
-                if (postedAtLineAt) {
-                    left = `${cli.getXLocation(postedAtLineAt)}px`
-
-                    // In principle, extend all green/red boxes up to the end of the chart
-                    width = `${chartArea.width - (cli.getXLocation(postedAtLineAt) - chartArea.left)}px`
-                    // But if there's an endedAtLine, all green/red boxes should stop at that line instead
-                    if (endedAtLineAt) {
-                        width = `${cli.getXLocation(endedAtLineAt) - cli.getXLocation(postedAtLineAt)}px`
-                    }
-                } else if (endedAtLineAt) {
-                    // If there's an endedAtLine, all green/red boxes should stop at that line instead
-                    width = `${cli.getXLocation(endedAtLineAt) - chartArea.left}px`
+                if (prediction.summary.goal && (prediction.summary.operator.startsWith('>'))) {
+                    options.vAxis.maxValue = prediction.summary.goal * 1.01
+                    upperGreenLineAt = [prediction.summary.goal, prediction.summary.goalWithError]
                 }
 
-                // Show upper green box, line and label
+                if (prediction.summary.goal && (prediction.summary.operator.startsWith('<'))) {
+                    options.vAxis.minValue = prediction.summary.goal * 0.99
+                    lowerGreenLineAt = [prediction.summary.goal, prediction.summary.goalWithError]
+                }
+
+                if (prediction.summary.rangeLow && prediction.summary.rangeHigh) {
+                    options.vAxis.minValue = prediction.summary.rangeLow * 0.99
+                    options.vAxis.maxValue = prediction.summary.rangeHigh * 1.01
+                    lowerRedLineAt = [prediction.summary.rangeLow, prediction.summary.rangeLowWithError]
+                    upperRedLineAt = [prediction.summary.rangeLow, prediction.summary.rangeHighWithError]
+                }
+
+                if (prediction.summary.willReach && prediction.summary.beforeItReaches) {
+                    options.vAxis.minValue = Math.min(prediction.summary.willReach, prediction.summary.beforeItReaches) * 0.99
+                    options.vAxis.maxValue = Math.max(prediction.summary.willReach, prediction.summary.beforeItReaches) * 1.01
+                    // TODO
+                    greenLineAt = prediction.summary.willReach
+                    redLineAt = prediction.summary.beforeItReaches
+                }
+
+                const deadlineStr = prediction.summary.endedAtTruncatedDueToResultInvalidation ? prediction.summary.endedAtTruncatedDueToResultInvalidation : prediction.summary.endedAt
+                const deadlineTs = deadlineStr ? new Date(deadlineStr).getTime() / 1000 : null
+                if (deadlineTs && prediction.state.status === 'FINISHED') {
+                    endedAtLineAt = new Date(deadlineStr)
+                }
+
+                const postedAtTs = new Date(prediction.postedAt).getTime() / 1000
+                const firstCoinCandles = prediction.summary.candlestickMap[Object.keys(prediction.summary.candlestickMap)[0]]
+                if (postedAtTs && postedAtTs >= firstCoinCandles[0].t && postedAtTs <= firstCoinCandles[firstCoinCandles.length - 1].t) {
+                    postedAtLineAt = new Date(prediction.postedAt)
+                }
+
+                return {
+                    upperGreenLineAt,
+                    lowerGreenLineAt,
+                    upperRedLineAt,
+                    lowerRedLineAt,
+                    postedAtLineAt,
+                    endedAtLineAt,
+                }
+            }
+
+            const {
+                upperGreenLineAt,
+                lowerGreenLineAt,
+                upperRedLineAt,
+                lowerRedLineAt,
+                postedAtLineAt,
+                endedAtLineAt,
+            } = calculateOverlaysBasedOnPredictionData(prediction, options)
+
+            // Overlays are visual elements that enhance the chart with information about the prediction.
+            // They show e.g. when the prediction starts, when it ends and the areas in which they become correct/incorrect/invalidated.
+            function placeOverlays(dataTable) {
+                const cli = this.getChartLayoutInterface();
+                const chartArea = cli.getChartAreaBoundingBox();
+
+                const xMin = postedAtLineAt ? cli.getXLocation(postedAtLineAt) : chartArea.left
+                const xMax = endedAtLineAt ? cli.getXLocation(endedAtLineAt) : chartArea.width + xMin
+
                 if (upperGreenLineAt) {
-                    const y1 = cli.getYLocation(upperGreenLineAt[0])
-
-                    const e = document.querySelector('#overlayUpperGreenBox')
-                    e.style.left = left
-                    e.style.top = `${chartArea.top}px`
-                    e.style.height = `${y1 - chartArea.top}px`
-                    e.style.width = width
-
-                    const label = document.querySelector('#overlayUpperGreenBoxLabel')
-                    label.innerText = `Goal`
-
-                    const endedAtPadding = endedAtLineAt ? 15 : 0
-                    label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
-                    label.style.top = `${y1 - (label.clientHeight / 2) + 1}px`;
-
-                    // Show yellow box, line and label
-                    const y2 = cli.getYLocation(upperGreenLineAt[1])
-                    if (Math.abs(y1 - y2) > 15) {
-                        const e = document.querySelector('#overlayUpperGreenYellowBox')
-                        e.style.left = left
-                        e.style.top = `${y1}px`
-                        e.style.height = `${y2 - y1}px`
-                        e.style.width = width
-
-                        const label = document.querySelector('#overlayUpperGreenYellowBoxLabel')
-                        label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
-
-                        const endedAtPadding = endedAtLineAt ? 15 : 0
-                        label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                        label.style.height = 'auto'
-                        label.style.width = 'auto'
-                        label.style.top = `${y2 - (label.clientHeight / 2) + 1}px`;
-                    }
+                    showGoalRange({
+                        isLower: false,
+                        softGoal: upperGreenLineAt[1],
+                        hardGoal: upperGreenLineAt[0],
+                        softGoalLineClass: 'yellowLine',
+                        hardGoalLineClass: 'greenLine',
+                        softGoalBoxClass: 'yellowBox',
+                        hardGoalBoxClass: 'greenBox',
+                        softGoalCaption: `${prediction.summary.errorMarginRatio * 100}% error margin`,
+                        hardGoalCaption: 'Goal',
+                        xMin,
+                        xMax,
+                    }, cli)
                 }
 
-                // Show lower green box, line and label
                 if (lowerGreenLineAt) {
-                    const y1 = cli.getYLocation(lowerGreenLineAt[0])
-
-                    const e = document.querySelector('#overlayLowerGreenBox')
-                    e.style.left = left
-                    e.style.top = `${y1}px`
-                    e.style.height = `${chartArea.top + chartArea.height - y1}px`
-                    e.style.width = width
-
-                    const label = document.querySelector('#overlayLowerGreenBoxLabel')
-                    label.innerText = `Goal`
-
-                    const endedAtPadding = endedAtLineAt ? 15 : 0
-                    label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
-                    label.style.top = `${y1 - (label.clientHeight / 2) + 1}px`;
-
-                    // Show yellow box, line and label
-                    const y2 = cli.getYLocation(lowerGreenLineAt[1])
-                    if (Math.abs(y1 - y2) > 15) {
-                        const e = document.querySelector('#overlayLowerGreenYellowBox')
-                        e.style.left = left
-                        e.style.top = `${y2}px`
-                        e.style.height = `${y1 - y2}px`
-                        e.style.width = width
-
-                        const label = document.querySelector('#overlayLowerGreenYellowBoxLabel')
-                        label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
-
-                        const endedAtPadding = endedAtLineAt ? 15 : 0
-                        label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                        label.style.height = 'auto'
-                        label.style.width = 'auto'
-                        label.style.top = `${y2 - (label.clientHeight / 2) + 1}px`;
-                    }
+                    showGoalRange({
+                        isLower: true,
+                        softGoal: lowerGreenLineAt[1],
+                        hardGoal: lowerGreenLineAt[0],
+                        softGoalLineClass: 'yellowLine',
+                        hardGoalLineClass: 'greenLine',
+                        softGoalBoxClass: 'yellowBox',
+                        hardGoalBoxClass: 'greenBox',
+                        softGoalCaption: `${prediction.summary.errorMarginRatio * 100}% error margin`,
+                        hardGoalCaption: 'Goal',
+                        xMin,
+                        xMax,
+                    }, cli)
                 }
 
-                // Show upper red box, line and label
                 if (upperRedLineAt) {
-                    const y1 = cli.getYLocation(upperRedLineAt[0])
-
-                    const e = document.querySelector('#overlayUpperRedBox')
-                    e.style.left = left
-                    e.style.top = `${chartArea.top}px`
-                    e.style.height = `${y1 - chartArea.top}px`
-                    e.style.width = width
-
-                    const label = document.querySelector('#overlayUpperRedBoxLabel')
-                    label.innerText = `Goal`
-
-                    const endedAtPadding = endedAtLineAt ? 15 : 0
-                    label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
-                    label.style.top = `${y1 - (label.clientHeight / 2) + 1}px`;
-
-                    // Show yellow box, line and label
-                    const y2 = cli.getYLocation(upperRedLineAt[1])
-                    if (Math.abs(y1 - y2) > 15) {
-                        const e = document.querySelector('#overlayUpperRedYellowBox')
-                        e.style.left = left
-                        e.style.top = `${y1}px`
-                        e.style.height = `${y2 - y1}px`
-                        e.style.width = width
-
-                        const label = document.querySelector('#overlayUpperRedYellowBoxLabel')
-                        label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
-
-                        const endedAtPadding = endedAtLineAt ? 15 : 0
-                        label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                        label.style.height = 'auto'
-                        label.style.width = 'auto'
-                        label.style.top = `${y2 - (label.clientHeight / 2) + 1}px`;
-                    }
+                    showGoalRange({
+                        isLower: false,
+                        softGoal: upperRedLineAt[1],
+                        hardGoal: upperRedLineAt[0],
+                        softGoalLineClass: 'redLine',
+                        hardGoalLineClass: 'redLine',
+                        softGoalBoxClass: 'redBox',
+                        hardGoalBoxClass: 'redBox',
+                        softGoalCaption: `${prediction.summary.errorMarginRatio * 100}% error margin`,
+                        hardGoalCaption: 'Incorrect',
+                        xMin,
+                        xMax,
+                    }, cli)
                 }
 
-                // Show lower Red box, line and label
                 if (lowerRedLineAt) {
-                    const y1 = cli.getYLocation(lowerRedLineAt[0])
-
-                    const e = document.querySelector('#overlayLowerRedBox')
-                    e.style.left = left
-                    e.style.top = `${y1}px`
-                    e.style.height = `${chartArea.top + chartArea.height - y1}px`
-                    e.style.width = width
-
-                    const label = document.querySelector('#overlayLowerRedBoxLabel')
-                    label.innerText = `Goal`
-
-                    const endedAtPadding = endedAtLineAt ? 15 : 0
-                    label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                    label.style.height = 'auto'
-                    label.style.width = 'auto'
-                    label.style.top = `${y1 - (label.clientHeight / 2) + 1}px`;
-
-                    // Show yellow box, line and label
-                    const y2 = cli.getYLocation(lowerRedLineAt[1])
-                    if (Math.abs(y1 - y2) > 15) {
-                        const e = document.querySelector('#overlayLowerRedYellowBox')
-                        e.style.left = left
-                        e.style.top = `${y2}px`
-                        e.style.height = `${y1 - y2}px`
-                        e.style.width = width
-
-                        const label = document.querySelector('#overlayLowerRedYellowBoxLabel')
-                        label.innerText = `${prediction.summary.errorMarginRatio * 100}% error margin`
-
-                        const endedAtPadding = endedAtLineAt ? 15 : 0
-                        label.style.left = `${chartArea.left + chartArea.width + 5 + endedAtPadding}px`
-                        label.style.height = 'auto'
-                        label.style.width = 'auto'
-                        label.style.top = `${y2 - (label.clientHeight / 2) + 1}px`;
-                    }
+                    showGoalRange({
+                        isLower: true,
+                        softGoal: lowerRedLineAt[1],
+                        hardGoal: lowerRedLineAt[0],
+                        softGoalLineClass: 'redLine',
+                        hardGoalLineClass: 'redLine',
+                        softGoalBoxClass: 'redBox',
+                        hardGoalBoxClass: 'redBox',
+                        softGoalCaption: `${prediction.summary.errorMarginRatio * 100}% error margin`,
+                        hardGoalCaption: 'Incorrect',
+                        xMin,
+                        xMax,
+                    }, cli)
                 }
-
 
                 // Show "finish line" white line with checkered flag emoji
                 if (endedAtLineAt) {
-                    const x = cli.getXLocation(endedAtLineAt)
-                    const e = document.querySelector('#overlayEndedAtLine')
-                    e.style.left = `${x}px`;
-                    e.style.top = `${chartArea.top}px`
-                    e.style.height = `${chartArea.height}px`
-
-                    const label = document.querySelector('#overlayEndedAtLabel')
-                    label.src = `chequered-flag_1f3c1.png`
-                    label.style.height = '20px'
-                    label.style.width = '20px'
-                    label.style.left = `${x - (label.clientWidth / 2) + 1}px`;
-                    label.style.top = `${chartArea.top - label.clientHeight}px`
+                    showVerticalLine({ labelClass: 'endedAt', xMillis: endedAtLineAt }, cli)
                 }
 
                 // Show "starting line" white line with eyes emoji
                 if (postedAtLineAt) {
-                    const x = cli.getXLocation(postedAtLineAt)
-                    const e = document.querySelector('#overlayPostedAtLine')
-                    e.style.left = `${x}px`;
-                    e.style.top = `${chartArea.top}px`
-                    e.style.height = `${chartArea.height}px`
-
-                    const label = document.querySelector('#overlayPostedAtLineLabel')
-                    label.src = `eyes_1f440.png`
-                    label.style.height = '20px'
-                    label.style.width = '20px'
-                    label.style.left = `${x - (label.clientWidth / 2) + 1}px`;
-                    label.style.top = `${chartArea.top - label.clientHeight}px`
+                    showVerticalLine({ labelClass: 'postedAt', xMillis: postedAtLineAt, }, cli)
                 }
             };
 
-            var chart = new google.visualization.CandlestickChart(document.getElementById('line-chart-marker'));
+            // The "goal range" overlay shows a red/green box plus a dashed line and a caption delimiting an area of
+            // the chart in which, if the candlesticks reach it, the prediction would become correct/incorrect/invalidated.
+            function showGoalRange(args, cli) {
+                const { isLower, softGoal, hardGoal, softGoalLineClass, hardGoalLineClass, softGoalBoxClass, hardGoalBoxClass, softGoalCaption, hardGoalCaption, xMin, xMax } = args
 
+                const chartArea = cli.getChartAreaBoundingBox();
+                const ySoftGoal = cli.getYLocation(softGoal)
+                const yHardGoal = cli.getYLocation(hardGoal)
+                const showSoftGoal = Math.abs(ySoftGoal - yHardGoal) > 15
+
+                if (showSoftGoal) {
+                    // Show the softGoalLine
+                    showOverlay({
+                        classList: [softGoalLineClass],
+                        style: {
+                            left: `${xMin}px`,
+                            width: `${xMax - xMin}px`,
+                            top: `${ySoftGoal}px`,
+                        }
+                    })
+
+                    // Show the softGoalBox
+                    showOverlay({
+                        classList: [softGoalBoxClass],
+                        style: {
+                            left: `${xMin}px`,
+                            width: `${xMax - xMin}px`,
+                            top: isLower ? `${ySoftGoal}px` : `${yHardGoal + 1}px`,
+                            height: isLower ? `${yHardGoal - ySoftGoal}px` : `${ySoftGoal - yHardGoal + 1}px`,
+                        }
+                    })
+
+                    // Show the softGoalCaption
+                    if (softGoalCaption) {
+                        const isThereNoEndAtLine = xMax == chartArea.width + xMin
+                        const padding = isThereNoEndAtLine ? 0 : 15
+                        const elem = showOverlay({
+                            classList: ['goalCaption'],
+                            caption: softGoalCaption,
+                            style: {
+                                left: `${chartArea.left + chartArea.width + 5 + padding}px`,
+                                height: 'auto',
+                                width: 'auto',
+                            }
+                        })
+                        elem.style.top = `${ySoftGoal - (elem.clientHeight / 2) + 1}px`;
+                    }
+                }
+
+                // Show the hardGoalLine
+                showOverlay({
+                    classList: [hardGoalLineClass],
+                    style: {
+                        left: `${xMin}px`,
+                        width: `${xMax - xMin}px`,
+                        top: `${yHardGoal}px`,
+                    }
+                })
+
+                // Show the hardGoalBox
+                showOverlay({
+                    classList: [hardGoalBoxClass],
+                    style: {
+                        left: `${xMin}px`,
+                        width: `${xMax - xMin}px`,
+                        top: isLower ? `${yHardGoal}px` : `${chartArea.top}px`,
+                        height: isLower ? `${chartArea.height + chartArea.top - yHardGoal}px` : `${yHardGoal - chartArea.top}px`,
+                    }
+                })
+
+                // Show the hardGoalCaption
+                if (hardGoalCaption) {
+                    const isThereNoEndAtLine = xMax == chartArea.width + xMin
+                    const padding = isThereNoEndAtLine ? 0 : 15
+                    const elem = showOverlay({
+                        classList: ['goalCaption'],
+                        caption: hardGoalCaption,
+                        style: {
+                            left: `${chartArea.left + chartArea.width + 5 + padding}px`,
+                            height: 'auto',
+                            width: 'auto',
+                        }
+                    })
+                    elem.style.top = `${Math.round(yHardGoal - (elem.clientHeight / 2) + 1)}px`;
+                    console.log({ top: elem.style.top, padding, left: chartArea.left + chartArea.width + 5 + padding })
+                }
+            }
+
+            // The "vertical line" overlay is the white line with an icon on top, marking the start and end of a prediction.
+            function showVerticalLine(args, cli) {
+                const { lineClass, labelClass, xMillis } = args
+
+                const chartArea = cli.getChartAreaBoundingBox();
+                const x = cli.getXLocation(xMillis)
+
+                // Show the vertical line
+                showOverlay({
+                    classList: ['verticalLine', lineClass],
+                    style: {
+                        left: `${x}px`,
+                        top: `${chartArea.top}px`,
+                        height: `${chartArea.height}px`,
+                    }
+                })
+
+                // Show the icon on top of it
+                showOverlay({
+                    elemType: "img",
+                    classList: [labelClass],
+                    style: {
+                        left: `${x - (20 / 2) + 1}px`,
+                        top: `${chartArea.top - 20}px`,
+                    }
+                })
+            }
+
+            // All chart overlays are rendered into the DOM by this function.
+            function showOverlay(args) {
+                let { elemType, classList, style, caption } = args
+
+                const elem = document.createElement(elemType ? elemType : 'div')
+                classList.forEach(cls => elem.classList.add(cls))
+                elem.classList.add('overlay')
+
+                // Show before setting properties, so that clientHeight & clientWidth can be set
+                document.querySelector('.chartWithMarkerOverlay').appendChild(elem)
+
+                // Set caption first, so that it affects clientHeight & clientWidth
+                if (caption) {
+                    elem.innerText = caption
+                }
+
+                Object.entries(style).forEach(entry => {
+                    const [key, value] = entry;
+                    elem.style[key] = value
+                });
+
+                return elem // element is returned in case its client dimensions have to be used after rendering.
+            }
+
+            // Render the chart and place overlays once chart is ready
+            var chart = new google.visualization.CandlestickChart(document.getElementById('line-chart-marker'));
             google.visualization.events.addListener(chart, 'ready',
-                placeMarkers.bind(chart, data)
+                placeOverlays.bind(chart, data)
             );
             chart.draw(data, options);
         }
@@ -545,7 +532,7 @@
 <body>
     <div class="topSection">
         <div class="topLeft">
-            <img class="happyface" src="" />
+            <img class="profileImage" src="" />
             <div class="bubble bubble-bottom-left"></div>
             <span class="postAuthor"></span>
         </div>
@@ -556,48 +543,15 @@
         </div>
     </div>
     <div class="chartWithMarkerOverlay">
-
         <div id="line-chart-marker"></div>
-
-        <div class="overlay" id="overlayUpperGreenBox"></div>
-        <div class="overlay" id="overlayUpperGreenBoxLabel"></div>
-        <div class="overlay" id="overlayUpperGreenYellowBox"></div>
-        <div class="overlay" id="overlayUpperGreenYellowBoxLabel"></div>
-        <div class="overlay" id="overlayLowerGreenBox"></div>
-        <div class="overlay" id="overlayLowerGreenBoxLabel"></div>
-        <div class="overlay" id="overlayLowerGreenYellowBox"></div>
-        <div class="overlay" id="overlayLowerGreenYellowBoxLabel"></div>
-
-        <div class="overlay" id="overlayUpperRedBox"></div>
-        <div class="overlay" id="overlayUpperRedBoxLabel"></div>
-        <div class="overlay" id="overlayUpperRedYellowBox"></div>
-        <div class="overlay" id="overlayUpperRedYellowBoxLabel"></div>
-        <div class="overlay" id="overlayLowerRedBox"></div>
-        <div class="overlay" id="overlayLowerRedBoxLabel"></div>
-        <div class="overlay" id="overlayLowerRedYellowBox"></div>
-        <div class="overlay" id="overlayLowerRedYellowBoxLabel"></div>
-
-        <div class="overlay" id="overlayPostedAtLine"></div>
-        <img class="overlay" id="overlayPostedAtLineLabel" />
-
-        <div class="overlay" id="overlayEndedAtLine"></div>
-        <img class="overlay" id="overlayEndedAtLabel" />
-
-        <!-- <div class="overlay-marker-1 overlay-marker">
-            <span>▲ ENTRY</span>
-        </div>
-        <div class="overlay-marker-2 overlay-marker">
-            <span>▼ EXIT</span>
-        </div> -->
-
     </div>
     <div class="footnote">* Goal may be reached at latest incomplete
         candlestick
         and not shown. Tweets don't store timezone information, which makes "end of day" and the like slightly
         innacurate.</div>
     <script type="text/javascript">
-        document.querySelector('.happyface').setAttribute("src", account.thumbnails[account.thumbnails.length - 1]);
-        document.querySelector('.happyface').setAttribute("onerror", "if (this.src != 'default_account_image.png') this.src = 'default_account_image.png'");
+        document.querySelector('.profileImage').setAttribute("src", account.thumbnails[account.thumbnails.length - 1]);
+        document.querySelector('.profileImage').setAttribute("onerror", "if (this.src != 'default_account_image.png') this.src = 'default_account_image.png'");
         document.querySelector('.bubble').innerText = prediction.predictionText;
 
         if (prediction.state.status !== 'FINISHED') {
@@ -606,16 +560,14 @@
         } else if (prediction.state.value === 'CORRECT') {
             document.querySelector('.predictionResult').innerHTML = 'CORRECT';
             document.querySelector('#predictionResultImage').src = 'check-mark-button_2705.png';
-        } else {
+        } else if (prediction.state.value === 'INCORRECT') {
             document.querySelector('.predictionResult').innerHTML = 'INCORRECT';
             document.querySelector('#predictionResultImage').src = 'cross-mark_274c.png';
+        } else {
+            document.querySelector('.predictionResult').innerHTML = 'INVALIDATED';
         }
 
-        if (account.handle) {
-            document.querySelector('.postAuthor').innerText = `@${account.handle}`;
-        } else {
-            document.querySelector('.postAuthor').innerText = account.name;
-        }
+        document.querySelector('.postAuthor').innerText = account.handle ? `@${account.handle}` : account.name;
     </script>
 
 </body>
