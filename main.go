@@ -107,7 +107,8 @@ func main() {
 		// The Daemon component is responsible for continuously running prediction state machines against market data.
 		enableTweeting = envOrStr("PREDICTIONS_DAEMON_ENABLE_TWEETING", "") != ""
 		enableReplying = envOrStr("PREDICTIONS_DAEMON_ENABLE_REPLYING", "") != ""
-		daemon         = daemon.NewDaemon(market, postgresDBStorage, predictionImageBuilder, enableTweeting, enableReplying)
+		websiteURL     = envOrStr("PREDICTIONS_WEBSITE_URL", "")
+		daemon         = daemon.NewDaemon(market, postgresDBStorage, predictionImageBuilder, enableTweeting, enableReplying, websiteURL)
 
 		// The BackOffice component is a UI for admins to maintain the predictions system.
 		backOffice = backoffice.NewBackOfficeUI(files, basicAuthUser, basicAuthPass)

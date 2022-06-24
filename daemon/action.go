@@ -3,6 +3,7 @@ package daemon
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -99,6 +100,10 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 }
 
 func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account types.Account) (string, error) {
+	var urlPart string
+	if r.websiteURL != "" {
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostUrl))
+	}
 	var (
 		description      = printer.NewPredictionPrettyPrinter(prediction).Default()
 		predictionResult = map[types.PredictionStateValue]string{
@@ -106,15 +111,20 @@ func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account typ
 			types.INCORRECT: "INCORRECT ❌",
 		}[prediction.State.Value]
 
-		text = fmt.Sprintf("Prediction by %v became %v!\n\n\"%v\"", `"%v"`, predictionResult, description)
+		text = fmt.Sprintf("Prediction by %v became %v!\n\n\"%v\"%v", `"%v"`, predictionResult, description, urlPart)
 	)
 	return r.doTweet(text, prediction, account)
 }
 
 func (r *Daemon) tweetActionPredictionCreated(prediction types.Prediction, account types.Account) (string, error) {
+	var urlPart string
+	if r.websiteURL != "" {
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostUrl))
+	}
+
 	var (
 		description = printer.NewPredictionPrettyPrinter(prediction).Default()
-		text        = fmt.Sprintf("👀 Now tracking prediction by %v 👀\n\n\"%v\"", `%v`, description)
+		text        = fmt.Sprintf("👀 Now tracking prediction by %v 👀\n\n\"%v\"%v", `%v`, description, urlPart)
 	)
 	return r.doTweet(text, prediction, account)
 }

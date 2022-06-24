@@ -31,13 +31,14 @@ type Daemon struct {
 	predImageBuilder imagebuilder.PredictionImageBuilder
 	enableTweeting   bool
 	enableReplying   bool
+	websiteURL       string
 
 	errs []error
 }
 
 // NewDaemon is the constructor for the Daemon component.
-func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool) *Daemon {
-	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder, enableTweeting: enableTweeting, enableReplying: enableReplying}
+func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool, websiteURL string) *Daemon {
+	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder, enableTweeting: enableTweeting, enableReplying: enableReplying, websiteURL: websiteURL}
 }
 
 // BlockinglyRunEvery does infinite Daemon runs, separated by a specified time.Sleep.

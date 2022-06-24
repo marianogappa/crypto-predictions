@@ -98,6 +98,7 @@ By setting both envs, it will attempt to reply to prediction tweets rather than 
 
 - `PREDICTIONS_DAEMON_ENABLE_TWEETING`: unset by default, set it to any value to enable
 - `PREDICTIONS_DAEMON_ENABLE_REPLYING`: unset by default, set it to any value to enable
+- `PREDICTIONS_WEBSITE_URL`: unset by default, set it to website domain (without trailing slash) to add a link to website on Tweets
 
 ## Components
 
