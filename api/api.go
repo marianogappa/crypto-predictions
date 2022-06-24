@@ -115,7 +115,7 @@ func NewAPI(
 	// It will perform actual security check for every relevant request.
 	adminAuth := middleware.BasicAuth("Admin Access", map[string]string{basicAuthUser: basicAuthPass})
 
-	s.Get("/pages/prediction/{url}", a.apiGetPagesPrediction())
+	s.Get("/pages/prediction/{id}", a.apiGetPagesPrediction())
 	s.Group(func(r chi.Router) {
 		r.Use(adminAuth, nethttp.HTTPBasicSecurityMiddleware(apiSchema, "Admin", "Admin access"))
 		r.Method(http.MethodGet, "/", nethttp.NewHandler(a.apiHealthcheck()))

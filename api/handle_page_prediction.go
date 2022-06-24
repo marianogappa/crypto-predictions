@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"strings"
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/serializer"
@@ -22,13 +23,22 @@ type apiResGetPagesPrediction struct {
 }
 
 type apiReqGetPagesPrediction struct {
-	URL string   `path:"url" format:"uri" description:"e.g. https://twitter.com/VLoveIt2Hack/status/1465354862372298763"`
-	_   struct{} `query:"_" additionalProperties:"false"`
+	ID string   `path:"id" format:"string" description:"e.g. https://twitter.com/VLoveIt2Hack/status/1465354862372298763 or a43d35c1-853d-4eef-ae57-63d12c57d04c"`
+	_  struct{} `query:"_" additionalProperties:"false"`
 }
 
-func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPrediction] {
+func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction] {
+	// Support both urls and UUIDs as id
+	urls := []string{}
+	uuids := []string{}
+	if strings.HasPrefix(id, "http") {
+		urls = []string{id}
+	} else {
+		uuids = []string{id}
+	}
+
 	preds, err := a.store.GetPredictions(
-		types.APIFilters{URLs: []string{url}},
+		types.APIFilters{URLs: urls, UUIDs: uuids},
 		[]string{},
 		0, 0,
 	)
@@ -165,14 +175,14 @@ func (a *API) getPagesPrediction(url string) apiResponse[apiResGetPagesPredictio
 
 func (a *API) apiGetPagesPrediction() usecase.Interactor {
 	u := usecase.NewInteractor(func(ctx context.Context, input apiReqGetPagesPrediction, output *apiResponse[apiResGetPagesPrediction]) error {
-		out := a.getPagesPrediction(input.URL)
+		out := a.getPagesPrediction(input.ID)
 		*output = out
 		return nil
 	})
 	u.SetTags("Pages")
 	u.SetTitle("Main API call to retrieve all info for the website page that shows a prediction.")
 	u.SetDescription(`
-This endpoint returns not only the prediction associated to the specified URL, but also a lot of other content that could be useful to be shown in the prediction page, e.g. latest predictions, top accounts (an "account" represents a social media account, which for now is either Twitter or Facebook).
+This endpoint returns not only the prediction associated to the specified URL/UUID, but also a lot of other content that could be useful to be shown in the prediction page, e.g. latest predictions, top accounts (an "account" represents a social media account, which for now is either Twitter or Facebook).
 
 Since there are potentially a lot of duplicate predictions & accounts in the response, there are two top-level objects: <i>predictionsByUUID</i> and <i>accountsByURL</i>, and everywhere else only UUIDs and URLs are used.
 
