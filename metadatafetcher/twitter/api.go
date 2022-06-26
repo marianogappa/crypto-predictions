@@ -135,7 +135,7 @@ func parseError(err error) Tweet {
 
 func (t Twitter) getTweetByID(id string) (Tweet, error) {
 	req := request.Request[response, Tweet]{
-		BaseUrl: t.apiURL,
+		BaseURL: t.apiURL,
 		Path:    fmt.Sprintf("tweets/%v?tweet.fields=created_at&user.fields=created_at,name,profile_image_url,public_metrics,verified,username&expansions=author_id,geo.place_id", id),
 		Headers: map[string]string{
 			"Authorization": fmt.Sprintf("Bearer %v", t.bearerToken),

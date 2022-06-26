@@ -29,29 +29,19 @@ type apiReqGetPagesPrediction struct {
 
 func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction] {
 	// Support both urls and UUIDs as id
-	urls := []string{}
-	uuids := []string{}
+	var url, uuid string
 	if strings.HasPrefix(id, "http") {
-		urls = []string{id}
+		url = id
 	} else {
-		uuids = []string{id}
+		uuid = id
 	}
 
-	preds, err := a.store.GetPredictions(
-		types.APIFilters{URLs: urls, UUIDs: uuids},
-		[]string{},
-		0, 0,
-	)
-	if err != nil {
-		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
+	pred, errResp := getPredictionByUUIDOrURL(uuid, url, a.store, apiResGetPagesPrediction{})
+	if errResp != nil {
+		return *errResp
 	}
-	if len(preds) != 1 {
-		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResGetPagesPrediction{})
-	}
-	pred := preds[0]
 
-	ps := serializer.NewPredictionSerializer(&a.mkt)
-	mainCompilerPred, err := ps.PreSerializeForAPI(&pred, true)
+	mainCompilerPred, err := serializer.NewPredictionSerializer(&a.mkt).PreSerializeForAPI(&pred, true)
 	if err != nil {
 		return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
 	}
@@ -59,62 +49,25 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	predictionsByUUID[UUID(mainCompilerPred.UUID)] = mainCompilerPred
 
 	// Latest Predictions
-	latest10Predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.CREATED_AT_DESC.String()}, 10, 0)
-	if err != nil {
-		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
-	}
-	latestPredictionUUIDs := []UUID{}
-	for _, prediction := range latest10Predictions {
-		predictionUUID := prediction.UUID
-		if predictionUUID == mainCompilerPred.UUID {
-			continue
-		}
-		latestPredictionUUIDs = append(latestPredictionUUIDs, UUID(predictionUUID))
-		compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
-		if err != nil {
-			return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
-		}
-		predictionsByUUID[UUID(predictionUUID)] = compilerPr
+	predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.POSTED_AT_DESC.String()}, 10, 0)
+	latestPredictionUUIDs, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
+	if errResp != nil {
+		return *errResp
 	}
 
 	// Latest Predictions by same author URL
-	latestPredictionSameAuthorURL := []UUID{}
-	if pred.PostAuthorURL != "" {
-		latest5PredictionsSameAuthor, err := a.store.GetPredictions(types.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{types.CREATED_AT_DESC.String()}, 5, 0)
-		if err != nil {
-			return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
-		}
-		for _, prediction := range latest5PredictionsSameAuthor {
-			predictionUUID := prediction.UUID
-			if predictionUUID == mainCompilerPred.UUID {
-				continue
-			}
-			latestPredictionSameAuthorURL = append(latestPredictionSameAuthorURL, UUID(predictionUUID))
-			compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
-			if err != nil {
-				return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
-			}
-			predictionsByUUID[UUID(predictionUUID)] = compilerPr
-		}
+	predictions, err = a.store.GetPredictions(types.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{types.POSTED_AT_DESC.String()}, 5, 0)
+	latestPredictionSameAuthorURL, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
+	if errResp != nil {
+		return *errResp
 	}
 
 	// Latest Predictions by same coin
 	latestPredictionSameCoinUUID := []UUID{}
-	latest5PredictionsSameCoin, err := a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.CREATED_AT_DESC.String()}, 5, 0)
-	if err != nil {
-		return failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
-	}
-	for _, prediction := range latest5PredictionsSameCoin {
-		predictionUUID := prediction.UUID
-		if predictionUUID == mainCompilerPred.UUID {
-			continue
-		}
-		latestPredictionSameCoinUUID = append(latestPredictionSameCoinUUID, UUID(predictionUUID))
-		compilerPr, err := ps.PreSerializeForAPI(&prediction, false)
-		if err != nil {
-			return failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
-		}
-		predictionsByUUID[UUID(predictionUUID)] = compilerPr
+	predictions, err = a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.POSTED_AT_DESC.String()}, 5, 0)
+	latestPredictionSameCoinUUID, predictionsByUUID, errResp = collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
+	if errResp != nil {
+		return *errResp
 	}
 
 	accountURLSet := map[URL]struct{}{}
@@ -171,6 +124,33 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 		AccountsByURL:                 accountsByURL,
 		PredictionsByUUID:             mapOfCompilerPrediction(predictionsByUUID),
 	}}
+}
+
+func collectPredictions(
+	predictions []types.Prediction,
+	err error,
+	predictionsByUUID map[UUID]compiler.Prediction,
+	mainPrediction compiler.Prediction,
+) ([]UUID, map[UUID]compiler.Prediction, *apiResponse[apiResGetPagesPrediction]) {
+	if err != nil {
+		fail := failWith(ErrStorageErrorRetrievingPredictions, err, apiResGetPagesPrediction{})
+		return nil, predictionsByUUID, &fail
+	}
+	uuids := []UUID{}
+	for _, prediction := range predictions {
+		predictionUUID := prediction.UUID
+		if predictionUUID == mainPrediction.UUID {
+			continue
+		}
+		uuids = append(uuids, UUID(predictionUUID))
+		compilerPr, err := serializer.NewPredictionSerializer(nil).PreSerializeForAPI(&prediction, false)
+		if err != nil {
+			fail := failWith(ErrFailedToSerializePredictions, err, apiResGetPagesPrediction{})
+			return nil, predictionsByUUID, &fail
+		}
+		predictionsByUUID[UUID(predictionUUID)] = compilerPr
+	}
+	return uuids, predictionsByUUID, nil
 }
 
 func (a *API) apiGetPagesPrediction() usecase.Interactor {

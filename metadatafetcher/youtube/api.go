@@ -100,7 +100,7 @@ func parseVideoError(err error) Video {
 
 func (t Youtube) GetVideoByID(id string) (Video, error) {
 	req := request.Request[videosResponse, Video]{
-		BaseUrl:       t.apiURL,
+		BaseURL:       t.apiURL,
 		Path:          fmt.Sprintf("videos?part=snippet&id=%v&key=%v", id, t.apiKey),
 		Headers:       map[string]string{"Accept": "application/json"},
 		ParseResponse: videosResponseToVideo,
@@ -187,7 +187,7 @@ func parseChannelError(err error) Channel {
 
 func (t Youtube) GetChannelByID(id string) (Channel, error) {
 	req := request.Request[channelsResponse, Channel]{
-		BaseUrl:       t.apiURL,
+		BaseURL:       t.apiURL,
 		Path:          fmt.Sprintf("channels?part=snippet,statistics&id=%v&key=%v", id, t.apiKey),
 		Headers:       map[string]string{"Accept": "application/json"},
 		ParseResponse: channelsResponseToChannel,

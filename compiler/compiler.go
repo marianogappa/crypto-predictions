@@ -53,8 +53,12 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 		compilePredictionState,
 	}
 	for _, partiallyCompile := range partialCompilers {
-		if err := partiallyCompile(raw, &prediction, account, c.metadataFetcher, c.timeNow); err != nil {
-			return prediction, account, err
+		var maybeAccount types.Account
+		if err := partiallyCompile(raw, &prediction, &maybeAccount, c.metadataFetcher, c.timeNow); err != nil {
+			return prediction, &maybeAccount, err
+		}
+		if maybeAccount.URL != nil {
+			account = &maybeAccount
 		}
 	}
 
@@ -100,7 +104,7 @@ func compilePostURL(raw Prediction, prediction *types.Prediction, account *types
 
 func compileMetadata(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	// N.B. This is not necessary but staticcheck complains that account is overwritten before first use.
-	if account != nil {
+	if account != nil && account.URL != nil {
 		return errors.New("predictionCompiler.compile: received a non-nil account when about to compile metadata")
 	}
 	if mf == nil && (raw.PostAuthor == "" || raw.PostAuthorURL == "") {
@@ -115,7 +119,7 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 		if err != nil {
 			return err
 		}
-		account = &metadata.Author
+		*account = metadata.Author
 		// N.B. This is not necessary but staticcheck complains that account is never used.
 		if account.Handle == "" {
 			return errors.New("predictionCompiler.compile: failed to fetch metadata, but without an error")

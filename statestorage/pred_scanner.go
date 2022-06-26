@@ -18,17 +18,17 @@ type PredictionScanner struct {
 // NewEvolvablePredictionsScanner constructs a PredictionScanner that only retrieves predictions that are not in a
 // final state, nor paused nor deleted.
 func NewEvolvablePredictionsScanner(store StateStorage) *PredictionScanner {
-	return newPredictionScanner(store, evolvableFilter, 100)
+	return newPredictionScanner(store, filterEvolvable, 100)
 }
 
 // NewAllPredictionsScanner constructs a PredictionScanner that retrieves all available predictions in the
 // storage-layer, even if they are final, paused or deleted.
 func NewAllPredictionsScanner(store StateStorage) *PredictionScanner {
-	return newPredictionScanner(store, allFilter, 100)
+	return newPredictionScanner(store, filterAll, 100)
 }
 
 var (
-	evolvableFilter = types.APIFilters{
+	filterEvolvable = types.APIFilters{
 		PredictionStateValues: []string{
 			types.ONGOING_PRE_PREDICTION.String(),
 			types.ONGOING_PREDICTION.String(),
@@ -37,7 +37,7 @@ var (
 		Deleted: pBool(false),
 	}
 
-	allFilter = types.APIFilters{
+	filterAll = types.APIFilters{
 		Paused:  nil,
 		Deleted: nil,
 		Hidden:  nil,

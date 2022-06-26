@@ -1,8 +1,12 @@
 package statestorage
 
-import "github.com/marianogappa/predictions/types"
+import (
+	"database/sql"
 
-// StateStorage is the interface to the storage-layer. Currently the two implementations are Postgres & Memory.
+	"github.com/marianogappa/predictions/types"
+)
+
+// StateStorage is the interface to the storage-layer. Currently the only implementation is Postgres.
 // It might be wise to keep this interface, because Postgres might be convenient but it's a terrible choice for
 // this engine's persistence needs.
 type StateStorage interface {
@@ -20,4 +24,5 @@ type StateStorage interface {
 	UnhidePrediction(uuid string) error
 	DeletePrediction(uuid string) error
 	UndeletePrediction(uuid string) error
+	DB() *sql.DB
 }

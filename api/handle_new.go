@@ -51,7 +51,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 	pc := compiler.NewPredictionCompiler(&a.mFetcher, a.NowFunc)
 	pred, account, err := pc.Compile([]byte(req.Prediction))
 	if err != nil {
-		return failWith(ErrFailedToCompilePrediction, err, apiResPostPrediction{})
+		return failWith(ErrInvalidRequestJSON, err, apiResPostPrediction{})
 	}
 
 	// If the state is empty, run one tick to see if the prediction is decided at start time. If so, it's invalid.

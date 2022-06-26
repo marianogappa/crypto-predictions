@@ -78,6 +78,11 @@ func (s *PostgresDBStateStorage) SetDebug(debug bool) {
 	s.debug = debug
 }
 
+// DB returns the DB for raw queries
+func (s *PostgresDBStateStorage) DB() *sql.DB {
+	return s.db
+}
+
 func predictionsBuildOrderBy(orderBys []string) string {
 	if len(orderBys) == 0 {
 		orderBys = []string{types.CREATED_AT_DESC.String()}

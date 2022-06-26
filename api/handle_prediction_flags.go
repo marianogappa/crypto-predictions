@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/usecase"
 )
@@ -18,18 +19,11 @@ type apiResStored struct {
 }
 
 func (a *API) predictionStorageActionWithUUID(uuid string, fn func(string) error) apiResponse[apiResStored] {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
-	if err != nil {
-		return failWith(ErrPredictionNotFound, err, apiResStored{})
-	}
-	if len(ps) == 0 {
-		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
+	pred, errResp := getPredictionByUUID(uuid, a.store, apiResStored{})
+	if errResp != nil {
+		return *errResp
 	}
 
-	if len(ps) != 1 {
-		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
-	}
-	pred := ps[0]
 	if err := fn(pred.UUID); err != nil {
 		return failWith(ErrFailedToCompilePrediction, err, apiResStored{})
 	}
@@ -62,18 +56,10 @@ func (a *API) apiPredictionRefetchAccount() usecase.Interactor {
 }
 
 func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
-	if err != nil {
-		return failWith(ErrPredictionNotFound, err, apiResStored{})
+	pred, errResp := getPredictionByUUID(uuid, a.store, apiResStored{})
+	if errResp != nil {
+		return *errResp
 	}
-	if len(ps) == 0 {
-		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
-	}
-
-	if len(ps) != 1 {
-		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
-	}
-	pred := ps[0]
 
 	metadata, err := a.mFetcher.Fetch(pred.PostUrl)
 	if err != nil {
@@ -100,21 +86,42 @@ func (a *API) apiPredictionClearState() usecase.Interactor {
 }
 
 func (a *API) predictionClearState(uuid string) apiResponse[apiResStored] {
-	ps, err := a.store.GetPredictions(types.APIFilters{UUIDs: []string{uuid}}, nil, 0, 0)
-	if err != nil {
-		return failWith(ErrPredictionNotFound, err, apiResStored{})
-	}
-	if len(ps) == 0 {
-		return failWith(ErrPredictionNotFound, ErrPredictionNotFound, apiResStored{})
+	pred, errResp := getPredictionByUUID(uuid, a.store, apiResStored{})
+	if errResp != nil {
+		return *errResp
 	}
 
-	if len(ps) != 1 {
-		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), apiResStored{})
-	}
-	pred := ps[0]
 	pred.ClearState()
 	if _, err := a.store.UpsertPredictions([]*types.Prediction{&pred}); err != nil {
 		return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: error storing prediction: %v", ErrStorageErrorStoringPrediction, err), apiResStored{})
 	}
 	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
+}
+
+func getPredictionByUUIDOrURL[D any](uuid, url string, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
+	if uuid != "" {
+		return getPredictionByFilter(types.APIFilters{UUIDs: []string{uuid}, URLs: []string{}}, store, zero)
+	}
+	return getPredictionByFilter(types.APIFilters{UUIDs: []string{}, URLs: []string{url}}, store, zero)
+}
+
+func getPredictionByUUID[D any](uuid string, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
+	return getPredictionByFilter(types.APIFilters{UUIDs: []string{uuid}}, store, zero)
+}
+
+func getPredictionByFilter[D any](filter types.APIFilters, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
+	ps, err := store.GetPredictions(filter, nil, 0, 0)
+	if err != nil {
+		errResp := failWith(ErrPredictionNotFound, err, zero)
+		return types.Prediction{}, &errResp
+	}
+	if len(ps) == 0 {
+		errResp := failWith(ErrPredictionNotFound, ErrPredictionNotFound, zero)
+		return types.Prediction{}, &errResp
+	}
+	if len(ps) != 1 {
+		errResp := failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), zero)
+		return types.Prediction{}, &errResp
+	}
+	return ps[0], nil
 }
