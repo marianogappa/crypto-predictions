@@ -63,9 +63,8 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	}
 
 	// Latest Predictions by same coin
-	latestPredictionSameCoinUUID := []UUID{}
 	predictions, err = a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.POSTED_AT_DESC.String()}, 5, 0)
-	latestPredictionSameCoinUUID, predictionsByUUID, errResp = collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
+	latestPredictionSameCoinUUID, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
 	}
