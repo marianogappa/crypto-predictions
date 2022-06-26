@@ -38,24 +38,21 @@ func (p PredictionPrettyPrinter) Default() string {
 
 func (p PredictionPrettyPrinter) predictionTypeCoinOperatorFloatDeadline() string {
 	cond := p.prediction.Predict.Predict.Literal
-	coin := parseOperand(cond.Operands[0])
-	number := parseOperand(cond.Operands[1])
+	coin, useDollarSign := parseOperand(cond.Operands[0], false)
+	number, _ := parseOperand(cond.Operands[1], useDollarSign)
 
-	temporalPart := fmt.Sprintf("by %v", cond.ToTs)
+	humanToTs := time.Unix(int64(cond.ToTs), 0).Format("Jan 2, 2006")
+	temporalPart := fmt.Sprintf("by %v", humanToTs)
 	if cond.ToDuration != "" {
 		temporalPart = parseDuration(cond.ToDuration, time.Unix(int64(cond.FromTs), 0))
 	}
 
 	operator := ""
 	switch cond.Operator {
-	case ">":
-		operator = "will hit"
-	case ">=":
+	case ">", ">=":
 		operator = "will exceed"
-	case "<":
-		operator = "will fall to"
-	case "<=":
-		operator = "will go below"
+	case "<", "<=":
+		operator = "will be below"
 	}
 
 	return fmt.Sprintf("%v %v %v %v", coin, operator, number, temporalPart)
@@ -67,15 +64,15 @@ func (p PredictionPrettyPrinter) predictionTypeCoinOperatorFloatDeadline() strin
 // }
 
 func (p PredictionPrettyPrinter) predictionTypeCoinWillReachBeforeItReaches() string {
-	coin := parseOperand(p.prediction.Predict.Predict.Operands[0].Literal.Operands[0])
-	willReach := parseNumber(p.prediction.Predict.Predict.Operands[0].Literal.Operands[1].Number)
-	beforeIfReaches := parseNumber(p.prediction.Predict.Predict.Operands[1].Operands[0].Literal.Operands[1].Number)
+	coin := legacyParseOperand(p.prediction.Predict.Predict.Operands[0].Literal.Operands[0])
+	willReach := parseNumber(p.prediction.Predict.Predict.Operands[0].Literal.Operands[1].Number, false)
+	beforeIfReaches := parseNumber(p.prediction.Predict.Predict.Operands[1].Operands[0].Literal.Operands[1].Number, false)
 	return fmt.Sprintf("%v will reach %v before it reaches %v", coin, willReach, beforeIfReaches)
 }
 
 func (p PredictionPrettyPrinter) predictionTypeTheFlippening() string {
-	coin1 := parseOperand(p.prediction.Predict.Predict.Literal.Operands[0])
-	coin2 := parseOperand(p.prediction.Predict.Predict.Literal.Operands[1])
+	coin1 := legacyParseOperand(p.prediction.Predict.Predict.Literal.Operands[0])
+	coin2 := legacyParseOperand(p.prediction.Predict.Predict.Literal.Operands[1])
 
 	cond := p.prediction.Predict.Predict.Literal
 	temporalPart := fmt.Sprintf("by %v", cond.ToTs)
