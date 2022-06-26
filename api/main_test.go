@@ -50,7 +50,8 @@ func connectToTestStore(t *testing.T, databaseName string) statestorage.StateSto
 
 	_store, err := statestorage.NewPostgresDBStateStorage(postgresConf)
 	if err != nil {
-		// Try a second time with pass "test". This is because CI on Github must be set up with a password. Check ci.yml
+		// Try a second time with root/test. This is because CI on Github is set up with this. Check ci.yml
+		postgresConf.User = "root"
 		postgresConf.Pass = "test"
 		_store, err = statestorage.NewPostgresDBStateStorage(postgresConf)
 		if err != nil {
