@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -79,10 +80,11 @@ func TestKlinesInvalidUrl(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL("invalid url")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = "invalid url"
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {
-		t.Fatalf("should have failed due to invalid url")
+		t.Fatalf("should have failed due to invalid url, but instead had %v", err)
 	}
 }
 
@@ -93,7 +95,8 @@ func TestKlinesErrReadingResponseBody(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid response body")
@@ -107,7 +110,8 @@ func TestKlinesErrorResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
@@ -121,7 +125,8 @@ func TestKlinesNon200Response(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {
 		t.Fatalf("should have failed due to 500 response")
@@ -135,7 +140,8 @@ func TestKlinesInvalidJSONResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
 
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {
@@ -150,7 +156,8 @@ func TestKlinesInvalidFloatsInJSONResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewCoinbase()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
 
 	_, err := b.RequestCandlesticks(opBTCUSDT, tInt("2021-07-04T14:14:18+00:00"), 1)
 	if err == nil {

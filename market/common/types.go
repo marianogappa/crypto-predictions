@@ -2,6 +2,7 @@
 package common
 
 import (
+	"errors"
 	"time"
 
 	"github.com/marianogappa/predictions/types"
@@ -22,6 +23,20 @@ const (
 	KUCOIN = "kucoin"
 	// BINANCEUSDMFUTURES is an enumesque string value representing the BINANCEUSDMFUTURES exchange
 	BINANCEUSDMFUTURES = "binanceusdmfutures"
+)
+
+var (
+	// ErrUnsupportedCandlestickInterval means: unsupported candlestick interval
+	ErrUnsupportedCandlestickInterval = errors.New("unsupported candlestick interval")
+
+	// ErrExecutingRequest means: error executing client.Do() http request method
+	ErrExecutingRequest = errors.New("error executing client.Do() http request method")
+
+	// ErrBrokenBodyResponse means: exchange returned broken body response
+	ErrBrokenBodyResponse = errors.New("exchange returned broken body response")
+
+	// ErrInvalidJSONResponse means: exchange returned invalid JSON response
+	ErrInvalidJSONResponse = errors.New("exchange returned invalid JSON response")
 )
 
 // Exchange is the interface for a crypto exchange.
@@ -117,3 +132,14 @@ func b2i(b bool) int {
 	}
 	return 0
 }
+
+// CandleReqError is an error arising from a call to requestCandlesticks
+type CandleReqError struct {
+	Code           int
+	Err            error
+	IsNotRetryable bool
+	IsExchangeSide bool
+	RetryAfter     time.Duration
+}
+
+func (e CandleReqError) Error() string { return e.Err.Error() }

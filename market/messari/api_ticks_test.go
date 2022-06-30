@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
@@ -166,7 +167,9 @@ func TestTicksInvalidUrl(t *testing.T) {
 	defer ts.Close()
 
 	b := NewMessari()
-	b.overrideAPIURL("invalid url")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = "invalid url"
+
 	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid url")
@@ -180,7 +183,9 @@ func TestTicksErrReadingResponseBody(t *testing.T) {
 	defer ts.Close()
 
 	b := NewMessari()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
+
 	b.SetDebug(true)
 	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
@@ -195,7 +200,9 @@ func TestTicksErrorResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewMessari()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
+
 	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to error response")
@@ -208,7 +215,9 @@ func TestTicksInvalidJSONResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewMessari()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
+
 	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid json")
@@ -227,7 +236,9 @@ func TestTicksInvalidFloatsInJSONResponse(t *testing.T) {
 	defer ts.Close()
 
 	b := NewMessari()
-	b.overrideAPIURL(ts.URL + "/")
+	b.requester.Strategy = common.RetryStrategy{Attempts: 1}
+	b.apiURL = ts.URL + "/"
+
 	_, err := b.RequestCandlesticks(opBTC, tInt("2021-07-04T14:14:18+00:00"), 60*24)
 	if err == nil {
 		t.Fatalf("should have failed due to invalid floats in json")

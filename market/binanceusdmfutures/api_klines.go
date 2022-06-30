@@ -12,6 +12,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -196,16 +197,8 @@ func (c binanceCandlestick) toCandlestick() types.Candlestick {
 	}
 }
 
-type klinesResult struct {
-	candlesticks        []types.Candlestick
-	err                 error
-	binanceErrorCode    int
-	binanceErrorMessage string
-	httpStatus          int
-}
-
-func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, startTimeMillis int, intervalMinutes int) (klinesResult, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%vklines", b.apiURL), nil)
+func (e *BinanceUSDMFutures) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%vklines", e.apiURL), nil)
 	symbol := fmt.Sprintf("%v%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
 	q := req.URL.Query()
@@ -244,11 +237,11 @@ func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, start
 	case 30 * 60 * 24:
 		q.Add("interval", "1M")
 	default:
-		return klinesResult{}, errors.New("unsupported interval minutes")
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrUnsupportedCandlestickInterval}
 	}
 
 	q.Add("limit", "1000")
-	q.Add("startTime", fmt.Sprintf("%v", startTimeMillis))
+	q.Add("startTime", fmt.Sprintf("%v", startTimeTs*1000))
 
 	req.URL.RawQuery = q.Encode()
 
@@ -256,62 +249,45 @@ func (b BinanceUSDMFutures) getKlines(baseAsset string, quoteAsset string, start
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrExecutingRequest}
 	}
 	defer resp.Body.Close()
 
-	// N.B. commenting this out, because 400 returns valid JSON with error description, which we need!
-	// if resp.StatusCode != http.StatusOK {
-	// 	err := fmt.Errorf("binance returned %v status code", resp.StatusCode)
-	// 	return klinesResult{httpStatus: 500, err: err}, err
-	// }
-
 	byts, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err := fmt.Errorf("binance returned broken body response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrBrokenBodyResponse}
 	}
 
 	maybeErrorResponse := errorResponse{}
 	err = json.Unmarshal(byts, &maybeErrorResponse)
 	errResp := maybeErrorResponse.toError()
 	if err == nil && errResp != nil {
-		return klinesResult{
-			binanceErrorCode:    maybeErrorResponse.Code,
-			binanceErrorMessage: maybeErrorResponse.Msg,
-			httpStatus:          500,
-			err:                 errResp,
-		}, errResp
+		return nil, common.CandleReqError{
+			IsNotRetryable: false,
+			IsExchangeSide: true,
+			Code:           maybeErrorResponse.Code,
+			Err:            errors.New(maybeErrorResponse.Msg),
+		}
 	}
 
 	maybeResponse := successfulResponse{}
 	err = json.Unmarshal(byts, &maybeResponse.ResponseCandlesticks)
 	if err != nil {
-		err := fmt.Errorf("binance returned invalid JSON response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrInvalidJSONResponse}
 	}
 
 	candlesticks, err := maybeResponse.toCandlesticks()
 	if err != nil {
-		return klinesResult{
-			httpStatus: resp.StatusCode,
-			err:        err,
-		}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: err}
 	}
 
 	if len(candlesticks) == 0 {
-		return klinesResult{
-			httpStatus: 200,
-			err:        types.ErrOutOfCandlesticks,
-		}, types.ErrOutOfCandlesticks
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
 	}
 
-	if b.debug {
-		log.Info().Str("exchange", "BinanceUDSMFutures").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
+	if e.debug {
+		log.Info().Str("exchange", "BinanceUDSMFutures").Str("market", fmt.Sprintf("%v/%v", baseAsset, quoteAsset)).Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
-	return klinesResult{
-		candlesticks: candlesticks,
-		httpStatus:   200,
-	}, nil
+	return candlesticks, nil
 }

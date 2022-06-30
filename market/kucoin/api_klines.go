@@ -2,7 +2,6 @@ package kucoin
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
@@ -93,16 +93,8 @@ func responseToCandlesticks(data [][]string) ([]types.Candlestick, error) {
 	return candlesticks, nil
 }
 
-type klinesResult struct {
-	candlesticks       []types.Candlestick
-	err                error
-	kucoinErrorCode    string
-	kucoinErrorMessage string
-	httpStatus         int
-}
-
-func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) (klinesResult, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarket/candles", k.apiURL), nil)
+func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]types.Candlestick, error) {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarket/candles", e.apiURL), nil)
 	symbol := fmt.Sprintf("%v-%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
 	q := req.URL.Query()
@@ -136,7 +128,7 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 	case 7 * 60 * 24:
 		q.Add("type", "1week")
 	default:
-		return klinesResult{}, errors.New("unsupported interval minutes")
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrUnsupportedCandlestickInterval}
 	}
 
 	q.Add("startAt", fmt.Sprintf("%v", startTimeSecs))
@@ -148,55 +140,56 @@ func (k Kucoin) getKlines(baseAsset string, quoteAsset string, startTimeSecs int
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return klinesResult{err: err}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrExecutingRequest}
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		err := fmt.Errorf("kucoin returned %v status code", resp.StatusCode)
-		if resp.StatusCode == 429 {
-			err = types.ErrRateLimit
-		}
-		return klinesResult{httpStatus: resp.StatusCode, err: err}, err
+	if resp.StatusCode == http.StatusTooManyRequests {
+		// In this case we should sleep for 11 seconds due to what it says in the docs.
+		// https://github.com/marianogappa/crypto-predictions/issues/37#issuecomment-1167566211
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrRateLimit, RetryAfter: 11 * time.Second}
 	}
 
 	byts, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err := fmt.Errorf("kucoin returned broken body response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: resp.StatusCode}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrBrokenBodyResponse}
 	}
 
 	maybeResponse := response{}
 	err = json.Unmarshal(byts, &maybeResponse)
 	if err == nil && (maybeResponse.Code != "200000" || maybeResponse.Msg != "") {
+		if maybeResponse.Code == "400100" && maybeResponse.Msg == "This pair is not provided at present" {
+			return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrInvalidMarketPair}
+		}
+
 		err := fmt.Errorf("kucoin returned error code! Code: %v, Message: %v", maybeResponse.Code, maybeResponse.Msg)
-		return klinesResult{
-			kucoinErrorCode:    maybeResponse.Code,
-			kucoinErrorMessage: maybeResponse.Msg,
-			httpStatus:         500,
-		}, err
+		// https://docs.kucoin.com/#request Codes are numeric
+		code, _ := strconv.Atoi(maybeResponse.Code)
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: err, Code: code}
 	}
 	if err != nil {
-		err := fmt.Errorf("kucoin returned invalid JSON response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrInvalidJSONResponse}
 	}
 
 	candlesticks, err := responseToCandlesticks(maybeResponse.Data)
 	if err != nil {
-		return klinesResult{
-			httpStatus: 500,
-			err:        err,
-		}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: err}
 	}
 
-	if k.debug {
-		log.Info().Str("exchange", "KuCoin").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
+	if e.debug {
+		log.Info().Str("exchange", "KuCoin").Str("market", fmt.Sprintf("%v/%v", baseAsset, quoteAsset)).Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
-	return klinesResult{
-		candlesticks: candlesticks,
-		httpStatus:   200,
-	}, nil
+	if len(candlesticks) == 0 {
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+	}
+
+	// Reverse slice, because Kucoin returns candlesticks in descending order
+	for i, j := 0, len(candlesticks)-1; i < j; i, j = i+1, j-1 {
+		candlesticks[i], candlesticks[j] = candlesticks[j], candlesticks[i]
+	}
+
+	return candlesticks, nil
 }
 
 // Kucoin uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested

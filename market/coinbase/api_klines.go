@@ -11,6 +11,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -64,15 +65,8 @@ func coinbaseToCandlesticks(response successResponse) ([]types.Candlestick, erro
 	return candlesticks, nil
 }
 
-type klinesResult struct {
-	candlesticks         []types.Candlestick
-	err                  error
-	coinbaseErrorMessage string
-	httpStatus           int
-}
-
-func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO8601, endTimeISO8601 string, intervalMinutes int) (klinesResult, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%vproducts/%v-%v/candles", c.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
+func (e *Coinbase) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%vproducts/%v-%v/candles", e.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 
 	q := req.URL.Query()
 
@@ -87,10 +81,15 @@ func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO860
 		86400: true,
 	}
 	if isValid := validGranularities[granularity]; !isValid {
-		return klinesResult{}, errors.New("unsupported resolution")
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrUnsupportedCandlestickInterval}
 	}
 
 	q.Add("granularity", fmt.Sprintf("%v", granularity))
+
+	startTimeTm := time.Unix(int64(startTimeTs), 0)
+	startTimeISO8601 := startTimeTm.Format(time.RFC3339)
+	endTimeISO8601 := startTimeTm.Add(299 * 60 * time.Second).Format(time.RFC3339)
+
 	q.Add("start", fmt.Sprintf("%v", startTimeISO8601))
 	q.Add("end", fmt.Sprintf("%v", endTimeISO8601))
 
@@ -100,55 +99,57 @@ func (c Coinbase) getKlines(baseAsset string, quoteAsset string, startTimeISO860
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return klinesResult{err: err}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrExecutingRequest}
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		byts, _ := ioutil.ReadAll(resp.Body)
-		err := fmt.Errorf("coinbase returned %v status code with payload [%v]", resp.StatusCode, string(byts))
-		return klinesResult{httpStatus: 500, err: err}, err
-	}
-
 	byts, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err := fmt.Errorf("coinbase returned broken body response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrBrokenBodyResponse}
 	}
 
 	maybeErrorResponse := errorResponse{}
 	err = json.Unmarshal(byts, &maybeErrorResponse)
 	if err == nil && (maybeErrorResponse.Message != "") {
-		err := fmt.Errorf("coinbase returned error code! Message: %v", maybeErrorResponse.Message)
-		return klinesResult{
-			coinbaseErrorMessage: maybeErrorResponse.Message,
-			httpStatus:           500,
-		}, err
+		if maybeErrorResponse.Message == "NotFound" {
+			return nil, common.CandleReqError{
+				IsNotRetryable: true,
+				IsExchangeSide: true,
+				Err:            types.ErrInvalidMarketPair,
+			}
+		}
+		return nil, common.CandleReqError{
+			IsNotRetryable: false,
+			IsExchangeSide: true,
+			Err:            errors.New(maybeErrorResponse.Message),
+		}
 	}
 
 	maybeResponse := successResponse{}
 	err = json.Unmarshal(byts, &maybeResponse)
 	if err != nil {
-		err := fmt.Errorf("coinbase returned invalid JSON response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrInvalidJSONResponse}
 	}
 
 	candlesticks, err := coinbaseToCandlesticks(maybeResponse)
 	if err != nil {
-		return klinesResult{
-			httpStatus: 500,
-			err:        fmt.Errorf("error unmarshalling successful JSON response from Coinbase: %v", err),
-		}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: err}
 	}
 
-	if c.debug {
-		log.Info().Str("exchange", "Coinbase").Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
+	if e.debug {
+		log.Info().Str("exchange", "Coinbase").Str("market", fmt.Sprintf("%v/%v", baseAsset, quoteAsset)).Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
-	return klinesResult{
-		candlesticks: candlesticks,
-		httpStatus:   200,
-	}, nil
+	if len(candlesticks) == 0 {
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+	}
+
+	// Reverse slice, because Coinbase returns candlesticks in descending order
+	for i, j := 0, len(candlesticks)-1; i < j; i, j = i+1, j-1 {
+		candlesticks[i], candlesticks[j] = candlesticks[j], candlesticks[i]
+	}
+
+	return candlesticks, nil
 }
 
 // Coinbase uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested

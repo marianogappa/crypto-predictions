@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
@@ -76,20 +78,12 @@ func (r response) toCandlesticks() ([]types.Candlestick, error) {
 	return candlesticks, nil
 }
 
-type metricsResult struct {
-	candlesticks        []types.Candlestick
-	err                 error
-	messariErrorCode    int
-	messariErrorMessage string
-	httpStatus          int
-}
-
-func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metricsResult, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%vassets/%v/metrics/%v/time-series", b.apiURL, asset, metricID), nil)
+func (e *Messari) requestCandlesticks(asset, metricID string, startTimeMillis int, _unused int) ([]types.Candlestick, error) {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%vassets/%v/metrics/%v/time-series", e.apiURL, asset, metricID), nil)
 
 	after := time.Unix(int64(startTimeMillis/1000), 0).Format("2006-01-02")
 
-	if b.debug {
+	if e.debug {
 		log.Info().Msgf("Running time-series request against Messari API for asset %v after %v...\n", asset, after)
 	}
 
@@ -99,68 +93,57 @@ func (b Messari) getMetrics(asset, metricID string, startTimeMillis int) (metric
 	q.Add("order", "ascending")
 	q.Add("startTime", fmt.Sprintf("%v", startTimeMillis))
 
-	req.Header.Add("x-messari-api-key", b.apiKey)
+	req.Header.Add("x-messari-api-key", e.apiKey)
 	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return metricsResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrExecutingRequest}
 	}
 	defer resp.Body.Close()
 
-	// N.B. commenting this out, because 400 returns valid JSON with error description, which we need!
-	// if resp.StatusCode != http.StatusOK {
-	// 	err := fmt.Errorf("messari returned %v status code", resp.StatusCode)
-	// 	return metricsResult{httpStatus: 500, err: err}, err
-	// }
-
 	byts, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err := fmt.Errorf("messari returned broken body response! Was: %v", string(byts))
-		return metricsResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrBrokenBodyResponse}
 	}
-	log.Info().Msgf("Messari API response: %v", string(byts))
+
+	if e.debug {
+		log.Info().Msgf("Messari API response: %v", string(byts))
+	}
 
 	res := response{}
 	err = json.Unmarshal(byts, &res)
 	if err != nil {
-		err := fmt.Errorf("messari returned invalid JSON response! Was: %v", string(byts))
-		return metricsResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrInvalidJSONResponse}
+	}
+
+	if res.Status.ErrorCode == 404 && strings.HasPrefix(res.Status.ErrorMessage, "Asset with key = ") && strings.HasSuffix(res.Status.ErrorMessage, " not found.") {
+		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrInvalidMarketPair}
 	}
 
 	if res.Status.ErrorCode != 0 {
-		err := fmt.Errorf("error from Messari API: %v", res.Status.ErrorMessage)
-		return metricsResult{
-			httpStatus:          500,
-			messariErrorCode:    res.Status.ErrorCode,
-			messariErrorMessage: res.Status.ErrorMessage,
-			err:                 err,
-		}, err
+		return nil, common.CandleReqError{
+			IsNotRetryable: false,
+			IsExchangeSide: true,
+			Err:            fmt.Errorf("error from Messari API: %v", res.Status.ErrorMessage),
+			Code:           res.Status.ErrorCode,
+		}
 	}
 
 	candlesticks, err := res.toCandlesticks()
 	if err != nil {
-		return metricsResult{
-			httpStatus: resp.StatusCode,
-			err:        err,
-		}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: err}
 	}
 
 	if len(candlesticks) == 0 {
-		return metricsResult{
-			httpStatus: 200,
-			err:        types.ErrOutOfTicks,
-		}, types.ErrOutOfTicks
+		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
 	}
 
-	if b.debug {
-		log.Info().Msgf("messari tick request successful! Candlestick count: %v\n", len(candlesticks))
+	if e.debug {
+		log.Info().Str("exchange", "Messari").Str("asset", fmt.Sprintf("%v", asset)).Int("candlestick_count", len(candlesticks)).Msg("Candlestick request successful!")
 	}
 
-	return metricsResult{
-		candlesticks: candlesticks,
-		httpStatus:   200,
-	}, nil
+	return candlesticks, nil
 }

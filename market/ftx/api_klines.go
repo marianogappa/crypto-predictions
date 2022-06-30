@@ -2,7 +2,6 @@ package ftx
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -59,15 +59,8 @@ func (r response) toCandlesticks() []types.Candlestick {
 	return candlesticks
 }
 
-type klinesResult struct {
-	candlesticks    []types.Candlestick
-	err             error
-	ftxErrorMessage string
-	httpStatus      int
-}
-
-func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) (klinesResult, error) {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarkets/%v/%v/candles", f.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
+func (e *FTX) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]types.Candlestick, error) {
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarkets/%v/%v/candles", e.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 	q := req.URL.Query()
 
 	resolution := intervalMinutes * 60
@@ -85,7 +78,7 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, i
 		86400 * 7: true,
 	}
 	if isValid := validResolutions[resolution]; !isValid {
-		return klinesResult{}, errors.New("unsupported resolution")
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrUnsupportedCandlestickInterval}
 	}
 
 	q.Add("resolution", fmt.Sprintf("%v", resolution))
@@ -101,49 +94,44 @@ func (f FTX) getKlines(baseAsset string, quoteAsset string, startTimeSecs int, i
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return klinesResult{err: err}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrExecutingRequest}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return klinesResult{httpStatus: 404, err: types.ErrInvalidMarketPair}, types.ErrInvalidMarketPair
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		byts, _ := ioutil.ReadAll(resp.Body)
-		err := fmt.Errorf("ftx returned %v status code with payload [%v]", resp.StatusCode, string(byts))
-		return klinesResult{httpStatus: 500, err: err}, err
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: types.ErrInvalidMarketPair}
 	}
 
 	byts, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		err := fmt.Errorf("ftx returned broken body response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrBrokenBodyResponse}
 	}
 
 	maybeResponse := response{}
 	err = json.Unmarshal(byts, &maybeResponse)
 	if err != nil {
-		err := fmt.Errorf("ftx returned invalid JSON response! Was: %v", string(byts))
-		return klinesResult{err: err, httpStatus: 500}, err
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrInvalidJSONResponse}
 	}
 
 	if !maybeResponse.Success {
-		return klinesResult{
-			httpStatus:      500,
-			ftxErrorMessage: maybeResponse.Error,
-			err:             fmt.Errorf("FTX returned error: %v", maybeResponse.Error),
-		}, err
+		return nil, common.CandleReqError{
+			IsNotRetryable: false,
+			IsExchangeSide: true,
+			Err:            fmt.Errorf("FTX returned error: %v", maybeResponse.Error),
+			Code:           resp.StatusCode,
+		}
 	}
 
-	if f.debug {
-		log.Info().Str("exchange", "FTX").Int("candlestick_count", len(maybeResponse.Result)).Msg("Candlestick request successful!")
+	if e.debug {
+		log.Info().Str("exchange", "FTX").Str("market", fmt.Sprintf("%v/%v", baseAsset, quoteAsset)).Int("candlestick_count", len(maybeResponse.Result)).Msg("Candlestick request successful!")
 	}
 
-	return klinesResult{
-		candlesticks: maybeResponse.toCandlesticks(),
-		httpStatus:   200,
-	}, nil
+	candlesticks := maybeResponse.toCandlesticks()
+	if len(candlesticks) == 0 {
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+	}
+
+	return candlesticks, nil
 }
 
 // FTX uses the strategy of having candlesticks on multiples of an hour or a day, and truncating the requested
