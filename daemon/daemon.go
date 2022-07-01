@@ -14,6 +14,9 @@ import (
 )
 
 var (
+	// ErrUIUnsupportedPredictionType means: this prediction type is not supported in the UI
+	ErrUIUnsupportedPredictionType = errors.New("this prediction type is not supported in the UI")
+
 	// ErrOnlyTwitterPredictionActioningSupported returned when a Youtube-based prediction is triggered to be actioned.
 	ErrOnlyTwitterPredictionActioningSupported = errors.New("only Twitter-based prediction actioning is supported")
 

@@ -119,6 +119,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		pgPredictionsURLs{filters.URLs},
 		pgPredictionsTags{filters.Tags},
 		pgGreaterThanUUID{filters.GreaterThanUUID},
+		pgIncludeUIUnsupported{filters.IncludeUIUnsupported},
 	}).build()
 
 	orderBy := predictionsBuildOrderBy(orderBys)
@@ -583,4 +584,20 @@ func (f pgGreaterThanUUID) filter() (string, []interface{}) {
 		return "", nil
 	}
 	return "uuid > ∆", []interface{}{f.uuid}
+}
+
+type pgIncludeUIUnsupported struct{ includeUIUnsupported bool }
+
+func (f pgIncludeUIUnsupported) filter() (string, []interface{}) {
+	if f.includeUIUnsupported {
+		return "", nil
+	}
+	args := []interface{}{}
+	for predictionType := range types.UIUnsupportedPredictionTypes {
+		args = append(args, predictionType.String())
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf("blob->>'type' NOT IN (%v)", strings.Join(strings.Split(strings.Repeat("∆", len(args)), ""), ", ")), args
+	}
+	return "", nil
 }

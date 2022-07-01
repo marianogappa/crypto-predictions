@@ -11,6 +11,16 @@ import (
 )
 
 var (
+	// UIUnsupportedPredictionTypes controls which prediction types are not Tweetable/showable/linkable in the UI.
+	// If a PredictionType is on this list, it's probably because the overlays or pretty printing are unsupported.
+	UIUnsupportedPredictionTypes = map[PredictionType]bool{
+		PREDICTION_TYPE_UNSUPPORTED:                               true,
+		PREDICTION_TYPE_COIN_WILL_RANGE:                           true,
+		PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:         true,
+		PREDICTION_TYPE_THE_FLIPPENING:                            true,
+		PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES: true,
+	}
+
 	// ErrUnknownOperandType means: unknown value for operandType
 	ErrUnknownOperandType = errors.New("unknown value for operandType")
 
@@ -339,6 +349,7 @@ type PredictionState struct {
 	// add state to provide evidence of alleged condition result
 }
 
+// APIFilters is the set of filters for requesting Predictions at API-level and storage-level.
 type APIFilters struct {
 	Tags                  []string `json:"tags"`
 	AuthorHandles         []string `json:"authorHandles"`
@@ -351,8 +362,10 @@ type APIFilters struct {
 	Deleted               *bool    `json:"deleted"`
 	Paused                *bool    `json:"paused"`
 	Hidden                *bool    `json:"hidden"`
+	IncludeUIUnsupported  bool     `json:"showUIUnsupported"`
 }
 
+// ToQueryStringWithOrderBy converts the struct to a QueryString, including the orderBy parameter
 func (f APIFilters) ToQueryStringWithOrderBy(orderBy []string) map[string][]string {
 	m := map[string][]string{
 		"tags":                  f.Tags,
@@ -381,6 +394,9 @@ func (f APIFilters) ToQueryStringWithOrderBy(orderBy []string) map[string][]stri
 		if *f.Hidden {
 			m["hidden"] = []string{"true"}
 		}
+	}
+	if f.IncludeUIUnsupported {
+		m["includeUIUnsupported"] = []string{"true"}
 	}
 
 	return m

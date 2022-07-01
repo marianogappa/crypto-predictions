@@ -120,6 +120,7 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 		UUIDs:                 trim(strings.Split(rawUUIDs, ",")),
 		PredictionStateValues: trim(strings.Split(rawStatuses, ",")),
 		PredictionStateStatus: trim(strings.Split(rawStateValues, ",")),
+		IncludeUIUnsupported:  true,
 	}})
 
 	data := make(map[string]interface{})

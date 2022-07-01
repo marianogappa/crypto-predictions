@@ -51,6 +51,9 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
 		return ErrOnlyTwitterPredictionActioningSupported
 	}
+	if types.UIUnsupportedPredictionTypes[prediction.Type] {
+		return ErrUIUnsupportedPredictionType
+	}
 	if actType != actionTypeBecameFinal && actType != actionTypePredictionCreated {
 		return ErrUnkownActionType
 	}

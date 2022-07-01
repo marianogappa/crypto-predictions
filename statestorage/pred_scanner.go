@@ -33,14 +33,16 @@ var (
 			types.ONGOING_PRE_PREDICTION.String(),
 			types.ONGOING_PREDICTION.String(),
 		},
-		Paused:  pBool(false),
-		Deleted: pBool(false),
+		Paused:               pBool(false),
+		Deleted:              pBool(false),
+		IncludeUIUnsupported: true,
 	}
 
 	filterAll = types.APIFilters{
-		Paused:  nil,
-		Deleted: nil,
-		Hidden:  nil,
+		Paused:               nil,
+		Deleted:              nil,
+		Hidden:               nil,
+		IncludeUIUnsupported: true,
 	}
 )
 

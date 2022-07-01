@@ -27,6 +27,7 @@ type apiReqGetPredictions struct {
 	Deleted               *bool    `json:"deleted" query:"deleted" description:""`
 	Paused                *bool    `json:"paused" query:"paused" description:""`
 	Hidden                *bool    `json:"hidden" query:"hidden" description:""`
+	IncludeUIUnsupported  bool     `json:"includeUIUnsupported" query:"includeUIUnsupported" description:"by default, prediction types that have no UI support are not returned"`
 	OrderBys              []string `json:"orderBys" query:"orderBys" description:"Order in which predictions are returned. Defaults to CREATED_AT_DESC."`
 	Limit                 string   `json:"limit" query:"limit" description:"How many predictions to return"`
 	Offset                string   `json:"offset" query:"offset" description:"From which prediction to return 'limit' predictions"`
@@ -45,6 +46,7 @@ func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPred
 		Deleted:               req.Deleted,
 		Paused:                req.Paused,
 		Hidden:                req.Hidden,
+		IncludeUIUnsupported:  req.IncludeUIUnsupported,
 	}
 
 	limit := 0
