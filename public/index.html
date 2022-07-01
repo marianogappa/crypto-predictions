@@ -13,7 +13,9 @@
 
         .predictionAuthor {}
 
-        .predictionStatus {}
+        .predictionCreatedAt {
+            min-width: 150px;
+        }
 
         .predictionValue {}
 
@@ -137,10 +139,13 @@
                 Author
             </div>
             <div class="table-header-cell">
-                Status
+                Flags
             </div>
             <div class="table-header-cell">
-                Result
+                Created At
+            </div>
+            <div class="table-header-cell">
+                🏁
             </div>
         </div>
         <div id="resp-table-body">
@@ -155,15 +160,14 @@
                 <div class="predictionAuthor resp-table-cell">
                     <a href="/?authors={{.predictionAuthor}}">{{.predictionAuthor}}</a>
                 </div>
-                <div class='predictionStatus resp-table-cell {{if(eq .predictionStatus "UNSTARTED")}}{{print "red"
-                    }}{{else if(eq .predictionStatus "FINISHED" ) }}{{print "green" }}{{else}}{{print "yellow"
-                    }}{{end}}'>
-                    <a href="/?statuses={{.predictionStatus}}">{{.predictionStatus}}</a>
+                <div class='resp-table-cell'>
+                    {{.predictionFlags}}
                 </div>
-                <div
-                    class='predictionValue resp-table-cell {{if(eq .predictionValue "INCORRECT")}}{{print "red"
-                    }}{{else if(eq .predictionValue "CORRECT" ) }}{{print "green" }}{{else}}{{print "yellow" }}{{end}}'>
-                    <a href="/?stateValues={{.predictionValue}}">{{.predictionValue}}</a>
+                <div class='predictionCreatedAt resp-table-cell'>
+                    {{.predictionCreatedAtAgo}}
+                </div>
+                <div class='predictionValue resp-table-cell'>
+                    <a href="/?stateValues={{.predictionValue}}">{{.predictionValueEmoji}}</a>
                 </div>
             </div>
             {{end}}

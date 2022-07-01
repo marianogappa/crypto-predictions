@@ -68,6 +68,9 @@ type Prediction struct {
 	// extra fields for API, but not for Postgres
 	PredictionText string            `json:"predictionText,omitempty" example:"COIN:BINANCE:BTC-USDT will hit 29000 by end of year"`
 	Summary        PredictionSummary `json:"summary,omitempty"`
+	Deleted        bool              `json:"deleted,omitempty"`
+	Paused         bool              `json:"paused,omitempty"`
+	Hidden         bool              `json:"hidden,omitempty"`
 }
 
 // PredictionSummary contains all necessary information about the prediction to make a candlestick chart of it.

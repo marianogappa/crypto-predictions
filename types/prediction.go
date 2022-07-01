@@ -1,5 +1,6 @@
 package types
 
+// Prediction is the struct that represents a prediction after it being compiled.
 type Prediction struct {
 	UUID          string
 	Version       string
@@ -15,8 +16,16 @@ type Prediction struct {
 	State         PredictionState
 	Reporter      string
 	Type          PredictionType
+
+	// These fields are stored outside of the DB blob field and are filled by StateStorage. They are not read by
+	// compilation nor serialised.
+	Deleted bool
+	Hidden  bool
+	Paused  bool
 }
 
+// Evaluate is a stateful method that evaluates & stores the value of this prediction, also potentially changing its
+// status.
 func (p *Prediction) Evaluate() PredictionStateValue {
 	// TODO: only calculate if not in final state? Why not?
 	value := p.calculateValue()
@@ -45,12 +54,14 @@ func (p Prediction) calculateValue() PredictionStateValue {
 	return predictValue
 }
 
+// ClearState removes all state from a Prediction, effectively making it able to "start evolving from scratch".
 func (p *Prediction) ClearState() {
 	p.State = PredictionState{}
 	p.PrePredict.ClearState()
 	p.Predict.ClearState()
 }
 
+// UndecidedConditions are all conditions in this Prediction that are not TRUE/FALSE yet.
 func (p *Prediction) UndecidedConditions() []*Condition {
 	var undecidedConditions []*Condition
 	undecidedConditions = append(undecidedConditions, p.PrePredict.UndecidedConditions()...)
@@ -70,6 +81,7 @@ func (p *Prediction) ActionableUndecidedConditions() []*Condition {
 	return []*Condition{}
 }
 
+// CalculateTags (for now) lists the set of all Operands in this Prediction.
 func (p *Prediction) CalculateTags() []string {
 	tags := map[string]struct{}{}
 
@@ -87,6 +99,7 @@ func (p *Prediction) CalculateTags() []string {
 	return res
 }
 
+// CalculateMainCoin returns the main Operand of this Prediction.
 func (p *Prediction) CalculateMainCoin() Operand {
 	switch p.Type {
 	case PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE, PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES, PREDICTION_TYPE_COIN_WILL_RANGE, PREDICTION_TYPE_THE_FLIPPENING:

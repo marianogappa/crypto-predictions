@@ -68,12 +68,12 @@
     {{else}}
 
     <div class="topLinks">
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=pause">PAUSE</a>
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=unpause">UNPAUSE</a>
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=hide">HIDE</a>
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=unhide">UNHIDE</a>
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=delete">DELETE</a>
-        <a href="/prediction?uuid={{.prediction.UUID}}&action=undelete">UNDELETE</a>
+        {{if (not .prediction.Paused)}}<a href="/prediction?uuid={{.prediction.UUID}}&action=pause">PAUSE</a>{{end}}
+        {{if .prediction.Paused}}<a href="/prediction?uuid={{.prediction.UUID}}&action=unpause">UNPAUSE</a>{{end}}
+        {{if (not .prediction.Hidden)}}<a href="/prediction?uuid={{.prediction.UUID}}&action=hide">HIDE</a>{{end}}
+        {{if .prediction.Hidden}}<a href="/prediction?uuid={{.prediction.UUID}}&action=unhide">UNHIDE</a>{{end}}
+        {{if (not .prediction.Deleted)}}<a href="/prediction?uuid={{.prediction.UUID}}&action=delete">DELETE</a>{{end}}
+        {{if .prediction.Deleted}}<a href="/prediction?uuid={{.prediction.UUID}}&action=undelete">UNDELETE</a>{{end}}
         <a href="/prediction?uuid={{.prediction.UUID}}&action=refreshAccount">REFRESH ACCOUNT</a>
         <a href="/prediction?uuid={{.prediction.UUID}}&action=clearState">CLEAR STATE</a>
     </div>

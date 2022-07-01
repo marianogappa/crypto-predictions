@@ -51,6 +51,7 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 		compileInnerPrediction,
 		compilePredictionType,
 		compilePredictionState,
+		compileFlags,
 	}
 	for _, partiallyCompile := range partialCompilers {
 		var maybeAccount types.Account
@@ -83,6 +84,13 @@ func compileVersion(raw Prediction, prediction *types.Prediction, account *types
 
 func compileUUID(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	prediction.UUID = raw.UUID
+	return nil
+}
+
+func compileFlags(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+	prediction.Paused = raw.Paused
+	prediction.Hidden = raw.Hidden
+	prediction.Deleted = raw.Deleted
 	return nil
 }
 

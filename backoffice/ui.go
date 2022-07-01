@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 	"text/template"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -138,12 +139,15 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	for _, pred := range preds {
 		pData := map[string]string{}
 		pData["predictionCreatedAt"] = string(pred.CreatedAt)
+		pData["predictionCreatedAtAgo"] = isoToAgo(pred.CreatedAt)
 		pData["predictionUUID"] = pred.UUID
 		pData["predictionUrl"] = pred.PostUrl
 		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
 		pData["predictionAuthor"] = pred.PostAuthor
 		pData["predictionStatus"] = pred.State.Status.String()
 		pData["predictionValue"] = pred.State.Value.String()
+		pData["predictionFlags"] = predictionToFlags(pred)
+		pData["predictionValueEmoji"] = predictionValueToEmoji(pred.State.Value)
 		pDatas = append(pDatas, pData)
 	}
 	sort.Slice(pDatas, func(i, j int) bool { return pDatas[i]["predictionCreatedAt"] > pDatas[j]["predictionCreatedAt"] })
@@ -151,6 +155,59 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data["Predictions"] = pDatas
 
 	t.Execute(w, data)
+}
+
+func predictionToFlags(pred types.Prediction) string {
+	var flags string
+
+	if pred.Paused {
+		flags += "⏸"
+	}
+	if pred.Hidden {
+		flags += "👻"
+	}
+	if pred.Deleted {
+		flags += "💀"
+	}
+	if flags == "" {
+		flags = "-"
+	}
+
+	return flags
+}
+
+func isoToAgo(iso types.ISO8601) string {
+	tm, _ := iso.Time()
+	dur := time.Now().Sub(tm)
+	if dur < 1*time.Minute {
+		return "just now"
+	}
+	if dur < 1*time.Hour {
+		return fmt.Sprintf("%v minutes ago", int(dur/time.Minute))
+	}
+	if dur < 24*time.Hour {
+		return fmt.Sprintf("%v hours ago", int(dur/time.Hour))
+	}
+	if dur < 24*7*time.Hour {
+		return fmt.Sprintf("%v days ago", int(dur/(24*time.Hour)))
+	}
+	if dur < 24*30*time.Hour {
+		return fmt.Sprintf("%v weeks ago", int(dur/(24*7*time.Hour)))
+	}
+	return fmt.Sprintf("%v months ago", int(dur/(24*30*time.Hour)))
+}
+
+func predictionValueToEmoji(v types.PredictionStateValue) string {
+	switch v {
+	case types.ANNULLED:
+		return "🏳️"
+	case types.CORRECT:
+		return "✅"
+	case types.INCORRECT:
+		return "❌"
+	default:
+		return "⏳"
+	}
 }
 
 func (s UI) predictionHandler(w http.ResponseWriter, r *http.Request) {

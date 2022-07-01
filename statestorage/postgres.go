@@ -128,7 +128,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		limitStr = fmt.Sprintf(" LIMIT %v OFFSET %v", limit, offset)
 	}
 
-	sql := fmt.Sprintf("SELECT uuid, blob FROM predictions WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
+	sql := fmt.Sprintf("SELECT uuid, blob, COALESCE(paused, false), COALESCE(hidden, false), COALESCE(deleted, false) FROM predictions WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
 
 	if s.debug {
 		log.Info().Msgf("PostgresDBStateStorage.GetPredictions: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
@@ -143,9 +143,10 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 	result := []types.Prediction{}
 	for rows.Next() {
 		var (
-			clUUID, clBlob []byte
+			clUUID, clBlob                []byte
+			clPaused, clHidden, clDeleted bool
 		)
-		err := rows.Scan(&clUUID, &clBlob)
+		err := rows.Scan(&clUUID, &clBlob, &clPaused, &clHidden, &clDeleted)
 		if err != nil {
 			log.Info().Msgf("error reading predictions fields from db, with error: %v\n", err)
 		}
@@ -155,6 +156,9 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 			continue
 		}
 		pred.UUID = string(clUUID)
+		pred.Paused = clPaused
+		pred.Hidden = clHidden
+		pred.Deleted = clDeleted
 		result = append(result, pred)
 	}
 
@@ -253,7 +257,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		if ps[i].UUID == "" {
 			ps[i].UUID = uuid.NewString()
 		}
-		blob, err := serializer.NewPredictionSerializer(nil).Serialize(ps[i])
+		blob, err := serializer.NewPredictionSerializer(nil).SerializeForDB(ps[i])
 		if err != nil {
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}

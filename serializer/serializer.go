@@ -49,6 +49,37 @@ func (s PredictionSerializer) PreSerialize(p *types.Prediction) (compiler.Predic
 		Predict:         pd,
 		PredictionState: marshalPredictionState(p.State),
 		Type:            p.Type.String(),
+		Paused:          p.Paused,
+		Hidden:          p.Hidden,
+		Deleted:         p.Deleted,
+	}, nil
+}
+
+// PreSerializeForDB serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing it
+// to a JSON []byte.
+func (s PredictionSerializer) PreSerializeForDB(p *types.Prediction) (compiler.Prediction, error) {
+	pp, err := marshalPrePredict(p.PrePredict)
+	if err != nil {
+		return compiler.Prediction{}, err
+	}
+	pd, err := marshalPredict(p.Predict)
+	if err != nil {
+		return compiler.Prediction{}, err
+	}
+	return compiler.Prediction{
+		UUID:            p.UUID,
+		Version:         p.Version,
+		CreatedAt:       p.CreatedAt,
+		Reporter:        p.Reporter,
+		PostAuthor:      p.PostAuthor,
+		PostAuthorURL:   p.PostAuthorURL,
+		PostedAt:        p.PostedAt,
+		PostURL:         p.PostUrl,
+		Given:           marshalGiven(p.Given),
+		PrePredict:      pp,
+		Predict:         pd,
+		PredictionState: marshalPredictionState(p.State),
+		Type:            p.Type.String(),
 	}, nil
 }
 
@@ -56,6 +87,16 @@ func (s PredictionSerializer) PreSerialize(p *types.Prediction) (compiler.Predic
 // by the API. There's a separate PreSerializeForAPI method for that purpose.
 func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 	pre, err := s.PreSerialize(p)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(pre)
+}
+
+// SerializeForDB serializes a Prediction to a JSON []byte. It is meant to be used for persisting, but must only be used
+// by the DB.
+func (s PredictionSerializer) SerializeForDB(p *types.Prediction) ([]byte, error) {
+	pre, err := s.PreSerializeForDB(p)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +119,9 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSum
 		Type:            p.Type.String(),
 		PredictionText:  printer.NewPredictionPrettyPrinter(*p).Default(),
 		Summary:         compiler.PredictionSummary{},
+		Paused:          p.Paused,
+		Hidden:          p.Hidden,
+		Deleted:         p.Deleted,
 	}
 
 	if includeSummary && s.mkt != nil {

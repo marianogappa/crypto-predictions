@@ -128,7 +128,10 @@ func TestSerialize(t *testing.T) {
 					"value": "ONGOING_PRE_PREDICTION"
 				},
 				"type": "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
-				"summary": {}
+				"summary": {},
+				"paused": false,
+				"hidden": false,
+				"deleted": false
 			}`,
 		},
 	}
