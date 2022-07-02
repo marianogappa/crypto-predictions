@@ -49,6 +49,7 @@ func (r *Daemon) BlockinglyRunEvery(dur time.Duration) {
 	log.Info().Msgf("Daemon scheduler started and will run again every: %v", dur)
 	for {
 		r.Run(int(time.Now().Unix()))
+		r.ActionPendingInteractions(time.Now)
 		time.Sleep(dur)
 	}
 }
@@ -81,7 +82,19 @@ func (r *Daemon) maybeActionPredictionCreated(prediction types.Prediction, nowTs
 	if prediction.State.Status != types.UNSTARTED {
 		return
 	}
-	err := r.ActionPrediction(prediction, actionTypePredictionCreated, nowTs)
+	err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+		PredictionUUID: prediction.UUID,
+		StateValue:     prediction.State.Value.String(),
+		CreatedAt:      types.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
+	})
+	r.addErrs(&prediction, err)
+
+	err = r.store.InsertPredictionInteraction(types.PredictionInteraction{
+		PostURL:        prediction.PostURL,
+		PredictionUUID: prediction.UUID,
+		ActionType:     actionTypePredictionCreated.String(),
+		Status:         "PENDING",
+	})
 	r.addErrs(&prediction, err)
 }
 
@@ -103,15 +116,21 @@ func (r *Daemon) maybeActionPredictionFinal(prediction types.Prediction, nowTs i
 	err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
 		PredictionUUID: prediction.UUID,
 		StateValue:     prediction.State.Value.String(),
-		CreatedAt:      types.ISO8601(time.Now().Format(time.RFC3339)),
+		CreatedAt:      types.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
 	})
 	r.addErrs(&prediction, err)
 
 	description := printer.NewPredictionPrettyPrinter(prediction).String()
 	log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 
+	// TODO this will have to change for prediction types where ANNULLED is a possible final state
 	if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
-		err := r.ActionPrediction(prediction, actionTypeBecameFinal, nowTs)
+		err := r.store.InsertPredictionInteraction(types.PredictionInteraction{
+			PostURL:        prediction.PostURL,
+			PredictionUUID: prediction.UUID,
+			ActionType:     actionTypeBecameFinal.String(),
+			Status:         "PENDING",
+		})
 		r.addErrs(&prediction, err)
 	}
 }

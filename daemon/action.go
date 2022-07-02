@@ -19,7 +19,8 @@ import (
 type actionType int
 
 const (
-	actionTypeBecameFinal actionType = iota
+	actionTypeUnknown actionType = iota
+	actionTypeBecameFinal
 	actionTypePredictionCreated
 )
 
@@ -28,6 +29,17 @@ var (
 	ErrTweetingDisabled = errors.New("tweeting is not enabled for the daemon; to enable set the PREDICTIONS_DAEMON_ENABLE_TWEETING env to any value")
 )
 
+// actionTypeFromString constructs an actionType from a String
+func actionTypeFromString(s string) actionType {
+	switch s {
+	case "ACTION_TYPE_BECAME_FINAL":
+		return actionTypeBecameFinal
+	case "ACTION_TYPE_PREDICTION_CREATED":
+		return actionTypePredictionCreated
+	default:
+		return actionTypeUnknown
+	}
+}
 func (a actionType) String() string {
 	switch a {
 	case actionTypeBecameFinal:
@@ -39,49 +51,100 @@ func (a actionType) String() string {
 	}
 }
 
+// ActionPendingInteractions actions all pending social media interactions for all predictions that change status.
+func (r *Daemon) ActionPendingInteractions(timeNowFunc func() time.Time) error {
+	pendingInteractions, err := r.store.GetPendingPredictionInteractions()
+	if err != nil {
+		log.Error().Err(err).Msgf("Daemon.ActionPendingInteractions: error actioning pending interactions.")
+		return err
+	}
+	if len(pendingInteractions) > 3 {
+		// Maximum of 3 action interactions per Daemon run, to not spam the Twitter handle with posts.
+		pendingInteractions = pendingInteractions[:3]
+	}
+	for _, interaction := range pendingInteractions {
+		tweetURL, err := r.ActionPendingInteraction(interaction, timeNowFunc)
+
+		interaction.Status = "POSTED"
+		interaction.Error = ""
+		interaction.InteractionPostURL = tweetURL
+		if err != nil {
+			interaction.Status = "ERROR"
+			interaction.Error = err.Error()
+		}
+
+		if err := r.store.UpdatePredictionInteractionStatus(interaction); err != nil {
+			log.Error().Err(err).Msg("Daemon.ActionPendingInteractions: error actioning pending interaction...ignoring.")
+		}
+	}
+	return nil
+}
+
+// ActionPendingInteraction actions a pending social media interaction.
+func (r *Daemon) ActionPendingInteraction(interaction types.PredictionInteraction, timeNowFunc func() time.Time) (string, error) {
+	preds, err := r.store.GetPredictions(types.APIFilters{UUIDs: []string{interaction.PredictionUUID}}, []string{}, 1, 0)
+	if err != nil {
+		log.Error().Err(err).Msgf("Daemon.ActionPendingInteractions: error actioning pending interactions.")
+		return "", err
+	}
+	if len(preds) == 0 {
+		log.Error().Msgf("Daemon.ActionPendingInteractions: could not find prediction for interaction.")
+		return "", fmt.Errorf("could not find prediction for interaction with UUID: [%v]", interaction.PredictionUUID)
+	}
+	actType := actionTypeFromString(interaction.ActionType)
+	if actType == actionTypeUnknown {
+		log.Error().Msgf("Daemon.ActionPendingInteractions: unknown action type.")
+		return "", fmt.Errorf("unknown action type: [%v]", interaction.ActionType)
+	}
+
+	return r.ActionPrediction(preds[0], actType, int(timeNowFunc().Unix()))
+}
+
 // ActionPrediction currently tweets when a prediction is created and when it becomes correct or incorrect.
 //
 // TODO: this should be extracted into a separate PredictionPublisher component that takes Twitter, Store & Market,
 // because BackOffice will probably end up using it, which means API needs to run it.
-func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionType, nowTs int) error {
+func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionType, nowTs int) (string, error) {
 	if !r.enableTweeting {
-		return ErrTweetingDisabled
+		return "", ErrTweetingDisabled
 	}
 	// TODO eventually we want to action Youtube predictions as well, possibly by just not replying to a tweet.
 	if !strings.HasPrefix(prediction.PostURL, "https://twitter.com/") {
-		return ErrOnlyTwitterPredictionActioningSupported
+		return "", ErrOnlyTwitterPredictionActioningSupported
 	}
 	if types.UIUnsupportedPredictionTypes[prediction.Type] {
-		return ErrUIUnsupportedPredictionType
+		return "", ErrUIUnsupportedPredictionType
 	}
 	if actType != actionTypeBecameFinal && actType != actionTypePredictionCreated {
-		return ErrUnkownActionType
+		return "", ErrUnkownActionType
 	}
+	// TODO this will have to change for prediction types where ANNULLED is a possible final state
 	if actType == actionTypeBecameFinal && prediction.State.Value != types.CORRECT && prediction.State.Value != types.INCORRECT {
-		return fmt.Errorf("daemon.ActionPrediction: prediction is not CORRECT nor INCORRECT, and I was asked to action ACTION_TYPE_BECAME_FINAL")
+		return "", fmt.Errorf("daemon.ActionPrediction: prediction is not CORRECT nor INCORRECT, and I was asked to action ACTION_TYPE_BECAME_FINAL")
 	}
 	if prediction.State.LastTs > nowTs {
-		return fmt.Errorf("daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen, bailing", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
+		return "", fmt.Errorf("daemon.ActionPrediction: now() seems to be newer than the prediction lastTs (%v)...that shouldn't happen, bailing", time.Unix(int64(prediction.State.LastTs), 0).Format(time.RFC1123))
 	}
 	if nowTs-prediction.State.LastTs > 60*60*24 {
-		return fmt.Errorf("daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore")
+		return "", fmt.Errorf("daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore")
 	}
-	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostURL, actType.String())
+	interaction := types.PredictionInteraction{PredictionUUID: prediction.UUID, PostURL: prediction.PostURL, ActionType: actType.String()}
+	exists, err := r.store.NonPendingPredictionInteractionExists(interaction)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if exists {
-		return ErrPredictionAlreadyActioned
+		return "", ErrPredictionAlreadyActioned
 	}
 	if prediction.PostAuthorURL == "" {
-		return errors.New("daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image")
+		return "", errors.New("daemon.ActionPrediction: prediction has no PostAuthorURL, so I cannot make an image")
 	}
 	accounts, err := r.store.GetAccounts(types.APIAccountFilters{URLs: []string{prediction.PostAuthorURL}}, nil, 1, 0)
 	if err != nil {
-		return fmt.Errorf("%w: %v", types.ErrStorageErrorRetrievingAccounts, err)
+		return "", fmt.Errorf("%w: %v", types.ErrStorageErrorRetrievingAccounts, err)
 	}
 	if len(accounts) == 0 {
-		return fmt.Errorf("daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
+		return "", fmt.Errorf("daemon.ActionPrediction: there is no account for %v", prediction.PostAuthorURL)
 	}
 	account := accounts[0]
 
@@ -93,19 +156,15 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 		tweetURL, err = r.tweetActionPredictionCreated(prediction, account)
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostURL, actType.String(), tweetURL); err != nil {
-		return err
-	}
-	return nil
+	return tweetURL, nil
 }
 
 func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account types.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostURL))
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/{POST_URL}", r.websiteURL)
 	}
 	var (
 		description      = printer.NewPredictionPrettyPrinter(prediction).String()
@@ -114,7 +173,7 @@ func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account typ
 			types.INCORRECT: "INCORRECT ❌",
 		}[prediction.State.Value]
 
-		text = fmt.Sprintf("Prediction by %v became %v!\n\n\"%v\"%v", `"%v"`, predictionResult, description, urlPart)
+		text = fmt.Sprintf("Prediction by {HANDLE} became %v!\n\n\"%v\"%v", predictionResult, description, urlPart)
 	)
 	return r.doTweet(text, prediction, account)
 }
@@ -122,17 +181,17 @@ func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account typ
 func (r *Daemon) tweetActionPredictionCreated(prediction types.Prediction, account types.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostURL))
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/{POST_URL}", r.websiteURL)
 	}
 
 	var (
 		description = printer.NewPredictionPrettyPrinter(prediction).String()
-		text        = fmt.Sprintf("👀 Now tracking prediction by %v 👀\n\n\"%v\"%v", `%v`, description, urlPart)
+		text        = fmt.Sprintf("👀 Now tracking prediction by {HANDLE} 👀\n\n\"%v\"%v", description, urlPart)
 	)
 	return r.doTweet(text, prediction, account)
 }
 
-func (r *Daemon) doTweet(rawText string, prediction types.Prediction, account types.Account) (string, error) {
+func (r *Daemon) doTweet(text string, prediction types.Prediction, account types.Account) (string, error) {
 	imageURL, err := r.predImageBuilder.BuildImage(prediction, account)
 	if err != nil {
 		log.Error().Err(err).Msg("Daemon.tweetActionBecameFinal: silently ignoring error with building image...")
@@ -149,10 +208,8 @@ func (r *Daemon) doTweet(rawText string, prediction types.Prediction, account ty
 		handle = prediction.PostAuthor
 	}
 
-	text := rawText
-	if strings.Contains(text, "%v") {
-		text = fmt.Sprintf(rawText, handle)
-	}
+	text = strings.Replace(text, "{HANDLE}", handle, -1)
+	text = strings.Replace(text, "{POST_URL}", url.QueryEscape(prediction.PostURL), -1)
 
 	tweetURL, err := twitter.NewTwitter("").Tweet(text, imageURL, inReplyToStatusID)
 	if err != nil {

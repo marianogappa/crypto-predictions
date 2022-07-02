@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -101,19 +102,23 @@ type responseIncludes struct {
 type response struct {
 	Data     responseData     `json:"data"`
 	Includes responseIncludes `json:"includes"`
+	Errors   json.RawMessage  `json:"errors"`
 }
 
 func responseToTweet(r response) (Tweet, error) {
+	if len(r.Errors) > 0 {
+		return Tweet{}, fmt.Errorf("there are errors in Twitter's API response: %v", string(r.Errors))
+	}
 	tweetCreatedAt, err := types.ISO8601(r.Data.CreatedAt).Time()
 	if err != nil {
-		return Tweet{}, err
+		return Tweet{}, fmt.Errorf("while parsing r.Data.CreatedAt (%v) as ISO8601: %w", r.Data.CreatedAt, err)
 	}
 	if len(r.Includes.Users) < 1 {
 		return Tweet{}, fmt.Errorf("expecting len(r.Includes.Users) to be >= 1, but was %v", len(r.Includes.Users))
 	}
 	userCreatedAt, err := types.ISO8601(r.Includes.Users[0].CreatedAt).Time()
 	if err != nil {
-		return Tweet{}, err
+		return Tweet{}, fmt.Errorf("while parsing r.Includes.Users[0].CreatedAt (%v) as ISO8601: %w", r.Includes.Users[0].CreatedAt, err)
 	}
 	return Tweet{
 		TweetText:      r.Data.Text,
@@ -147,7 +152,7 @@ func (t Twitter) getTweetByID(id string) (Tweet, error) {
 
 	tweet := request.MakeRequest(req, false)
 	if tweet.err != nil {
-		return tweet, tweet.err
+		return tweet, fmt.Errorf("while making HTTP request: %w", tweet.err)
 	}
 
 	return tweet, nil

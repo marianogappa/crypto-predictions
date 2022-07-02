@@ -695,3 +695,13 @@ func (v PredictionType) String() string {
 		return "PREDICTION_TYPE_UNSUPPORTED"
 	}
 }
+
+// PredictionInteraction is a social media post posted by this engine upon an event of a prediction.
+type PredictionInteraction struct {
+	PostURL            string
+	ActionType         string
+	InteractionPostURL string
+	PredictionUUID     string
+	Status             string // PENDING, POSTED, ERROR
+	Error              string
+}

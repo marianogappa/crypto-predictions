@@ -58,7 +58,7 @@ func (e *Coinbase) RequestCandlesticks(operand types.Operand, startTimeTs int, i
 //
 // Some exchanges may return results for unfinished candles (e.g. the current minute) and some may not, so callers
 // should not request unfinished candles. This patience should be taken into account in addition to unfinished candles.
-func (e *Coinbase) GetPatience() time.Duration { return 1 * time.Minute }
+func (e *Coinbase) GetPatience() time.Duration { return 2 * time.Minute }
 
 // SetDebug sets exchange-wide debug logging. It's useful to know how many times requests are being sent to exchanges.
 func (e *Coinbase) SetDebug(debug bool) {
