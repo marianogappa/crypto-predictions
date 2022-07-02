@@ -9,9 +9,7 @@ test: ## Run tests
 test:
 	go test -race -vet=off ./...
 
-push:
-	test
-	format
+push: test format
 	@git push
 
 help: ## prints this help
