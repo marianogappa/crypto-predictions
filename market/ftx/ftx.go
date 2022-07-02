@@ -31,10 +31,6 @@ func NewFTX() *FTX {
 	return e
 }
 
-// func (e *FTX) overrideAPIURL(apiURL string) {
-// 	e.apiURL = apiURL
-// }
-
 // RequestCandlesticks requests candlesticks for the given market pair, of candlestick interval "intervalMinutes",
 // starting at "startTimeTs".
 //

@@ -13,7 +13,7 @@ import (
 func predictionToMap(p types.Prediction) map[string]interface{} {
 	urlType := "UNKNOWN"
 	urlSiteSpecificID := ""
-	u, err := url.Parse(p.PostUrl)
+	u, err := url.Parse(p.PostURL)
 	if err == nil {
 		hostname := u.Hostname()
 		switch {
@@ -35,7 +35,7 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 		"PostAuthor":        p.PostAuthor,
 		"PostText":          p.PostText,
 		"PostedAt":          postedAt,
-		"PostUrl":           p.PostUrl,
+		"PostUrl":           p.PostURL,
 		"Paused":            p.Paused,
 		"Hidden":            p.Hidden,
 		"Deleted":           p.Deleted,
@@ -44,7 +44,7 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 		"Predict":           mapifyPredict(p.Predict),
 		"State":             mapifyState(p.State),
 		"Reporter":          p.Reporter,
-		"PrettyPrint":       printer.NewPredictionPrettyPrinter(p).Default(),
+		"PrettyPrint":       printer.NewPredictionPrettyPrinter(p).String(),
 		"URLType":           urlType,
 		"URLSiteSpecificId": urlSiteSpecificID,
 		"Type":              p.Type.String(),

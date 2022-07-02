@@ -48,7 +48,7 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 		return ErrTweetingDisabled
 	}
 	// TODO eventually we want to action Youtube predictions as well, possibly by just not replying to a tweet.
-	if !strings.HasPrefix(prediction.PostUrl, "https://twitter.com/") {
+	if !strings.HasPrefix(prediction.PostURL, "https://twitter.com/") {
 		return ErrOnlyTwitterPredictionActioningSupported
 	}
 	if types.UIUnsupportedPredictionTypes[prediction.Type] {
@@ -66,7 +66,7 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 	if nowTs-prediction.State.LastTs > 60*60*24 {
 		return fmt.Errorf("daemon.ActionPrediction: prediction's lastTs is older than 24hs, so I won't action it anymore")
 	}
-	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostUrl, actType.String())
+	exists, err := r.store.PredictionInteractionExists(prediction.UUID, prediction.PostURL, actType.String())
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 		return err
 	}
 
-	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostUrl, actType.String(), tweetURL); err != nil {
+	if err := r.store.InsertPredictionInteraction(prediction.UUID, prediction.PostURL, actType.String(), tweetURL); err != nil {
 		return err
 	}
 	return nil
@@ -105,10 +105,10 @@ func (r *Daemon) ActionPrediction(prediction types.Prediction, actType actionTyp
 func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account types.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostUrl))
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostURL))
 	}
 	var (
-		description      = printer.NewPredictionPrettyPrinter(prediction).Default()
+		description      = printer.NewPredictionPrettyPrinter(prediction).String()
 		predictionResult = map[types.PredictionStateValue]string{
 			types.CORRECT:   "CORRECT ✅",
 			types.INCORRECT: "INCORRECT ❌",
@@ -122,11 +122,11 @@ func (r *Daemon) tweetActionBecameFinal(prediction types.Prediction, account typ
 func (r *Daemon) tweetActionPredictionCreated(prediction types.Prediction, account types.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostUrl))
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/%v", r.websiteURL, url.QueryEscape(prediction.PostURL))
 	}
 
 	var (
-		description = printer.NewPredictionPrettyPrinter(prediction).Default()
+		description = printer.NewPredictionPrettyPrinter(prediction).String()
 		text        = fmt.Sprintf("👀 Now tracking prediction by %v 👀\n\n\"%v\"%v", `%v`, description, urlPart)
 	)
 	return r.doTweet(text, prediction, account)
@@ -141,7 +141,7 @@ func (r *Daemon) doTweet(rawText string, prediction types.Prediction, account ty
 		defer os.Remove(imageURL)
 	}
 
-	inReplyToStatusID, err := getStatusIDFromTweetURL(prediction.PostUrl)
+	inReplyToStatusID, err := getStatusIDFromTweetURL(prediction.PostURL)
 	handle := fmt.Sprintf("@%v", account.Handle)
 
 	if !r.enableReplying || err != nil || account.Handle == "" {

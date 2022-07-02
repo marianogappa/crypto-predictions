@@ -7,26 +7,31 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+// PredictionPrettyPrinter builds a human-readable description of a prediction, e.g.:
+// "Bitcoin will be below $17k in 2 weeks"
 type PredictionPrettyPrinter struct {
 	prediction types.Prediction
 }
 
+// NewPredictionPrettyPrinter constructs a PredictionPrettyPrinter.
 func NewPredictionPrettyPrinter(p types.Prediction) PredictionPrettyPrinter {
 	return PredictionPrettyPrinter{prediction: p}
 }
 
-func (p PredictionPrettyPrinter) Default() string {
+// String returns a human-readable description of a prediction, e.g.:
+// "Bitcoin will be below $17k in 2 weeks"
+func (p PredictionPrettyPrinter) String() string {
 	switch p.prediction.Type {
-	case types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
+	case types.PredictionTypeCoinOperatorFloatDeadline:
 		// TODO: this if is necessary because there's a bug where some predictions are miscategorised
 		if p.prediction.Predict.Predict.Literal != nil && len(p.prediction.Predict.Predict.Literal.Operands) == 2 {
 			return p.predictionTypeCoinOperatorFloatDeadline()
 		}
 	// case types.PREDICTION_TYPE_COIN_WILL_RANGE:
 	// 	p.predictionTypeCoinWillRange()
-	case types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:
+	case types.PredictionTypeCoinWillReachBeforeItReaches:
 		p.predictionTypeCoinWillReachBeforeItReaches()
-	case types.PREDICTION_TYPE_THE_FLIPPENING:
+	case types.PredictionTypeTheFlippening:
 		p.predictionTypeTheFlippening()
 	}
 

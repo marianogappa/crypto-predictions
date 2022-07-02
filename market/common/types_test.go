@@ -26,7 +26,7 @@ func TestJsonFloat64(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(ts.expected, func(t *testing.T) {
-			bs, err := json.Marshal(types.JsonFloat64(ts.f))
+			bs, err := json.Marshal(types.JSONFloat64(ts.f))
 			if err != nil {
 				t.Fatalf("Marshalling failed with %v", err)
 			}
@@ -46,7 +46,7 @@ func TestJsonFloat64Fails(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(fmt.Sprintf("%f", ts.f), func(t *testing.T) {
-			_, err := json.Marshal(types.JsonFloat64(ts.f))
+			_, err := json.Marshal(types.JSONFloat64(ts.f))
 			if err == nil {
 				t.Fatal("Expected marshalling to fail")
 			}
@@ -100,8 +100,8 @@ func TestCandlestickToTicks(t *testing.T) {
 	}
 }
 
-func f(fl float64) types.JsonFloat64 {
-	return types.JsonFloat64(fl)
+func f(fl float64) types.JSONFloat64 {
+	return types.JSONFloat64(fl)
 }
 
 func TestPatchCandlestickHoles(t *testing.T) {

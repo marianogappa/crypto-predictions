@@ -21,17 +21,25 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// PredictionImageBuilder builds images based on Predictions, including candlestick charts, post author image, etc.
 type PredictionImageBuilder struct {
 	market     market.IMarket
 	templates  map[string]*template.Template
 	chromePath string
 }
 
+// NewPredictionImageBuilder constructs a PredictionImageBuilder.
 func NewPredictionImageBuilder(m market.IMarket, files embed.FS, chromePath string) PredictionImageBuilder {
 	templates, _ := loadTemplates(files)
 	return PredictionImageBuilder{market: m, templates: templates, chromePath: chromePath}
 }
 
+// BuildImageBase64 builds the prediction image and returns it as a base64-encoded-bytestream string.
+//
+// Successfully building depends on having a valid Chrome installation, filesystem write access, being able to
+// execute the Chrome binary. Prediction must be well-formed. Building candlestick chart depends on Internet access,
+// and the market communicates with an exchange's API that might be offline, might decide to 429, etc. A lot can
+// go wrong unfortunately.
 func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, account types.Account) (string, error) {
 	url, err := r.BuildImage(prediction, account)
 	if err != nil {
@@ -61,6 +69,13 @@ func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, ac
 	return base64Encoding, nil
 }
 
+// BuildImage builds the prediction image and returns the filesystem's path to the built image. It is your
+// responsibility to delete it once you're done using it, or otherwise you might fill your disk eventually!
+//
+// Successfully building depends on having a valid Chrome installation, filesystem write access, being able to
+// execute the Chrome binary. Prediction must be well-formed. Building candlestick chart depends on Internet access,
+// and the market communicates with an exchange's API that might be offline, might decide to 429, etc. A lot can
+// go wrong unfortunately.
 func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account types.Account) (string, error) {
 	if r.chromePath == "" {
 		return "", errors.New("daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set")

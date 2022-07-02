@@ -25,7 +25,7 @@ func TestPredictEvaluate(t *testing.T) {
 			expr: Predict{
 				Predict: *literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "Only Predict evaluates to CORRECT",
@@ -75,7 +75,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalFalseBoolExpr,
 				Predict:    *literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,Predict=UNDECIDED) evaluates to ONGOING_PREDICTION",
@@ -84,7 +84,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalFalseBoolExpr,
 				Predict:    *literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
@@ -102,7 +102,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    *literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=UNDECIDED) evaluates to ONGOING_PREDICTION",
@@ -111,7 +111,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    *literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=TRUE,Predict=FALSE) evaluates to ANNULLED",
@@ -174,7 +174,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    *literalFalseBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=FALSE) evaluates to ONGOING_PREDICTION",
@@ -183,7 +183,7 @@ func TestPredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    *literalFalseBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		// IgnoreUndecidedIfPredictIsDefined flag
 		{

@@ -11,19 +11,19 @@ func CalculatePredictionType(pred types.Prediction) types.PredictionType {
 			return predictionType
 		}
 	}
-	return types.PREDICTION_TYPE_UNSUPPORTED
+	return types.PredictionTypeUnsupported
 }
 
 var (
 	predictionTypes = map[types.PredictionType]func(types.Prediction) bool{
-		types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE: func(pred types.Prediction) bool {
+		types.PredictionTypeCoinOperatorFloatDeadline: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf == nil && pred.Predict.WrongIf == nil &&
 				pred.Predict.Predict.Operator == types.LITERAL && len(pred.Predict.Predict.Literal.Operands) == 2 &&
 				pred.Predict.Predict.Literal.Operands[0].Type == types.COIN &&
 				pred.Predict.Predict.Literal.Operands[1].Type == types.NUMBER
 		},
-		types.PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES: func(pred types.Prediction) bool {
+		types.PredictionTypeCoinWillReachInvalidatedIfItReaches: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf != nil && pred.Predict.WrongIf == nil &&
 
@@ -40,7 +40,7 @@ var (
 				// Operators are opposite
 				operatorsAreOpposite(pred.Predict.Predict.Literal.Operator, pred.Predict.AnnulledIf.Literal.Operator)
 		},
-		types.PREDICTION_TYPE_COIN_WILL_RANGE: func(pred types.Prediction) bool {
+		types.PredictionTypeCoinWillRange: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf == nil && pred.Predict.WrongIf == nil &&
 				pred.Predict.Predict.Operator == types.LITERAL && len(pred.Predict.Predict.Literal.Operands) == 3 &&
@@ -49,7 +49,7 @@ var (
 				pred.Predict.Predict.Literal.Operands[1].Type == types.NUMBER &&
 				pred.Predict.Predict.Literal.Operands[2].Type == types.NUMBER
 		},
-		types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES: func(pred types.Prediction) bool {
+		types.PredictionTypeCoinWillReachBeforeItReaches: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil &&
 				pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil &&
@@ -70,7 +70,7 @@ var (
 				pred.Predict.Predict.Operands[0].Literal.Operands[0] == pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[0] &&
 				pred.Predict.Predict.Operands[0].Literal.Operator != pred.Predict.Predict.Operands[1].Operands[0].Literal.Operator
 		},
-		types.PREDICTION_TYPE_THE_FLIPPENING: func(pred types.Prediction) bool {
+		types.PredictionTypeTheFlippening: func(pred types.Prediction) bool {
 			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
 				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf == nil && pred.Predict.WrongIf == nil &&
 				pred.Predict.Predict.Operator == types.LITERAL && len(pred.Predict.Predict.Literal.Operands) == 2 &&

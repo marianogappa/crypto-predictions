@@ -71,7 +71,7 @@ func TestAPI(t *testing.T) {
 				p, _, err := compiler.NewPredictionCompiler(nil, time.Now).Compile(predBs)
 				require.Equal(t, err, nil)
 				require.Equal(t, p.Reporter, "admin")
-				require.Equal(t, p.PostUrl, "https://twitter.com/CryptoCapo_/status/1499475622988595206")
+				require.Equal(t, p.PostURL, "https://twitter.com/CryptoCapo_/status/1499475622988595206")
 				require.Equal(t, len(p.Given), 1)
 				require.Equal(t, p.Given["a"].Operands[0].Str, "COIN:BINANCE:BTC-USDT")
 				require.Equal(t, p.Given["a"].Operands[1].Str, "30000")
@@ -104,7 +104,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and not hiding it, only the hidden one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				require.Equal(t, apiResp.Status, 200, apiResp.InternalErrorMessage)
 
@@ -138,7 +138,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and not deleting it, only the deleted one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				require.Equal(t, apiResp.Status, 200, apiResp.InternalErrorMessage)
 
@@ -172,7 +172,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and not pausing it, only the paused one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				require.Equal(t, apiResp.Status, 200, apiResp.InternalErrorMessage)
 
@@ -205,7 +205,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and hiding it, only the hidden one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				secondUUID := apiResp.Data.Prediction.UUID
 
@@ -239,7 +239,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and deleting it, only the deleted one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				secondUUID := apiResp.Data.Prediction.UUID
 
@@ -273,7 +273,7 @@ func TestAPI(t *testing.T) {
 
 				// When posting a new prediction and pausing it, only the paused one should show up
 				secondPrediction, _ := compile(t, sampleRawPrediction)
-				secondPrediction.PostUrl = "https://twitter.com/differentUser/status/1499475622988595206"
+				secondPrediction.PostURL = "https://twitter.com/differentUser/status/1499475622988595206"
 				apiResp = a.postPrediction(apiReqPostPrediction{Prediction: serialize(t, secondPrediction), Store: true})
 				secondUUID := apiResp.Data.Prediction.UUID
 
@@ -293,7 +293,7 @@ func TestAPI(t *testing.T) {
 				for i := 0; i < 10; i++ {
 					samplePred, sampleAccount := compile(t, sampleRawPrediction)
 					samplePred.UUID = uuid.NewString()
-					samplePred.PostUrl = fmt.Sprintf("https://twitter.com/differentUser/status/%v", i)
+					samplePred.PostURL = fmt.Sprintf("https://twitter.com/differentUser/status/%v", i)
 					samplePred.PostedAt = types.ISO8601(fmt.Sprintf("2020-06-26T00:00:0%vZ", i))
 					samplePred.PostAuthor = fmt.Sprintf("User%v", i)
 					samplePred.PostAuthorURL = fmt.Sprintf("https://twitter.com/user%v", i)
@@ -339,7 +339,7 @@ func TestAPI(t *testing.T) {
 					curTime.Add(1 * time.Hour)
 				}
 
-				apiResp := a.getPagesPrediction(samplePreds[0].PostUrl)
+				apiResp := a.getPagesPrediction(samplePreds[0].PostURL)
 				require.Equal(t, 200, apiResp.Status)
 
 				// The main Prediction's UUID must match the first samplePred
@@ -376,7 +376,7 @@ func TestAPI(t *testing.T) {
 
 				// PredictionsByUUID must have all samplePreds
 				for _, samplePred := range samplePreds {
-					require.Equal(t, samplePred.PostUrl, apiResp.Data.PredictionsByUUID[UUID(samplePred.UUID)].PostURL)
+					require.Equal(t, samplePred.PostURL, apiResp.Data.PredictionsByUUID[UUID(samplePred.UUID)].PostURL)
 				}
 			},
 		},

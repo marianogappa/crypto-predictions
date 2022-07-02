@@ -129,7 +129,7 @@ func (r response) parse() parsedResponse {
 type predictionSummary struct {
 	TickMap  map[string][]types.Tick `json:"tickMap"`
 	Coin     string                  `json:"coin"`
-	Goal     types.JsonFloat64       `json:"goal"`
+	Goal     types.JSONFloat64       `json:"goal"`
 	Operator string                  `json:"operator"`
 	Deadline types.ISO8601           `json:"deadline"`
 }

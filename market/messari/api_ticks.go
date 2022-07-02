@@ -68,10 +68,10 @@ func (r response) toCandlesticks() ([]types.Candlestick, error) {
 		if !ok {
 			return candlesticks, fmt.Errorf("candlestick %v has non-float price! Invalid syntax from messari", i)
 		}
-		candlestick.OpenPrice = types.JsonFloat64(price)
-		candlestick.HighestPrice = types.JsonFloat64(price)
-		candlestick.LowestPrice = types.JsonFloat64(price)
-		candlestick.ClosePrice = types.JsonFloat64(price)
+		candlestick.OpenPrice = types.JSONFloat64(price)
+		candlestick.HighestPrice = types.JSONFloat64(price)
+		candlestick.LowestPrice = types.JSONFloat64(price)
+		candlestick.ClosePrice = types.JSONFloat64(price)
 		candlesticks[i] = candlestick
 	}
 

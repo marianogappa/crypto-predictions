@@ -31,7 +31,7 @@ func mapOperand(v string) (Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return Operand{Type: NUMBER, Number: JsonFloat64(f), Str: v}, nil
+		return Operand{Type: NUMBER, Number: JSONFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {
@@ -57,7 +57,7 @@ func operand(s string) Operand {
 
 func TestCondition(t *testing.T) {
 	var (
-		anyError = errors.New("any error for now...")
+		anyError = errors.New("any error for now... ")
 		times    = []int{tInt("2022-01-01 00:00:00"), tInt("2022-01-02 00:00:00"), tInt("2022-01-03 00:00:00")}
 	)
 

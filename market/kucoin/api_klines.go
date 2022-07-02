@@ -82,11 +82,11 @@ func responseToCandlesticks(data [][]string) ([]types.Candlestick, error) {
 
 		candlesticks[i] = types.Candlestick{
 			Timestamp:    candlestick.Time,
-			OpenPrice:    types.JsonFloat64(candlestick.Open),
-			ClosePrice:   types.JsonFloat64(candlestick.Close),
-			LowestPrice:  types.JsonFloat64(candlestick.Low),
-			HighestPrice: types.JsonFloat64(candlestick.High),
-			Volume:       types.JsonFloat64(candlestick.Volume),
+			OpenPrice:    types.JSONFloat64(candlestick.Open),
+			ClosePrice:   types.JSONFloat64(candlestick.Close),
+			LowestPrice:  types.JSONFloat64(candlestick.Low),
+			HighestPrice: types.JSONFloat64(candlestick.High),
+			Volume:       types.JSONFloat64(candlestick.Volume),
 		}
 	}
 

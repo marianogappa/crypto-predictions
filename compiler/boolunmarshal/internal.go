@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-type TokenType int
+type tokenType int
 
-func (t TokenType) String() string {
+func (t tokenType) String() string {
 	switch t {
 	case EOF:
 		return "EOF"
@@ -25,18 +25,25 @@ func (t TokenType) String() string {
 }
 
 const (
-	UNKNOWN TokenType = iota
+	// UNKNOWN is a token type
+	UNKNOWN tokenType = iota
+	// EOF is a token type
 	EOF
+	// INDENTIFIER is a token type
 	INDENTIFIER
+	// AND is a token type
 	AND
+	// OR is a token type
 	OR
+	// NOT is a token type
 	NOT
 )
 
-var reservedTokens = map[TokenType]string{AND: "and", OR: "or", NOT: "not"}
+var reservedTokens = map[tokenType]string{AND: "and", OR: "or", NOT: "not"}
 
+// Node is a node in the boolean expression tree.
 type Node struct {
-	TT    TokenType
+	TT    tokenType
 	Token string
 	Nodes []Node
 }

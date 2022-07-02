@@ -68,7 +68,7 @@ func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiRe
 		}
 
 		if newPred.PostAuthorURL == "" {
-			return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: metadata fetcher could not resolve postAuthorURL from postURL: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResMaintenance{})
+			return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: metadata fetcher could not resolve postAuthorURL from postURL: %v", ErrFailedToCompilePrediction, pred.PostURL), apiResMaintenance{})
 		}
 
 		predsToUpdate = append(predsToUpdate, &newPred)
@@ -96,7 +96,7 @@ func (a *API) recalculatePredictionTypeOnAllPredictions(req apiReqMaintenance) a
 			continue
 		}
 
-		log.Info().Msgf("Changing prediction %v from %v to %v", prediction.PostUrl, prediction.Type, predType)
+		log.Info().Msgf("Changing prediction %v from %v to %v", prediction.PostURL, prediction.Type, predType)
 		prediction.Type = predType
 		if _, err := a.store.UpsertPredictions([]*types.Prediction{&prediction}); err != nil {
 			return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})

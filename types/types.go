@@ -6,19 +6,17 @@ import (
 	"math"
 	"net/url"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var (
 	// UIUnsupportedPredictionTypes controls which prediction types are not Tweetable/showable/linkable in the UI.
 	// If a PredictionType is on this list, it's probably because the overlays or pretty printing are unsupported.
 	UIUnsupportedPredictionTypes = map[PredictionType]bool{
-		PREDICTION_TYPE_UNSUPPORTED:                               true,
-		PREDICTION_TYPE_COIN_WILL_RANGE:                           true,
-		PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:         true,
-		PREDICTION_TYPE_THE_FLIPPENING:                            true,
-		PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES: true,
+		PredictionTypeUnsupported:                         true,
+		PredictionTypeCoinWillRange:                       true,
+		PredictionTypeCoinWillReachBeforeItReaches:        true,
+		PredictionTypeTheFlippening:                       true,
+		PredictionTypeCoinWillReachInvalidatedIfItReaches: true,
 	}
 
 	// ErrUnknownOperandType means: unknown value for operandType
@@ -157,18 +155,23 @@ type Operand struct {
 	Provider   string      // e.g. "BINANCE", "KUCOIN", must be empty if Type == NUMBER
 	BaseAsset  string      // e.g. "BTC" in BTC/USDT, must be empty if Type == NUMBER
 	QuoteAsset string      // e.g. "USDT" in BTC/USDT, must be empty if Type in {MARKETCAP, NUMBER}
-	Number     JsonFloat64 // e.g. "1.234", must be empty if Type != NUMBER
+	Number     JSONFloat64 // e.g. "1.234", must be empty if Type != NUMBER
 	Str        string      // e.g. "COIN:BINANCE:BTC-USDT", "MARKETCAP:MESSARI:BTC", "1.234"
 }
 
+// OperandType is the type of Operand in a condition. Can be NUMBER|COIN|MARKETCAP
 type OperandType int
 
 const (
+	// NUMBER is e.g. 1.2345
 	NUMBER OperandType = iota
+	// COIN is e.g. COIN:BINANCE:BTC-USDT
 	COIN
+	// MARKETCAP is e.g. MARKETCAP:MESSARI:BTC
 	MARKETCAP
 )
 
+// OperandTypeFromString constructs an OperandType from a string
 func OperandTypeFromString(s string) (OperandType, error) {
 	switch s {
 	case "NUMBER", "":
@@ -224,8 +227,10 @@ func (s ConditionState) Clone() ConditionState {
 	}
 }
 
+// BoolOperator is the boolean operation to resolve an expression between conditions in a prediction step.
 type BoolOperator int
 
+// BoolOperatorFromString constructs a BoolOperator from a string
 func BoolOperatorFromString(s string) (BoolOperator, error) {
 	switch s {
 	case "LITERAL":
@@ -255,8 +260,10 @@ func (v BoolOperator) String() string {
 	}
 }
 
+// ConditionStatus represents the status of a condition within a prediction step, i.e.: UNSTARTED|STARTED|FINISHED.
 type ConditionStatus int
 
+// ConditionStatusFromString constructs a ConditionStatus from a string.
 func ConditionStatusFromString(s string) (ConditionStatus, error) {
 	switch s {
 	case "UNSTARTED", "":
@@ -282,14 +289,16 @@ func (v ConditionStatus) String() string {
 	}
 }
 
+// PredictionStateValue represents the value of a prediction, that is, if it was correct or not, or not yet...
 type PredictionStateValue int
 
+// PredictionStateValueFromString constructs a PredictionStateValue from a string.
 func PredictionStateValueFromString(s string) (PredictionStateValue, error) {
 	switch s {
 	case "ONGOING_PRE_PREDICTION", "":
-		return ONGOING_PRE_PREDICTION, nil
+		return ONGOINGPREPREDICTION, nil
 	case "ONGOING_PREDICTION":
-		return ONGOING_PREDICTION, nil
+		return ONGOINGPREDICTION, nil
 	case "CORRECT":
 		return CORRECT, nil
 	case "INCORRECT":
@@ -302,9 +311,9 @@ func PredictionStateValueFromString(s string) (PredictionStateValue, error) {
 }
 func (v PredictionStateValue) String() string {
 	switch v {
-	case ONGOING_PRE_PREDICTION:
+	case ONGOINGPREPREDICTION:
 		return "ONGOING_PRE_PREDICTION"
-	case ONGOING_PREDICTION:
+	case ONGOINGPREDICTION:
 		return "ONGOING_PREDICTION"
 	case CORRECT:
 		return "CORRECT"
@@ -317,36 +326,50 @@ func (v PredictionStateValue) String() string {
 	}
 }
 
+// IsFinal answers if a prediction is either CORRECT, INCORRECT or ANNULLED, but is no longer ongoing.
 func (v PredictionStateValue) IsFinal() bool {
-	return v != ONGOING_PRE_PREDICTION && v != ONGOING_PREDICTION
+	return v != ONGOINGPREPREDICTION && v != ONGOINGPREDICTION
 }
 
 const (
+	// LITERAL is a BoolOperator
 	LITERAL BoolOperator = iota
+	// AND is a BoolOperator
 	AND
+	// OR is a BoolOperator
 	OR
+	// NOT is a BoolOperator
 	NOT
 )
 
 const (
+	// UNSTARTED is a ConditionStatus
 	UNSTARTED ConditionStatus = iota
+	// STARTED is a ConditionStatus
 	STARTED
+	// FINISHED is a ConditionStatus
 	FINISHED
 )
 
 const (
-	ONGOING_PRE_PREDICTION PredictionStateValue = iota
-	ONGOING_PREDICTION
+	// ONGOINGPREPREDICTION is a PredictionStateValue
+	ONGOINGPREPREDICTION PredictionStateValue = iota
+	// ONGOINGPREDICTION is a PredictionStateValue
+	ONGOINGPREDICTION
+	// CORRECT is a PredictionStateValue
 	CORRECT
+	// INCORRECT is a PredictionStateValue
 	INCORRECT
+	// ANNULLED is a PredictionStateValue
 	ANNULLED
 )
 
+// PredictionState contains the state of evolving a prediction up to a given date's worth of market data.
+// It's not the complete state, as each individual Condition also contains some state.
 type PredictionState struct {
 	Status ConditionStatus
 	LastTs int
 	Value  PredictionStateValue
-	// add state to provide evidence of alleged condition result
 }
 
 // APIFilters is the set of filters for requesting Predictions at API-level and storage-level.
@@ -402,90 +425,105 @@ func (f APIFilters) ToQueryStringWithOrderBy(orderBy []string) map[string][]stri
 	return m
 }
 
+// APIAccountFilters are the available filters for requesting Accounts, at both API & database levels.
 type APIAccountFilters struct {
 	Handles []string `json:"handles"`
 	URLs    []string `json:"urls"`
 }
 
+// APIAccountOrderBy are the possible ways to order a list of accounts at API & database levels.
 type APIAccountOrderBy int
 
 const (
-	ACCOUNT_CREATED_AT_DESC APIAccountOrderBy = iota
-	ACCOUNT_CREATED_AT_ASC
-	ACCOUNT_FOLLOWER_COUNT_DESC
+	// AccountCreatedAtDesc is used to sort a list of Accounts by created_at desc
+	AccountCreatedAtDesc APIAccountOrderBy = iota
+	// AccountCreatedAtAsc is used to sort a list of Accounts by created_at asc
+	AccountCreatedAtAsc
+	// AccountFollowerCountDesc is used to sort a list of Accounts by follower_count desc
+	AccountFollowerCountDesc
 )
 
+// APIAccountOrderByFromString constructs a APIAccountOrderBy from a string.
 func APIAccountOrderByFromString(s string) (APIAccountOrderBy, error) {
 	switch s {
 	case "ACCOUNT_CREATED_AT_DESC", "":
-		return ACCOUNT_CREATED_AT_DESC, nil
+		return AccountCreatedAtDesc, nil
 	case "ACCOUNT_CREATED_AT_ASC":
-		return ACCOUNT_CREATED_AT_ASC, nil
+		return AccountCreatedAtAsc, nil
 	case "ACCOUNT_FOLLOWER_COUNT_DESC":
-		return ACCOUNT_FOLLOWER_COUNT_DESC, nil
+		return AccountFollowerCountDesc, nil
 	default:
 		return 0, fmt.Errorf("%w: %v", ErrUnknownAPIOrderBy, s)
 	}
 }
 func (v APIAccountOrderBy) String() string {
 	switch v {
-	case ACCOUNT_CREATED_AT_DESC:
+	case AccountCreatedAtDesc:
 		return "ACCOUNT_CREATED_AT_DESC"
-	case ACCOUNT_CREATED_AT_ASC:
+	case AccountCreatedAtAsc:
 		return "ACCOUNT_CREATED_AT_ASC"
-	case ACCOUNT_FOLLOWER_COUNT_DESC:
+	case AccountFollowerCountDesc:
 		return "ACCOUNT_FOLLOWER_COUNT_DESC"
 	default:
 		return ""
 	}
 }
 
-type APIOrderBy int
+// APIPredictionsOrderBy are the possible ways to order a list of predictions at API & database levels.
+type APIPredictionsOrderBy int
 
 const (
-	CREATED_AT_DESC APIOrderBy = iota
-	CREATED_AT_ASC
-	POSTED_AT_DESC
-	POSTED_AT_ASC
-	UUID_ASC
+	// PredictionsCreatedAtDesc sorts a list of predictions by createdAt desc
+	PredictionsCreatedAtDesc APIPredictionsOrderBy = iota
+	// PredictionsCreatedAtAsc sorts a list of predictions by createdAt desc
+	PredictionsCreatedAtAsc
+	// PredictionsPostedAtDesc sorts a list of predictions by postedAt desc
+	PredictionsPostedAtDesc
+	// PredictionsPostedAtAsc sorts a list of predictions by postedAt asc
+	PredictionsPostedAtAsc
+	// PredictionsUUIDAsc sorts a list of predictions by UUID asc
+	PredictionsUUIDAsc
 )
 
-func APIOrderByFromString(s string) (APIOrderBy, error) {
+// APIPredictionsOrderByFromString constructs a APIPredictionsOrderBy from a string
+func APIPredictionsOrderByFromString(s string) (APIPredictionsOrderBy, error) {
 	switch s {
 	case "CREATED_AT_DESC", "":
-		return CREATED_AT_DESC, nil
+		return PredictionsCreatedAtDesc, nil
 	case "CREATED_AT_ASC":
-		return CREATED_AT_ASC, nil
+		return PredictionsCreatedAtAsc, nil
 	case "POSTED_AT_DESC":
-		return POSTED_AT_DESC, nil
+		return PredictionsPostedAtDesc, nil
 	case "POSTED_AT_ASC":
-		return POSTED_AT_ASC, nil
+		return PredictionsPostedAtAsc, nil
 	case "UUID_ASC":
-		return UUID_ASC, nil
+		return PredictionsUUIDAsc, nil
 	default:
 		return 0, fmt.Errorf("%w: %v", ErrUnknownAPIOrderBy, s)
 	}
 }
-func (v APIOrderBy) String() string {
+func (v APIPredictionsOrderBy) String() string {
 	switch v {
-	case CREATED_AT_DESC:
+	case PredictionsCreatedAtDesc:
 		return "CREATED_AT_DESC"
-	case CREATED_AT_ASC:
+	case PredictionsCreatedAtAsc:
 		return "CREATED_AT_ASC"
-	case POSTED_AT_DESC:
+	case PredictionsPostedAtDesc:
 		return "POSTED_AT_DESC"
-	case POSTED_AT_ASC:
+	case PredictionsPostedAtAsc:
 		return "POSTED_AT_ASC"
-	case UUID_ASC:
+	case PredictionsUUIDAsc:
 		return "UUID_ASC"
 	default:
 		return ""
 	}
 }
 
-type JsonFloat64 float64
+// JSONFloat64 exists only for the purpose of marshalling floats in a nicer way.
+type JSONFloat64 float64
 
-func (jf JsonFloat64) MarshalJSON() ([]byte, error) {
+// MarshalJSON overrides the marshalling of floats in a nicer way.
+func (jf JSONFloat64) MarshalJSON() ([]byte, error) {
 	f := float64(jf)
 	if math.IsInf(f, 0) || math.IsNaN(f) {
 		return nil, errors.New("unsupported value")
@@ -504,12 +542,15 @@ func (jf JsonFloat64) MarshalJSON() ([]byte, error) {
 	return bs[:i+1], nil
 }
 
+// ISO8601 adds convenience methods for converting ISO8601-formatted date strings.
 type ISO8601 string
 
+// Time converts an ISO8601-formatted date string into a time.Time.
 func (t ISO8601) Time() (time.Time, error) {
 	return time.Parse(time.RFC3339, string(t))
 }
 
+// Seconds converts an ISO8601-formatted date string into a Unix timestamp.
 func (t ISO8601) Seconds() (int, error) {
 	tm, err := t.Time()
 	if err != nil {
@@ -518,6 +559,7 @@ func (t ISO8601) Seconds() (int, error) {
 	return int(tm.Unix()), nil
 }
 
+// Millis converts an ISO8601-formatted date string into a Javascript millisecond timestamp.
 func (t ISO8601) Millis() (int, error) {
 	tm, err := t.Seconds()
 	if err != nil {
@@ -532,19 +574,19 @@ type Candlestick struct {
 	Timestamp int `json:"t"`
 
 	// OpenPrice is the price at which the candlestick opened.
-	OpenPrice JsonFloat64 `json:"o"`
+	OpenPrice JSONFloat64 `json:"o"`
 
 	// ClosePrice is the price at which the candlestick closed.
-	ClosePrice JsonFloat64 `json:"c"`
+	ClosePrice JSONFloat64 `json:"c"`
 
 	// LowestPrice is the lowest price reached during the candlestick duration.
-	LowestPrice JsonFloat64 `json:"l"`
+	LowestPrice JSONFloat64 `json:"l"`
 
 	// HighestPrice is the highest price reached during the candlestick duration.
-	HighestPrice JsonFloat64 `json:"h"`
+	HighestPrice JSONFloat64 `json:"h"`
 
 	// Volume is the traded volume in base asset during this candlestick.
-	Volume JsonFloat64 `json:"v"`
+	Volume JSONFloat64 `json:"v"`
 
 	// NumberOfTrades is the total number of filled order book orders in this candlestick.
 	NumberOfTrades int `json:"n,omitempty"`
@@ -559,38 +601,26 @@ func (c Candlestick) ToTicks() []Tick {
 	}
 }
 
+// PredictionStateValueChange represents a database-row for the event of a prediction changing value.
 type PredictionStateValueChange struct {
 	PredictionUUID string
 	StateValue     string
 	CreatedAt      ISO8601
 }
 
-func (p PredictionStateValueChange) PK() string {
-	return fmt.Sprintf("%v|%v", p.PredictionUUID, p.StateValue)
-}
-
-func (p PredictionStateValueChange) Validate() error {
-	if _, err := p.CreatedAt.Time(); err != nil {
-		return errors.New("CreatedAt is an invalid ISO8601")
-	}
-	if _, err := PredictionStateValueFromString(p.StateValue); err != nil {
-		return err
-	}
-	if _, err := uuid.Parse(p.PredictionUUID); err != nil {
-		return err
-	}
-	return nil
-}
-
+// Tick is the closePrice & timestamp of a Candlestick.
 type Tick struct {
 	Timestamp int         `json:"t"`
-	Value     JsonFloat64 `json:"v"`
+	Value     JSONFloat64 `json:"v"`
 }
+
+// Iterator is the interface for a CandlestickIterator. It allows to iterate over both Ticks & Candlesticks.
 type Iterator interface {
 	NextTick() (Tick, error)
 	NextCandlestick() (Candlestick, error)
 }
 
+// Account represents a post author's social media account, both at the API & database-level.
 type Account struct {
 	URL           *url.URL   `json:"url"`
 	AccountType   string     `json:"account_type"`
@@ -603,44 +633,63 @@ type Account struct {
 	IsVerified    bool       `json:"is_verified"`
 }
 
+// PredictionType identifies the structure of a prediction. It is used conditionally to decide how to pretty-print it
+// and produce overlays for charting it.
 type PredictionType int
 
 const (
-	PREDICTION_TYPE_UNSUPPORTED PredictionType = iota
-	PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE
-	PREDICTION_TYPE_COIN_WILL_RANGE
-	PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES
-	PREDICTION_TYPE_THE_FLIPPENING
-	PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES
+	// PredictionTypeUnsupported is the type of prediction used when this prediction is unsupported.
+	PredictionTypeUnsupported PredictionType = iota
+
+	// PredictionTypeCoinOperatorFloatDeadline is a type of prediction that looks like this:
+	// "Bitcoin will be below $17k in 2 weeks"
+	PredictionTypeCoinOperatorFloatDeadline
+
+	// PredictionTypeCoinWillRange is a type of prediction that looks like this:
+	// "Bitcoin will range between $17k and $20k for 2 weeks"
+	PredictionTypeCoinWillRange
+
+	// PredictionTypeCoinWillReachBeforeItReaches is a type of prediction that looks like this:
+	// "Bitcoin will reach $17k before it reaches $20k"
+	PredictionTypeCoinWillReachBeforeItReaches
+
+	// PredictionTypeTheFlippening is a type of prediction that looks like this:
+	// "Ethereum's marketcap will surpass Bitcoin's marketcap by end of year"
+	PredictionTypeTheFlippening
+
+	// PredictionTypeCoinWillReachInvalidatedIfItReaches is a type of prediction that looks like this:
+	// "If Bitcoin doesn't fall below $10k, it will reach $60k within 3 months"
+	PredictionTypeCoinWillReachInvalidatedIfItReaches
 )
 
+// PredictionTypeFromString constructs a PredictionType from a string.
 func PredictionTypeFromString(s string) PredictionType {
 	switch s {
 	case "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE", "":
-		return PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE
+		return PredictionTypeCoinOperatorFloatDeadline
 	case "PREDICTION_TYPE_COIN_WILL_RANGE":
-		return PREDICTION_TYPE_COIN_WILL_RANGE
+		return PredictionTypeCoinWillRange
 	case "PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES":
-		return PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES
+		return PredictionTypeCoinWillReachBeforeItReaches
 	case "PREDICTION_TYPE_THE_FLIPPENING":
-		return PREDICTION_TYPE_THE_FLIPPENING
+		return PredictionTypeTheFlippening
 	case "PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES":
-		return PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES
+		return PredictionTypeCoinWillReachInvalidatedIfItReaches
 	default:
-		return PREDICTION_TYPE_UNSUPPORTED
+		return PredictionTypeUnsupported
 	}
 }
 func (v PredictionType) String() string {
 	switch v {
-	case PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE:
+	case PredictionTypeCoinOperatorFloatDeadline:
 		return "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE"
-	case PREDICTION_TYPE_COIN_WILL_RANGE:
+	case PredictionTypeCoinWillRange:
 		return "PREDICTION_TYPE_COIN_WILL_RANGE"
-	case PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES:
+	case PredictionTypeCoinWillReachBeforeItReaches:
 		return "PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES"
-	case PREDICTION_TYPE_THE_FLIPPENING:
+	case PredictionTypeTheFlippening:
 		return "PREDICTION_TYPE_THE_FLIPPENING"
-	case PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES:
+	case PredictionTypeCoinWillReachInvalidatedIfItReaches:
 		return "PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES"
 	default:
 		return "PREDICTION_TYPE_UNSUPPORTED"

@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (m *Messari) overrideAPIURL(url string) {
-	m.apiURL = url
-}
-
 func TestHappyToCandlesticks(t *testing.T) {
 	testTicks := `{
 		"status": {

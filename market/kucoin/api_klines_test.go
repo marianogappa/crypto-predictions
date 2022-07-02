@@ -179,8 +179,8 @@ func TestKlinesInvalidFloatsInJSONResponse(t *testing.T) {
 	}
 }
 
-func f(fl float64) types.JsonFloat64 {
-	return types.JsonFloat64(fl)
+func f(fl float64) types.JSONFloat64 {
+	return types.JSONFloat64(fl)
 }
 
 func tp(s string) time.Time {

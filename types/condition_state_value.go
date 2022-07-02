@@ -5,18 +5,24 @@ import (
 	"fmt"
 )
 
+// ConditionStateValue is the value of a condition: one of TRUE|FALSE|UNDECIDED.
 type ConditionStateValue int
 
 const (
+	// UNDECIDED is one of the possible values of a condition.
 	UNDECIDED ConditionStateValue = iota
+	// TRUE is one of the possible values of a condition.
 	TRUE
+	// FALSE is one of the possible values of a condition.
 	FALSE
 )
 
 var (
+	// ErrUnknownConditionStateValue means: invalid state: unknown condition state value
 	ErrUnknownConditionStateValue = errors.New("invalid state: unknown condition state value")
 )
 
+// ConditionStateValueFromString constructs a ConditionStateValue from a string.
 func ConditionStateValueFromString(s string) (ConditionStateValue, error) {
 	switch s {
 	case "UNDECIDED", "":
@@ -29,8 +35,8 @@ func ConditionStateValueFromString(s string) (ConditionStateValue, error) {
 		return 0, fmt.Errorf("%w: %v", ErrUnknownConditionStateValue, s)
 	}
 }
-func (v ConditionStateValue) String() string {
-	switch v {
+func (a ConditionStateValue) String() string {
+	switch a {
 	case UNDECIDED:
 		return "UNDECIDED"
 	case TRUE:
@@ -42,7 +48,7 @@ func (v ConditionStateValue) String() string {
 	}
 }
 
-func (a ConditionStateValue) And(b ConditionStateValue) ConditionStateValue {
+func (a ConditionStateValue) and(b ConditionStateValue) ConditionStateValue {
 	if a == FALSE || b == FALSE {
 		return FALSE
 	}
@@ -52,7 +58,7 @@ func (a ConditionStateValue) And(b ConditionStateValue) ConditionStateValue {
 	return UNDECIDED
 }
 
-func (a ConditionStateValue) Or(b ConditionStateValue) ConditionStateValue {
+func (a ConditionStateValue) or(b ConditionStateValue) ConditionStateValue {
 	if a == TRUE || b == TRUE {
 		return TRUE
 	}
@@ -62,7 +68,7 @@ func (a ConditionStateValue) Or(b ConditionStateValue) ConditionStateValue {
 	return UNDECIDED
 }
 
-func (a ConditionStateValue) Not() ConditionStateValue {
+func (a ConditionStateValue) not() ConditionStateValue {
 	switch a {
 	case UNDECIDED:
 		return UNDECIDED

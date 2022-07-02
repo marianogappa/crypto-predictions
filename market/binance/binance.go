@@ -31,10 +31,6 @@ func NewBinance() *Binance {
 	return e
 }
 
-func (e *Binance) overrideAPIURL(url string) {
-	e.apiURL = url
-}
-
 // RequestCandlesticks requests candlesticks for the given market pair, of candlestick interval "intervalMinutes",
 // starting at "startTimeTs".
 //

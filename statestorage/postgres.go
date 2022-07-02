@@ -85,20 +85,20 @@ func (s *PostgresDBStateStorage) DB() *sql.DB {
 
 func predictionsBuildOrderBy(orderBys []string) string {
 	if len(orderBys) == 0 {
-		orderBys = []string{types.CREATED_AT_DESC.String()}
+		orderBys = []string{types.PredictionsCreatedAtDesc.String()}
 	}
 	resultArr := []string{}
 	for _, orderBy := range orderBys {
 		switch orderBy {
-		case types.CREATED_AT_DESC.String():
+		case types.PredictionsCreatedAtDesc.String():
 			resultArr = append(resultArr, "created_at DESC")
-		case types.CREATED_AT_ASC.String():
+		case types.PredictionsCreatedAtAsc.String():
 			resultArr = append(resultArr, "created_at ASC")
-		case types.POSTED_AT_DESC.String():
+		case types.PredictionsPostedAtDesc.String():
 			resultArr = append(resultArr, "posted_at DESC")
-		case types.POSTED_AT_ASC.String():
+		case types.PredictionsPostedAtAsc.String():
 			resultArr = append(resultArr, "posted_at ASC")
-		case types.UUID_ASC.String():
+		case types.PredictionsUUIDAsc.String():
 			resultArr = append(resultArr, "uuid ASC")
 		}
 	}
@@ -167,16 +167,16 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 
 func accountsBuildOrderBy(orderBys []string) string {
 	if len(orderBys) == 0 {
-		orderBys = []string{types.ACCOUNT_FOLLOWER_COUNT_DESC.String()}
+		orderBys = []string{types.AccountFollowerCountDesc.String()}
 	}
 	resultArr := []string{}
 	for _, orderBy := range orderBys {
 		switch orderBy {
-		case types.ACCOUNT_CREATED_AT_DESC.String():
+		case types.AccountCreatedAtDesc.String():
 			resultArr = append(resultArr, "created_at DESC")
-		case types.ACCOUNT_CREATED_AT_ASC.String():
+		case types.AccountCreatedAtAsc.String():
 			resultArr = append(resultArr, "created_at ASC")
-		case types.ACCOUNT_FOLLOWER_COUNT_DESC.String():
+		case types.AccountFollowerCountDesc.String():
 			resultArr = append(resultArr, "follower_count DESC")
 		}
 	}
@@ -261,7 +261,7 @@ func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*ty
 		if err != nil {
 			log.Info().Msgf("Failed to marshal prediction, with error: %v\n", err)
 		}
-		builder.addRow(ps[i].UUID, blob, ps[i].CreatedAt, ps[i].PostedAt, pq.Array(ps[i].CalculateTags()), ps[i].PostUrl)
+		builder.addRow(ps[i].UUID, blob, ps[i].CreatedAt, ps[i].PostedAt, pq.Array(ps[i].CalculateTags()), ps[i].PostURL)
 	}
 	sql, args := builder.build()
 	_, err := s.db.Exec(sql, args...)

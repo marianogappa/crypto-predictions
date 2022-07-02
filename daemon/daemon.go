@@ -107,7 +107,7 @@ func (r *Daemon) maybeActionPredictionFinal(prediction types.Prediction, nowTs i
 	})
 	r.addErrs(&prediction, err)
 
-	description := printer.NewPredictionPrettyPrinter(prediction).Default()
+	description := printer.NewPredictionPrettyPrinter(prediction).String()
 	log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 
 	if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {

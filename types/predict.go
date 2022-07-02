@@ -1,5 +1,6 @@
 package types
 
+// Predict represents the main Prediction step.
 type Predict struct {
 	WrongIf                           *BoolExpr
 	AnnulledIf                        *BoolExpr
@@ -7,6 +8,7 @@ type Predict struct {
 	IgnoreUndecidedIfPredictIsDefined bool
 }
 
+// UndecidedConditions is the list of conditions within this Prediction step that haven't reached a final status.
 func (p Predict) UndecidedConditions() []*Condition {
 	conds := []*Condition{}
 	conds = append(conds, p.WrongIf.UndecidedConditions()...)
@@ -15,6 +17,7 @@ func (p Predict) UndecidedConditions() []*Condition {
 	return conds
 }
 
+// Evaluate is a non-mutable method that evaluates this Prediction step's current value.
 func (p Predict) Evaluate() PredictionStateValue {
 	var (
 		wrongIfValue    = FALSE
@@ -62,11 +65,12 @@ func (p Predict) Evaluate() PredictionStateValue {
 		}
 	}
 	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictValue == UNDECIDED {
-		return ONGOING_PREDICTION
+		return ONGOINGPREDICTION
 	}
 	return CORRECT
 }
 
+// ClearState removes all state arising from evolving this prediction's step.
 func (p *Predict) ClearState() {
 	if p.AnnulledIf != nil {
 		p.AnnulledIf.ClearState()

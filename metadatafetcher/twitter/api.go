@@ -17,7 +17,7 @@ var (
 	errTwitterOauth1CredentialsRequired = errors.New("the following env variables are required in order to post tweets: PREDICTIONS_TWITTER_CONSUMER_KEY, PREDICTIONS_TWITTER_CONSUMER_SECRET, PREDICTIONS_TWITTER_ACCESS_TOKEN, PREDICTIONS_TWITTER_ACCESS_SECRET")
 )
 
-// Twitter is the main struct for the Twitter component that interacts with Twitter via the Twitter API
+// Twitter is the main struct for the Twitter component that interacts with Twitter via the Twitter API.
 type Twitter struct {
 	apiKey         string
 	apiSecret      string
@@ -31,7 +31,7 @@ type Twitter struct {
 	api *twitter.Client
 }
 
-// NewTwitter is the constructor for the Twitter component that interacts with Twitter via the Twitter API
+// NewTwitter is the constructor for the Twitter component that interacts with Twitter via the Twitter API.
 func NewTwitter(apiURL string) Twitter {
 	if apiURL == "" {
 		apiURL = "https://api.twitter.com/2"
@@ -56,7 +56,7 @@ func NewTwitter(apiURL string) Twitter {
 	return t
 }
 
-// Tweet represents a Twitter Tweet
+// Tweet represents a Twitter Tweet.
 type Tweet struct {
 	TweetText      string
 	TweetID        string

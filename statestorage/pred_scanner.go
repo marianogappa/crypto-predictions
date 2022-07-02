@@ -30,8 +30,8 @@ func NewAllPredictionsScanner(store StateStorage) *PredictionScanner {
 var (
 	filterEvolvable = types.APIFilters{
 		PredictionStateValues: []string{
-			types.ONGOING_PRE_PREDICTION.String(),
-			types.ONGOING_PREDICTION.String(),
+			types.ONGOINGPREPREDICTION.String(),
+			types.ONGOINGPREDICTION.String(),
 		},
 		Paused:               pBool(false),
 		Deleted:              pBool(false),
@@ -63,7 +63,7 @@ func (it *PredictionScanner) query() ([]types.Prediction, error) {
 
 	preds, err := it.store.GetPredictions(
 		filters,
-		[]string{types.UUID_ASC.String()},
+		[]string{types.PredictionsUUIDAsc.String()},
 		it.limit, 0,
 	)
 	if err != nil {

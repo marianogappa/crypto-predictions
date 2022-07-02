@@ -188,11 +188,11 @@ type binanceCandlestick struct {
 func (c binanceCandlestick) toCandlestick() types.Candlestick {
 	return types.Candlestick{
 		Timestamp:      int(c.openAt.Unix()),
-		OpenPrice:      types.JsonFloat64(c.openPrice),
-		ClosePrice:     types.JsonFloat64(c.closePrice),
-		LowestPrice:    types.JsonFloat64(c.lowPrice),
-		HighestPrice:   types.JsonFloat64(c.highPrice),
-		Volume:         types.JsonFloat64(c.volume),
+		OpenPrice:      types.JSONFloat64(c.openPrice),
+		ClosePrice:     types.JSONFloat64(c.closePrice),
+		LowestPrice:    types.JSONFloat64(c.lowPrice),
+		HighestPrice:   types.JSONFloat64(c.highPrice),
+		Volume:         types.JSONFloat64(c.volume),
 		NumberOfTrades: c.tradeCount,
 	}
 }

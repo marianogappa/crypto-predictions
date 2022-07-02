@@ -9,19 +9,24 @@ import (
 	"github.com/marianogappa/predictions/metadatafetcher/twitter"
 )
 
+// SpecificFetcher is the interface for a concrete fetcher, e.g. youtube.Fetcher, twitter.Fetcher.
 type SpecificFetcher interface {
 	IsCorrectFetcher(url *url.URL) bool
 	Fetch(url *url.URL) (types.PostMetadata, error)
 }
 
+// MetadataFetcher is the main struct for the social media account metadata fetcher.
 type MetadataFetcher struct {
 	Fetchers []SpecificFetcher
 }
 
+// NewMetadataFetcher constructs a MetadataFetcher.
 func NewMetadataFetcher() *MetadataFetcher {
 	return &MetadataFetcher{[]SpecificFetcher{twitter.NewMetadataFetcher(""), youtube.NewMetadataFetcher("")}}
 }
 
+// Fetch takes a URL string, loops through the available fetchers looking for the correct one, and then requests
+// metadata for that URL using the specific fetcher.
 func (f MetadataFetcher) Fetch(rawURL string) (types.PostMetadata, error) {
 	url, err := url.Parse(rawURL)
 	if err != nil {

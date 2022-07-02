@@ -1,5 +1,6 @@
 package types
 
+// PrePredict represents the initial, non-main prediction step.
 type PrePredict struct {
 	WrongIf                           *BoolExpr
 	AnnulledIf                        *BoolExpr
@@ -8,6 +9,7 @@ type PrePredict struct {
 	IgnoreUndecidedIfPredictIsDefined bool
 }
 
+// UndecidedConditions is the list of conditions within this Prediction step that haven't reached a final status.
 func (p PrePredict) UndecidedConditions() []*Condition {
 	conds := []*Condition{}
 	conds = append(conds, p.WrongIf.UndecidedConditions()...)
@@ -16,9 +18,10 @@ func (p PrePredict) UndecidedConditions() []*Condition {
 	return conds
 }
 
+// Evaluate is a non-mutable method that evaluates this Prediction step's current value.
 func (p PrePredict) Evaluate() PredictionStateValue {
 	if p.WrongIf == nil && p.AnnulledIf == nil && p.Predict == nil {
-		return ONGOING_PREDICTION
+		return ONGOINGPREDICTION
 	}
 	var (
 		wrongIfValue    = FALSE
@@ -47,7 +50,7 @@ func (p PrePredict) Evaluate() PredictionStateValue {
 		return INCORRECT
 	}
 	if p.IgnoreUndecidedIfPredictIsDefined && predictValue == TRUE && wrongIfValue == UNDECIDED {
-		return ONGOING_PREDICTION
+		return ONGOINGPREDICTION
 	}
 	if p.IgnoreUndecidedIfPredictIsDefined && predictValue == FALSE {
 		return INCORRECT
@@ -56,11 +59,12 @@ func (p PrePredict) Evaluate() PredictionStateValue {
 		return INCORRECT
 	}
 	if wrongIfValue == UNDECIDED || annulledIfValue == UNDECIDED || predictValue == UNDECIDED {
-		return ONGOING_PRE_PREDICTION
+		return ONGOINGPREPREDICTION
 	}
-	return ONGOING_PREDICTION
+	return ONGOINGPREDICTION
 }
 
+// ClearState removes all state arising from evolving this prediction's step.
 func (p *PrePredict) ClearState() {
 	if p.AnnulledIf != nil {
 		p.AnnulledIf.ClearState()

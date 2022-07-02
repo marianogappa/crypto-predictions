@@ -25,7 +25,7 @@ func TestPrettyPrinter(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		require.Equal(t, prettyPrints[i], NewPredictionPrettyPrinter(prediction).Default(), "on %v", i)
+		require.Equal(t, prettyPrints[i], NewPredictionPrettyPrinter(prediction).String(), "on %v", i)
 	}
 
 }

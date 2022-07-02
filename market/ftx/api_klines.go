@@ -47,11 +47,11 @@ func (r response) toCandlesticks() []types.Candlestick {
 		raw := r.Result[i]
 		candlestick := types.Candlestick{
 			Timestamp:    int(raw.Time) / 1000,
-			OpenPrice:    types.JsonFloat64(raw.Open),
-			ClosePrice:   types.JsonFloat64(raw.Close),
-			LowestPrice:  types.JsonFloat64(raw.Low),
-			HighestPrice: types.JsonFloat64(raw.High),
-			Volume:       types.JsonFloat64(raw.Volume),
+			OpenPrice:    types.JSONFloat64(raw.Open),
+			ClosePrice:   types.JSONFloat64(raw.Close),
+			LowestPrice:  types.JSONFloat64(raw.Low),
+			HighestPrice: types.JSONFloat64(raw.High),
+			Volume:       types.JSONFloat64(raw.Volume),
 		}
 		candlesticks[i] = candlestick
 	}

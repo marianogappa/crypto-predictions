@@ -9,79 +9,79 @@ func TestConditionStateValue(t *testing.T) {
 	}{
 		{
 			name: "TRUE.And(TRUE) == TRUE",
-			eval: TRUE.And(TRUE) == TRUE,
+			eval: TRUE.and(TRUE) == TRUE,
 		},
 		{
 			name: "TRUE.And(FALSE) == FALSE",
-			eval: TRUE.And(FALSE) == FALSE,
+			eval: TRUE.and(FALSE) == FALSE,
 		},
 		{
 			name: "FALSE.And(TRUE) == FALSE",
-			eval: FALSE.And(TRUE) == FALSE,
+			eval: FALSE.and(TRUE) == FALSE,
 		},
 		{
 			name: "FALSE.And(FALSE) == FALSE",
-			eval: FALSE.And(FALSE) == FALSE,
+			eval: FALSE.and(FALSE) == FALSE,
 		},
 		{
 			name: "TRUE.And(UNDECIDED) == UNDECIDED",
-			eval: TRUE.And(UNDECIDED) == UNDECIDED,
+			eval: TRUE.and(UNDECIDED) == UNDECIDED,
 		},
 		{
 			name: "UNDECIDED.And(TRUE) == UNDECIDED",
-			eval: UNDECIDED.And(TRUE) == UNDECIDED,
+			eval: UNDECIDED.and(TRUE) == UNDECIDED,
 		},
 		{
 			name: "UNDECIDED.And(FALSE) == FALSE",
-			eval: UNDECIDED.And(FALSE) == FALSE,
+			eval: UNDECIDED.and(FALSE) == FALSE,
 		},
 		{
 			name: "FALSE.And(UNDECIDED) == FALSE",
-			eval: FALSE.And(UNDECIDED) == FALSE,
+			eval: FALSE.and(UNDECIDED) == FALSE,
 		},
 		{
 			name: "TRUE.Or(TRUE) == TRUE",
-			eval: TRUE.Or(TRUE) == TRUE,
+			eval: TRUE.or(TRUE) == TRUE,
 		},
 		{
 			name: "TRUE.Or(FALSE) == TRUE",
-			eval: TRUE.Or(FALSE) == TRUE,
+			eval: TRUE.or(FALSE) == TRUE,
 		},
 		{
 			name: "FALSE.Or(TRUE) == TRUE",
-			eval: FALSE.Or(TRUE) == TRUE,
+			eval: FALSE.or(TRUE) == TRUE,
 		},
 		{
 			name: "FALSE.Or(FALSE) == FALSE",
-			eval: FALSE.Or(FALSE) == FALSE,
+			eval: FALSE.or(FALSE) == FALSE,
 		},
 		{
 			name: "TRUE.Or(UNDECIDED) == TRUE",
-			eval: TRUE.Or(UNDECIDED) == TRUE,
+			eval: TRUE.or(UNDECIDED) == TRUE,
 		},
 		{
 			name: "UNDECIDED.Or(TRUE) == TRUE",
-			eval: UNDECIDED.Or(TRUE) == TRUE,
+			eval: UNDECIDED.or(TRUE) == TRUE,
 		},
 		{
 			name: "UNDECIDED.Or(FALSE) == UNDECIDED",
-			eval: UNDECIDED.Or(FALSE) == UNDECIDED,
+			eval: UNDECIDED.or(FALSE) == UNDECIDED,
 		},
 		{
 			name: "FALSE.Or(UNDECIDED) == UNDECIDED",
-			eval: FALSE.Or(UNDECIDED) == UNDECIDED,
+			eval: FALSE.or(UNDECIDED) == UNDECIDED,
 		},
 		{
 			name: "FALSE.Not() == TRUE",
-			eval: FALSE.Not() == TRUE,
+			eval: FALSE.not() == TRUE,
 		},
 		{
 			name: "TRUE.Not() == FALSE",
-			eval: TRUE.Not() == FALSE,
+			eval: TRUE.not() == FALSE,
 		},
 		{
 			name: "UNDECIDED.Not() == UNDECIDED",
-			eval: UNDECIDED.Not() == UNDECIDED,
+			eval: UNDECIDED.not() == UNDECIDED,
 		},
 		{
 			name: `TRUE.String() == "TRUE"`,

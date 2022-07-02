@@ -934,14 +934,14 @@ func TestCompile(t *testing.T) {
 				PostAuthor: "NOT CryptoCapo!",
 				PostText:   "",
 				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
-				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				Given: map[string]*types.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
 						Operands: []types.Operand{
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -957,7 +957,7 @@ func TestCompile(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -965,7 +965,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
-				Type: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
+				Type: types.PredictionTypeCoinOperatorFloatDeadline,
 			},
 		},
 		{
@@ -998,14 +998,14 @@ func TestCompile(t *testing.T) {
 				PostAuthor: "CryptoCapo_",
 				PostText:   "",
 				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
-				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				Given: map[string]*types.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
 						Operands: []types.Operand{
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -1021,7 +1021,7 @@ func TestCompile(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -1029,7 +1029,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
-				Type: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
+				Type: types.PredictionTypeCoinOperatorFloatDeadline,
 			},
 		},
 	}

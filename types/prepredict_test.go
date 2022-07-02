@@ -23,21 +23,21 @@ func TestPrePredictEvaluate(t *testing.T) {
 		{
 			name:     "Empty PrePredict evaluates to ONGOING_PREDICTION",
 			expr:     PrePredict{},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "Only Predict evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				Predict: literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "Only Predict evaluates to ONGOING_PREDICTION",
 			expr: PrePredict{
 				Predict: literalTrueBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "Only Predict evaluates to INCORRECT",
@@ -51,7 +51,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 			expr: PrePredict{
 				WrongIf: literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "Only WrongIf evaluates to INCORRECT",
@@ -65,14 +65,14 @@ func TestPrePredictEvaluate(t *testing.T) {
 			expr: PrePredict{
 				WrongIf: literalFalseBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "Only AnnulledIf evaluates to ONGOING_PRE_PREDICTION",
 			expr: PrePredict{
 				AnnulledIf: literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "Only AnnulledIf evaluates to ANNULLED",
@@ -86,7 +86,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 			expr: PrePredict{
 				AnnulledIf: literalFalseBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=TRUE) evaluates to ANNULLED",
@@ -118,7 +118,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE) evaluates to ONGOING_PRE_PREDICTION",
@@ -126,7 +126,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				WrongIf:    literalUndecidedBoolExpr,
 				AnnulledIf: literalFalseBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE) evaluates to ANNULLED",
@@ -142,7 +142,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				WrongIf:    literalFalseBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
@@ -150,7 +150,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				WrongIf:    literalTrueBoolExpr,
 				AnnulledIf: literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
@@ -186,7 +186,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalFalseBoolExpr,
 				Predict:    literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=FALSE,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
@@ -195,7 +195,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalFalseBoolExpr,
 				Predict:    literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=UNDECIDED,AnnulledIf=TRUE,Predict=UNDECIDED) evaluates to ANNULLED",
@@ -213,7 +213,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=UNDECIDED) evaluates to ONGOING_PRE_PREDICTION",
@@ -222,7 +222,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    literalUndecidedBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=TRUE,Predict=FALSE) evaluates to ANNULLED",
@@ -285,7 +285,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    literalFalseBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=FALSE) evaluates to ONGOING_PRE_PREDICTION",
@@ -294,7 +294,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				AnnulledIf: literalUndecidedBoolExpr,
 				Predict:    literalFalseBoolExpr,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		// AnnulledIfPredictIsFalse flag
 		{
@@ -315,7 +315,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				Predict:                  literalTrueBoolExpr,
 				AnnulledIfPredictIsFalse: true,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=FALSE,Predict=TRUE w/Annulled flag) evaluates to INCORRECT",
@@ -335,7 +335,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				Predict:                  literalFalseBoolExpr,
 				AnnulledIfPredictIsFalse: true,
 			},
-			expected: ONGOING_PRE_PREDICTION,
+			expected: ONGOINGPREPREDICTION,
 		},
 		// IgnoreUndecidedIfPredictIsDefined flag
 		{
@@ -356,7 +356,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				Predict:                           literalTrueBoolExpr,
 				IgnoreUndecidedIfPredictIsDefined: true,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 		{
 			name: "(WrongIf=TRUE,AnnulledIf=UNDECIDED,Predict=TRUE w/IgnoreUndecided flag) evaluates to INCORRECT",
@@ -399,7 +399,7 @@ func TestPrePredictEvaluate(t *testing.T) {
 				IgnoreUndecidedIfPredictIsDefined: true,
 				AnnulledIfPredictIsFalse:          true,
 			},
-			expected: ONGOING_PREDICTION,
+			expected: ONGOINGPREDICTION,
 		},
 	}
 	for _, ts := range tss {

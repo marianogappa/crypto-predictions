@@ -141,8 +141,8 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 		pData["predictionCreatedAt"] = string(pred.CreatedAt)
 		pData["predictionCreatedAtAgo"] = isoToAgo(pred.CreatedAt)
 		pData["predictionUUID"] = pred.UUID
-		pData["predictionUrl"] = pred.PostUrl
-		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).Default()
+		pData["predictionUrl"] = pred.PostURL
+		pData["predictionText"] = printer.NewPredictionPrettyPrinter(pred).String()
 		pData["predictionAuthor"] = pred.PostAuthor
 		pData["predictionStatus"] = pred.State.Status.String()
 		pData["predictionValue"] = pred.State.Value.String()
@@ -178,7 +178,7 @@ func predictionToFlags(pred types.Prediction) string {
 
 func isoToAgo(iso types.ISO8601) string {
 	tm, _ := iso.Time()
-	dur := time.Now().Sub(tm)
+	dur := time.Since(tm)
 	if dur < 1*time.Minute {
 		return "just now"
 	}

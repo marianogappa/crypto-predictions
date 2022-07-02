@@ -26,7 +26,7 @@ func NewPredEvolver(prediction *types.Prediction, m market.IMarket, nowTs int) (
 	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]types.Iterator)}
 
 	predStateValue := prediction.Evaluate()
-	if predStateValue != types.ONGOING_PRE_PREDICTION && predStateValue != types.ONGOING_PREDICTION {
+	if predStateValue != types.ONGOINGPREPREDICTION && predStateValue != types.ONGOINGPREDICTION {
 		errs = append(errs, errPredictionAtFinalStateAtCreation)
 		return nil, errs
 	}

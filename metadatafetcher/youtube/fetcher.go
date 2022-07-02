@@ -10,15 +10,18 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
-type YoutubeMetadataFetcher struct {
+// MetadataFetcher is the main struct for fetching metadata from Youtube.
+type MetadataFetcher struct {
 	apiURL string
 }
 
-func NewMetadataFetcher(apiURL string) YoutubeMetadataFetcher {
-	return YoutubeMetadataFetcher{apiURL}
+// NewMetadataFetcher is constructor for fetching metadata from Youtube.
+func NewMetadataFetcher(apiURL string) MetadataFetcher {
+	return MetadataFetcher{apiURL}
 }
 
-func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, error) {
+// Fetch requests metadata from Youtube API for the specified URL.
+func (f MetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, error) {
 	path := strings.Split(fetchURL.Path, "/")
 	if len(path) != 2 || path[0] != "" || path[1] != "watch" {
 		return mfTypes.PostMetadata{}, fmt.Errorf("invalid path for Youtube metadata fetching: %v", path)
@@ -37,12 +40,12 @@ func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, 
 	youtubeAPI := NewYoutube(f.apiURL)
 
 	videoID := vField[0]
-	video, err := youtubeAPI.GetVideoByID(videoID)
+	video, err := youtubeAPI.getVideoByID(videoID)
 	if err != nil {
 		return mfTypes.PostMetadata{}, err
 	}
 
-	channel, err := youtubeAPI.GetChannelByID(video.ChannelID)
+	channel, err := youtubeAPI.getChannelByID(video.ChannelID)
 	if err != nil {
 		return mfTypes.PostMetadata{}, err
 	}
@@ -91,7 +94,8 @@ func (f YoutubeMetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, 
 	}, nil
 }
 
-func (f YoutubeMetadataFetcher) IsCorrectFetcher(url *url.URL) bool {
+// IsCorrectFetcher answers if this fetcher is the correct one for the specified URL.
+func (f MetadataFetcher) IsCorrectFetcher(url *url.URL) bool {
 	host, _, err := net.SplitHostPort(url.Host)
 	if err != nil {
 		host = url.Host

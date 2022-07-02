@@ -31,7 +31,7 @@ func TestPredictionType(t *testing.T) {
 					"predict": "main"
 				}
 			}`,
-			expected: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
+			expected: types.PredictionTypeCoinOperatorFloatDeadline,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES",
@@ -55,7 +55,7 @@ func TestPredictionType(t *testing.T) {
 				  "ignoreUndecidedIfPredictIsDefined": true
 				}
 			  }`,
-			expected: types.PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES,
+			expected: types.PredictionTypeCoinWillReachInvalidatedIfItReaches,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_RANGE",
@@ -73,7 +73,7 @@ func TestPredictionType(t *testing.T) {
 					"predict": "main"
 				}
 			}`,
-			expected: types.PREDICTION_TYPE_COIN_WILL_RANGE,
+			expected: types.PredictionTypeCoinWillRange,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_THE_FLIPPENING",
@@ -91,7 +91,7 @@ func TestPredictionType(t *testing.T) {
 					"predict": "main"
 				}
 			}`,
-			expected: types.PREDICTION_TYPE_THE_FLIPPENING,
+			expected: types.PredictionTypeTheFlippening,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES",
@@ -114,7 +114,7 @@ func TestPredictionType(t *testing.T) {
 				  "predict": "a and (not b)"
 				}
 			  }`,
-			expected: types.PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES,
+			expected: types.PredictionTypeCoinWillReachBeforeItReaches,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_UNSUPPORTED",
@@ -234,7 +234,7 @@ func TestPredictionType(t *testing.T) {
 					"value": "ONGOING_PREDICTION"
 				}
 			}`,
-			expected: types.PREDICTION_TYPE_UNSUPPORTED,
+			expected: types.PredictionTypeUnsupported,
 		},
 	}
 	for _, ts := range tss {

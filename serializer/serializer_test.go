@@ -26,14 +26,14 @@ func TestSerialize(t *testing.T) {
 				PostAuthor: "CryptoCapo_",
 				PostText:   "",
 				PostedAt:   tpToISO("2020-01-02 00:00:00"),
-				PostUrl:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
+				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
 				Given: map[string]*types.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
 						Operands: []types.Operand{
 							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -50,7 +50,7 @@ func TestSerialize(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -70,7 +70,7 @@ func TestSerialize(t *testing.T) {
 							Operator: "<=",
 							Operands: []types.Operand{
 								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JsonFloat64(0.845), Str: "0.845"},
+								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -80,7 +80,7 @@ func TestSerialize(t *testing.T) {
 					},
 					IgnoreUndecidedIfPredictIsDefined: true,
 				},
-				Type: types.PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE,
+				Type: types.PredictionTypeCoinOperatorFloatDeadline,
 			},
 			err: nil,
 			expected: `{
@@ -128,10 +128,7 @@ func TestSerialize(t *testing.T) {
 					"value": "ONGOING_PRE_PREDICTION"
 				},
 				"type": "PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
-				"summary": {},
-				"paused": false,
-				"hidden": false,
-				"deleted": false
+				"summary": {}
 			}`,
 		},
 	}
@@ -159,7 +156,7 @@ func TestSerialize(t *testing.T) {
 				t.FailNow()
 			}
 			if ts.err == nil {
-				require.Equal(t, expected, actual)
+				require.Equal(t, string(expected), string(actual))
 			}
 		})
 	}

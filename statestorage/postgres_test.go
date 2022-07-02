@@ -9,7 +9,6 @@ import (
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +25,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{UUIDs: []string{prediction.UUID}}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 			},
 		},
 		{
@@ -34,7 +33,7 @@ func TestPostgres(t *testing.T) {
 			test: func(t *testing.T, store StateStorage) {
 				prediction1, _ := compile(t, sampleRawPrediction)
 				prediction2, _ := compile(t, sampleRawPrediction)
-				prediction2.PostUrl = "http://different.url"
+				prediction2.PostURL = "http://different.url"
 
 				_, err := store.UpsertPredictions([]*types.Prediction{&prediction1, &prediction2})
 				require.Nil(t, err)
@@ -42,8 +41,8 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 2)
-				require.Equal(t, prediction1.PostUrl, actualPreds[0].PostUrl)
-				require.Equal(t, prediction2.PostUrl, actualPreds[1].PostUrl)
+				require.Equal(t, prediction1.PostURL, actualPreds[0].PostURL)
+				require.Equal(t, prediction2.PostURL, actualPreds[1].PostURL)
 			},
 		},
 		{
@@ -70,7 +69,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -93,7 +92,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -113,7 +112,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -136,7 +135,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -156,7 +155,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -179,7 +178,7 @@ func TestPostgres(t *testing.T) {
 				actualPreds, err := store.GetPredictions(types.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
-				require.Equal(t, prediction.PostUrl, actualPreds[0].PostUrl)
+				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
 				actualPreds, err = store.GetPredictions(types.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
@@ -283,15 +282,4 @@ func compile(t *testing.T, rawPrediction []byte) (types.Prediction, *types.Accou
 	compiledPrediction, account, err := compiler.NewPredictionCompiler(mf, time.Now).Compile(sampleRawPrediction)
 	require.Nil(t, err)
 	return compiledPrediction, account
-}
-
-func serialize(t *testing.T, prediction types.Prediction) string {
-	rawPrediction, err := serializer.NewPredictionSerializer(nil).Serialize(&prediction)
-	require.Nil(t, err)
-	return string(rawPrediction)
-}
-
-func tp(s string) time.Time {
-	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return t
 }

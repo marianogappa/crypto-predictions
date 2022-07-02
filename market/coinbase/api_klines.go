@@ -53,11 +53,11 @@ func coinbaseToCandlesticks(response successResponse) ([]types.Candlestick, erro
 
 		candlestick := types.Candlestick{
 			Timestamp:    timestamp,
-			LowestPrice:  types.JsonFloat64(lowestPrice),
-			HighestPrice: types.JsonFloat64(highestPrice),
-			OpenPrice:    types.JsonFloat64(openPrice),
-			ClosePrice:   types.JsonFloat64(closePrice),
-			Volume:       types.JsonFloat64(volume),
+			LowestPrice:  types.JSONFloat64(lowestPrice),
+			HighestPrice: types.JSONFloat64(highestPrice),
+			OpenPrice:    types.JSONFloat64(openPrice),
+			ClosePrice:   types.JSONFloat64(closePrice),
+			Volume:       types.JSONFloat64(volume),
 		}
 		candlesticks[i] = candlestick
 	}

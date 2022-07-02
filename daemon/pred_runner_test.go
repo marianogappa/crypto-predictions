@@ -267,7 +267,7 @@ func mapOperand(v string) (types.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: types.JsonFloat64(f), Str: v}, nil
+		return types.Operand{Type: types.NUMBER, Number: types.JSONFloat64(f), Str: v}, nil
 	}
 	strVariable := `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
 	rxVariable := regexp.MustCompile(fmt.Sprintf("^%v$", strVariable))
@@ -297,7 +297,7 @@ func newPredictionWith(prePredict types.PrePredict, predict types.Predict) types
 		PostAuthor: "JohnDoe",
 		PostText:   "Test prediction!",
 		PostedAt:   types.ISO8601("2022-02-27 15:14:00"),
-		PostUrl:    "https://twitter.com/trader1sz/status/1494458312238247950",
+		PostURL:    "https://twitter.com/trader1sz/status/1494458312238247950",
 		Given:      map[string]*types.Condition{},
 		PrePredict: prePredict,
 		Predict:    predict,

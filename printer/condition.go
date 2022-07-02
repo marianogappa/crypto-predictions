@@ -187,7 +187,7 @@ func legacyParseOperand(op types.Operand) string {
 	return s
 }
 
-func parseNumber(num types.JsonFloat64, useDollarSign bool) string {
+func parseNumber(num types.JSONFloat64, useDollarSign bool) string {
 	dollarSign := ""
 	if useDollarSign {
 		dollarSign = "$"

@@ -61,9 +61,9 @@ func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
 		return *errResp
 	}
 
-	metadata, err := a.mFetcher.Fetch(pred.PostUrl)
+	metadata, err := a.mFetcher.Fetch(pred.PostURL)
 	if err != nil {
-		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: error fetching metadata for url: %v", ErrFailedToCompilePrediction, pred.PostUrl), apiResStored{})
+		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: error fetching metadata for url: %v", ErrFailedToCompilePrediction, pred.PostURL), apiResStored{})
 	}
 
 	if _, err := a.store.UpsertAccounts([]*types.Account{&metadata.Author}); err != nil {

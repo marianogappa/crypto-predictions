@@ -1,11 +1,13 @@
 package types
 
+// BoolExpr represents a boolean expression in a prediction step.
 type BoolExpr struct {
 	Operator BoolOperator
 	Operands []*BoolExpr
 	Literal  *Condition
 }
 
+// UndecidedConditions calculates a list of conditions that haven't reached a final value.
 func (p *BoolExpr) UndecidedConditions() []*Condition {
 	conds := []*Condition{}
 	if p == nil || (p.Operator == LITERAL && p.Literal == nil) {
@@ -24,6 +26,7 @@ func (p *BoolExpr) UndecidedConditions() []*Condition {
 	return conds
 }
 
+// Evaluate returns the evaluated value of a boolean expression: one of TRUE|FALSE|UNDECIDED.
 func (p *BoolExpr) Evaluate() ConditionStateValue {
 	if p == nil {
 		return TRUE
@@ -35,7 +38,7 @@ func (p *BoolExpr) Evaluate() ConditionStateValue {
 		}
 		result := p.Operands[0].Evaluate()
 		for _, operand := range p.Operands[1:] {
-			result = result.And(operand.Evaluate())
+			result = result.and(operand.Evaluate())
 		}
 		return result
 	case OR:
@@ -44,11 +47,11 @@ func (p *BoolExpr) Evaluate() ConditionStateValue {
 		}
 		result := p.Operands[0].Evaluate()
 		for _, operand := range p.Operands[1:] {
-			result = result.Or(operand.Evaluate())
+			result = result.or(operand.Evaluate())
 		}
 		return result
 	case NOT:
-		return p.Operands[0].Evaluate().Not()
+		return p.Operands[0].Evaluate().not()
 	default:
 		if p.Literal == nil {
 			return TRUE
@@ -57,6 +60,7 @@ func (p *BoolExpr) Evaluate() ConditionStateValue {
 	}
 }
 
+// ClearState removes all state arising from evolving the boolean expression.
 func (p *BoolExpr) ClearState() {
 	if p.Literal != nil {
 		p.Literal.ClearState()

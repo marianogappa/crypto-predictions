@@ -9,11 +9,13 @@ import (
 	"github.com/marianogappa/predictions/types"
 )
 
+// Youtube is the main struct for the Youtube component that interacts with Youtube via the Youtube API.
 type Youtube struct {
 	apiKey string
 	apiURL string
 }
 
+// NewYoutube constructs a Youtube.
 func NewYoutube(apiURL string) Youtube {
 	if apiURL == "" {
 		apiURL = "https://youtube.googleapis.com/youtube/v3"
@@ -25,6 +27,7 @@ func NewYoutube(apiURL string) Youtube {
 	}
 }
 
+// Video represents a Youtube video.
 type Video struct {
 	VideoTitle           string
 	VideoDescription     string
@@ -56,7 +59,7 @@ type responseSnippetThumbnails struct {
 
 type responseSnippet struct {
 	PublishedAt  types.ISO8601             `json:"publishedAt"`
-	ChannelId    string                    `json:"channelId"`
+	ChannelID    string                    `json:"channelId"`
 	Title        string                    `json:"title"`
 	Description  string                    `json:"description"`
 	Thumbnails   responseSnippetThumbnails `json:"thumbnails"`
@@ -81,7 +84,7 @@ func videosResponseToVideo(r videosResponse) (Video, error) {
 	}
 
 	return Video{
-		ChannelID:            r.Items[0].Snippet.ChannelId,
+		ChannelID:            r.Items[0].Snippet.ChannelID,
 		PublishedAt:          r.Items[0].Snippet.PublishedAt,
 		ChannelTitle:         r.Items[0].Snippet.ChannelTitle,
 		VideoTitle:           r.Items[0].Snippet.Title,
@@ -98,7 +101,7 @@ func parseVideoError(err error) Video {
 	return Video{err: err}
 }
 
-func (t Youtube) GetVideoByID(id string) (Video, error) {
+func (t Youtube) getVideoByID(id string) (Video, error) {
 	req := request.Request[videosResponse, Video]{
 		BaseURL:       t.apiURL,
 		Path:          fmt.Sprintf("videos?part=snippet&id=%v&key=%v", id, t.apiKey),
@@ -115,6 +118,7 @@ func (t Youtube) GetVideoByID(id string) (Video, error) {
 	return video, nil
 }
 
+// Channel represents a post author's Youtube account.
 type Channel struct {
 	ID                  string
 	URL                 string
@@ -185,7 +189,7 @@ func parseChannelError(err error) Channel {
 	return Channel{err: err}
 }
 
-func (t Youtube) GetChannelByID(id string) (Channel, error) {
+func (t Youtube) getChannelByID(id string) (Channel, error) {
 	req := request.Request[channelsResponse, Channel]{
 		BaseURL:       t.apiURL,
 		Path:          fmt.Sprintf("channels?part=snippet,statistics&id=%v&key=%v", id, t.apiKey),

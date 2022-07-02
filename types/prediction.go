@@ -9,7 +9,7 @@ type Prediction struct {
 	PostAuthorURL string
 	PostText      string
 	PostedAt      ISO8601
-	PostUrl       string
+	PostURL       string
 	Given         map[string]*Condition
 	PrePredict    PrePredict
 	Predict       Predict
@@ -31,7 +31,7 @@ func (p *Prediction) Evaluate() PredictionStateValue {
 	value := p.calculateValue()
 	p.State.Value = value
 	switch p.State.Value {
-	case ONGOING_PRE_PREDICTION, ONGOING_PREDICTION:
+	case ONGOINGPREPREDICTION, ONGOINGPREDICTION:
 		p.State.Status = STARTED
 	case CORRECT, INCORRECT, ANNULLED:
 		p.State.Status = FINISHED
@@ -47,7 +47,7 @@ func (p *Prediction) Evaluate() PredictionStateValue {
 func (p Prediction) calculateValue() PredictionStateValue {
 	// TODO: only calculate if not in final state? Why not?
 	prePredictValue := p.PrePredict.Evaluate()
-	if prePredictValue == ONGOING_PRE_PREDICTION || prePredictValue == INCORRECT || prePredictValue == ANNULLED {
+	if prePredictValue == ONGOINGPREPREDICTION || prePredictValue == INCORRECT || prePredictValue == ANNULLED {
 		return prePredictValue
 	}
 	predictValue := p.Predict.Evaluate()
@@ -73,9 +73,9 @@ func (p *Prediction) UndecidedConditions() []*Condition {
 // are undecided, but need to wait for other conditions to be decided first.
 func (p *Prediction) ActionableUndecidedConditions() []*Condition {
 	switch p.Evaluate() {
-	case ONGOING_PRE_PREDICTION:
+	case ONGOINGPREPREDICTION:
 		return p.PrePredict.UndecidedConditions()
-	case ONGOING_PREDICTION:
+	case ONGOINGPREDICTION:
 		return p.Predict.UndecidedConditions()
 	}
 	return []*Condition{}
@@ -102,7 +102,7 @@ func (p *Prediction) CalculateTags() []string {
 // CalculateMainCoin returns the main Operand of this Prediction.
 func (p *Prediction) CalculateMainCoin() Operand {
 	switch p.Type {
-	case PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE, PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES, PREDICTION_TYPE_COIN_WILL_RANGE, PREDICTION_TYPE_THE_FLIPPENING:
+	case PredictionTypeCoinOperatorFloatDeadline, PredictionTypeCoinWillReachBeforeItReaches, PredictionTypeCoinWillRange, PredictionTypeTheFlippening:
 		return p.Predict.Predict.Literal.Operands[0]
 	default:
 		// In unsupported cases, return the first available operand (Note: non-deterministic due to map).

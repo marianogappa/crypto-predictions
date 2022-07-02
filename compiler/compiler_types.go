@@ -79,29 +79,29 @@ type PredictionSummary struct {
 	OtherCoin string `json:"otherCoin,omitempty"`
 
 	// Only in "PredictionTypeCoinOperatorFloatDeadline" type
-	Goal                                    types.JsonFloat64 `json:"goal,omitempty"`
-	GoalWithError                           types.JsonFloat64 `json:"goalWithError,omitempty"`
+	Goal                                    types.JSONFloat64 `json:"goal,omitempty"`
+	GoalWithError                           types.JSONFloat64 `json:"goalWithError,omitempty"`
 	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
 
 	// Only in "PredictionTypeCoinWillReachInvalidatedIfItReaches"
-	InvalidatedIfItReaches types.JsonFloat64 `json:"invalidatedIfItReaches,omitempty"`
+	InvalidatedIfItReaches types.JSONFloat64 `json:"invalidatedIfItReaches,omitempty"`
 
 	// Only in "PredictionWillRange type"
-	RangeLow           types.JsonFloat64 `json:"rangeLow,omitempty"`
-	RangeLowWithError  types.JsonFloat64 `json:"rangeLowWithError,omitempty"`
-	RangeHigh          types.JsonFloat64 `json:"rangeHigh,omitempty"`
-	RangeHighWithError types.JsonFloat64 `json:"rangeHighWithError,omitempty"`
+	RangeLow           types.JSONFloat64 `json:"rangeLow,omitempty"`
+	RangeLowWithError  types.JSONFloat64 `json:"rangeLowWithError,omitempty"`
+	RangeHigh          types.JSONFloat64 `json:"rangeHigh,omitempty"`
+	RangeHighWithError types.JSONFloat64 `json:"rangeHighWithError,omitempty"`
 
 	// Only in "PredictionWillReachBeforeItReaches type"
-	WillReach                types.JsonFloat64 `json:"willReach,omitempty"`
-	WillReachWithError       types.JsonFloat64 `json:"willReachWithError,omitempty"`
-	BeforeItReaches          types.JsonFloat64 `json:"beforeItReaches,omitempty"`
-	BeforeItReachesWithError types.JsonFloat64 `json:"beforeItReachesWithError,omitempty"`
+	WillReach                types.JSONFloat64 `json:"willReach,omitempty"`
+	WillReachWithError       types.JSONFloat64 `json:"willReachWithError,omitempty"`
+	BeforeItReaches          types.JSONFloat64 `json:"beforeItReaches,omitempty"`
+	BeforeItReachesWithError types.JSONFloat64 `json:"beforeItReachesWithError,omitempty"`
 
 	// In all prediction types
 	CandlestickMap   map[string][]types.Candlestick `json:"candlestickMap,omitempty"`
 	Coin             string                         `json:"coin,omitempty"`
-	ErrorMarginRatio types.JsonFloat64              `json:"errorMarginRatio,omitempty"`
+	ErrorMarginRatio types.JSONFloat64              `json:"errorMarginRatio,omitempty"`
 	Operator         string                         `json:"operator,omitempty"`
 	Deadline         types.ISO8601                  `json:"deadline,omitempty"`
 	EndedAt          types.ISO8601                  `json:"endedAt,omitempty"`

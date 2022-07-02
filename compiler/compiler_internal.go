@@ -34,7 +34,7 @@ func mapOperand(v string) (types.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: types.JsonFloat64(f), Str: v}, nil
+		return types.Operand{Type: types.NUMBER, Number: types.JSONFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {

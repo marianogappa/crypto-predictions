@@ -106,7 +106,7 @@ func compilePostURL(raw Prediction, prediction *types.Prediction, account *types
 	if raw.PostURL == "" {
 		return types.ErrEmptyPostURL
 	}
-	prediction.PostUrl = raw.PostURL
+	prediction.PostURL = raw.PostURL
 	return nil
 }
 
@@ -176,7 +176,7 @@ func compileGiven(raw Prediction, prediction *types.Prediction, account *types.A
 
 func compilePredictionType(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	prediction.Type = types.PredictionTypeFromString(raw.Type)
-	if prediction.Type == types.PREDICTION_TYPE_UNSUPPORTED {
+	if prediction.Type == types.PredictionTypeUnsupported {
 		prediction.Type = CalculatePredictionType(*prediction)
 	}
 	return nil

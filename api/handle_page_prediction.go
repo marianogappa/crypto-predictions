@@ -49,21 +49,21 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	predictionsByUUID[UUID(mainCompilerPred.UUID)] = mainCompilerPred
 
 	// Latest Predictions
-	predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.POSTED_AT_DESC.String()}, 10, 0)
+	predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.PredictionsPostedAtDesc.String()}, 10, 0)
 	latestPredictionUUIDs, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
 	}
 
 	// Latest Predictions by same author URL
-	predictions, err = a.store.GetPredictions(types.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{types.POSTED_AT_DESC.String()}, 5, 0)
+	predictions, err = a.store.GetPredictions(types.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{types.PredictionsPostedAtDesc.String()}, 5, 0)
 	latestPredictionSameAuthorURL, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
 	}
 
 	// Latest Predictions by same coin
-	predictions, err = a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.POSTED_AT_DESC.String()}, 5, 0)
+	predictions, err = a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.PredictionsPostedAtDesc.String()}, 5, 0)
 	latestPredictionSameCoinUUID, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
@@ -72,7 +72,7 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	accountURLSet := map[URL]struct{}{}
 
 	// Get the top 10 Accounts by follower count
-	topAccounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.ACCOUNT_FOLLOWER_COUNT_DESC.String()}, 10, 0)
+	topAccounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.AccountFollowerCountDesc.String()}, 10, 0)
 	if err != nil {
 		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
