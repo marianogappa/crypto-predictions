@@ -3,6 +3,7 @@ package statestorage
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -395,12 +396,12 @@ func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.Prediction
 	return err
 }
 
-// PredictionInteractionExists checks the database to see if a predictions creation or finalization Tweet post happened.
-func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, postURL, actionType string) (bool, error) {
+// NonPendingPredictionInteractionExists checks the database to see if a predictions creation or finalization Tweet post happened.
+func (s PostgresDBStateStorage) NonPendingPredictionInteractionExists(interaction types.PredictionInteraction) (bool, error) {
 	var exists bool
 	res, err := s.db.Query(`
-	SELECT EXISTS(SELECT * FROM prediction_interactions WHERE prediction_uuid = $1 AND post_url = $2 AND action_type = $3);
-		`, predictionUUID, postURL, actionType)
+	SELECT EXISTS(SELECT * FROM prediction_interactions WHERE prediction_uuid = $1 AND post_url = $2 AND action_type = $3 AND status != 'PENDING');
+		`, interaction.PredictionUUID, interaction.PostURL, interaction.ActionType)
 	if err != nil {
 		return false, err
 	}
@@ -412,14 +413,54 @@ func (s PostgresDBStateStorage) PredictionInteractionExists(predictionUUID, post
 }
 
 // InsertPredictionInteraction logs the fact that a Tweet was sent when a prediction was created or finalized.
-func (s PostgresDBStateStorage) InsertPredictionInteraction(predictionUUID, postURL, actionType, interactionPostURL string) error {
+func (s PostgresDBStateStorage) InsertPredictionInteraction(i types.PredictionInteraction) error {
 	_, err := s.db.Query(`
-	INSERT INTO prediction_interactions (uuid, prediction_uuid, post_url, action_type, interaction_post_url) VALUES ($1, $2, $3, $4, $5);
-		`, uuid.NewString(), predictionUUID, postURL, actionType, interactionPostURL)
+	INSERT INTO prediction_interactions (uuid, prediction_uuid, post_url, action_type, interaction_post_url, status, error) VALUES ($1, $2, $3, $4, $5, $6, $7);
+		`, uuid.NewString(), i.PredictionUUID, i.PostURL, i.ActionType, i.InteractionPostURL, i.Status, i.Error)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// UpdatePredictionInteractionStatus changes the status of a PredictionInteraction.
+func (s PostgresDBStateStorage) UpdatePredictionInteractionStatus(i types.PredictionInteraction) error {
+	res, err := s.db.Exec(`
+	UPDATE prediction_interactions SET status = $1, error = $2 WHERE post_url = $3 AND action_type = $4 AND prediction_uuid = $5 AND status = 'PENDING';
+		`, i.Status, i.Error, i.PostURL, i.ActionType, i.PredictionUUID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("update of prediction interaction status didn't update any rows")
+	}
+	return nil
+}
+
+// GetPendingPredictionInteractions SELECTs pending prediction interactions from the database.
+func (s PostgresDBStateStorage) GetPendingPredictionInteractions() ([]types.PredictionInteraction, error) {
+	rows, err := s.db.Query("SELECT prediction_uuid, post_url, action_type, interaction_post_url, status FROM prediction_interactions WHERE status = 'PENDING' ORDER BY created_at")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	interactions := []types.PredictionInteraction{}
+	for rows.Next() {
+		var row types.PredictionInteraction
+
+		if err := rows.Scan(&row.PredictionUUID, &row.PostURL, &row.ActionType, &row.InteractionPostURL, &row.Status); err != nil {
+			log.Info().Err(err).Msg("error reading prediction interaction from db")
+		}
+
+		interactions = append(interactions, row)
+	}
+
+	return interactions, nil
 }
 
 type pgPredictionsDeleted struct{ deleted *bool }

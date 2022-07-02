@@ -24,6 +24,37 @@ func NewPredictionCompiler(fetcher *metadatafetcher.MetadataFetcher, timeNow fun
 	return PredictionCompiler{metadataFetcher: fetcher, timeNow: timeNow}
 }
 
+type partiallyCompile = func(Prediction, *types.Prediction, *types.Account, *metadatafetcher.MetadataFetcher, func() time.Time) error
+
+var (
+	partialCompilerNames = []string{
+		"compileVersion",
+		"compileUUID",
+		"compileReporter",
+		"compilePostURL",
+		"compileCreatedAt",
+		"compileMetadata",
+		"compileGiven",
+		"compileInnerPrediction",
+		"compilePredictionType",
+		"compilePredictionState",
+		"compileFlags",
+	}
+	partialCompilerFns = map[string]partiallyCompile{
+		partialCompilerNames[0]:  compileVersion,
+		partialCompilerNames[1]:  compileUUID,
+		partialCompilerNames[2]:  compileReporter,
+		partialCompilerNames[3]:  compilePostURL,
+		partialCompilerNames[4]:  compileCreatedAt,
+		partialCompilerNames[5]:  compileMetadata,
+		partialCompilerNames[6]:  compileGiven,
+		partialCompilerNames[7]:  compileInnerPrediction,
+		partialCompilerNames[8]:  compilePredictionType,
+		partialCompilerNames[9]:  compilePredictionState,
+		partialCompilerNames[10]: compileFlags,
+	}
+)
+
 // Compile compiles a JSON string representing a prediction into a prediction that can be used throughout the engine.
 // If a MetadataFetcher is supplied on construction, it may also return an Account representing the post author's
 // social media account (but otherwise the Account will be nil).
@@ -35,28 +66,13 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	)
 
 	if err := json.Unmarshal([]byte(rawPredictionBs), &raw); err != nil {
-		return prediction, nil, fmt.Errorf("%w: %v", types.ErrInvalidJSON, err)
+		return prediction, nil, fmt.Errorf("while unmarshalling raw incoming JSON for compilation: %w: %v", types.ErrInvalidJSON, err)
 	}
 
-	type partiallyCompile = func(Prediction, *types.Prediction, *types.Account, *metadatafetcher.MetadataFetcher, func() time.Time) error
-
-	partialCompilers := []partiallyCompile{
-		compileVersion,
-		compileUUID,
-		compileReporter,
-		compilePostURL,
-		compileCreatedAt,
-		compileMetadata,
-		compileGiven,
-		compileInnerPrediction,
-		compilePredictionType,
-		compilePredictionState,
-		compileFlags,
-	}
-	for _, partiallyCompile := range partialCompilers {
+	for _, name := range partialCompilerNames {
 		var maybeAccount types.Account
-		if err := partiallyCompile(raw, &prediction, &maybeAccount, c.metadataFetcher, c.timeNow); err != nil {
-			return prediction, &maybeAccount, err
+		if err := partialCompilerFns[name](raw, &prediction, &maybeAccount, c.metadataFetcher, c.timeNow); err != nil {
+			return prediction, &maybeAccount, fmt.Errorf("while running compiler step %v: %w", name, err)
 		}
 		if maybeAccount.URL != nil {
 			account = &maybeAccount
@@ -125,7 +141,7 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 		log.Info().Msgf("Fetching metadata for %v\n", raw.PostURL)
 		metadata, err := mf.Fetch(raw.PostURL)
 		if err != nil {
-			return err
+			return fmt.Errorf("while fetching metadata: %w", err)
 		}
 		*account = metadata.Author
 		// N.B. This is not necessary but staticcheck complains that account is never used.

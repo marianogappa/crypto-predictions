@@ -176,7 +176,7 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 
 	operands, err := mapOperands(strOperands)
 	if err != nil {
-		return types.Condition{}, err
+		return types.Condition{}, fmt.Errorf("while parsing condition's operands: %w", err)
 	}
 
 	if operator != ">" && operator != "<" && operator != ">=" && operator != "<=" && operator != "BETWEEN" {
@@ -189,22 +189,22 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 
 	stateValue, err := types.ConditionStateValueFromString(c.State.Value)
 	if err != nil {
-		return types.Condition{}, err
+		return types.Condition{}, fmt.Errorf("while parsing condition's stateValue: %w", err)
 	}
 
 	stateStatus, err := types.ConditionStatusFromString(c.State.Status)
 	if err != nil {
-		return types.Condition{}, err
+		return types.Condition{}, fmt.Errorf("while parsing condition's stateStatus: %w", err)
 	}
 
 	fromTs, err := mapFromTs(c, postedAt)
 	if err != nil {
-		return types.Condition{}, err
+		return types.Condition{}, fmt.Errorf("while parsing condition's fromTs: %w", err)
 	}
 
 	toTs, err := mapToTs(c, fromTs)
 	if err != nil {
-		return types.Condition{}, err
+		return types.Condition{}, fmt.Errorf("while parsing condition's toTs: %w", err)
 	}
 
 	return types.Condition{
