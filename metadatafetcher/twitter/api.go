@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dghubble/oauth1"
-	twitter "github.com/marianogappa/predictions/metadatafetcher/externaltwitter"
+	"github.com/drswork/go-twitter/twitter"
 	"github.com/marianogappa/predictions/request"
 	"github.com/marianogappa/predictions/types"
 )
