@@ -1,4 +1,4 @@
-package kucoin
+package bitstamp
 
 import (
 	"encoding/json"
