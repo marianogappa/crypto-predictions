@@ -8,6 +8,7 @@ import (
 
 	"github.com/marianogappa/predictions/market/binance"
 	"github.com/marianogappa/predictions/market/binanceusdmfutures"
+	"github.com/marianogappa/predictions/market/bitstamp"
 	"github.com/marianogappa/predictions/market/cache"
 	"github.com/marianogappa/predictions/market/coinbase"
 	"github.com/marianogappa/predictions/market/common"
@@ -44,6 +45,7 @@ func NewMarket(cacheSizes map[time.Duration]int) Market {
 		common.COINBASE:           coinbase.NewCoinbase(),
 		common.KUCOIN:             kucoin.NewKucoin(),
 		common.BINANCEUSDMFUTURES: binanceusdmfutures.NewBinanceUSDMFutures(),
+		common.BITSTAMP:           bitstamp.NewBitstamp(),
 	}
 	supportedVariableProviders := map[string]struct{}{}
 	for exchangeName := range exchanges {

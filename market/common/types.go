@@ -23,6 +23,8 @@ const (
 	KUCOIN = "kucoin"
 	// BINANCEUSDMFUTURES is an enumesque string value representing the BINANCEUSDMFUTURES exchange
 	BINANCEUSDMFUTURES = "binanceusdmfutures"
+	// BITSTAMP is an enumesque string value representing the BITSTAMP exchange
+	BITSTAMP = "bitstamp"
 )
 
 var (
