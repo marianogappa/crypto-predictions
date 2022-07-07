@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 func TestPrePredictEvaluate(t *testing.T) {

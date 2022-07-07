@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
 )

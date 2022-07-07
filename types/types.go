@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 var (

@@ -4,16 +4,14 @@ module github.com/marianogappa/predictions
 go 1.18
 
 require (
-	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/dghubble/oauth1 v0.7.1
-	github.com/dghubble/sling v1.4.0
 	github.com/drswork/go-twitter v0.0.0-20220703123116-bc8e79819264
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/golang-lru v0.5.4
 	github.com/lib/pq v1.10.4
-	github.com/rs/zerolog v1.26.1
+	github.com/marianogappa/crypto-candles v0.0.0-20220707141411-e8d72eea811e
+	github.com/rs/zerolog v1.27.0
 	github.com/swaggest/jsonschema-go v0.3.33
 	github.com/swaggest/rest v0.2.26
 	github.com/swaggest/swgui v1.4.5
@@ -24,8 +22,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dghubble/sling v1.4.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v3 v3.1.0 // indirect

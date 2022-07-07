@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 // Condition represents a boolean condition that looks like "BTC/USDT >= 45000 within 3 weeks".

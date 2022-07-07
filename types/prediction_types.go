@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 // PredictionTypeCoinWillReachBeforeItReachesWrapper is a prediction type. This type decorator provides value facades.

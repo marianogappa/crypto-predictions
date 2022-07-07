@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/imagebuilder"
-	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/serializer"

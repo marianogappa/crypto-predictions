@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/imagebuilder"
-	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/marianogappa/predictions/types"
@@ -30,7 +30,7 @@ var (
 // Daemon is the main struct for the Daemon component.
 type Daemon struct {
 	store            statestorage.StateStorage
-	market           market.IMarket
+	market           candles.IMarket
 	predImageBuilder imagebuilder.PredictionImageBuilder
 	enableTweeting   bool
 	enableReplying   bool
@@ -40,7 +40,7 @@ type Daemon struct {
 }
 
 // NewDaemon is the constructor for the Daemon component.
-func NewDaemon(market market.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool, websiteURL string) *Daemon {
+func NewDaemon(market candles.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool, websiteURL string) *Daemon {
 	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder, enableTweeting: enableTweeting, enableReplying: enableReplying, websiteURL: websiteURL}
 }
 
@@ -70,7 +70,7 @@ func (r *Daemon) Run(nowTs int) []error {
 	}
 	r.addErrs(nil, predictionsScanner.Error)
 
-	log.Info().Msgf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(market.Market).CalculateCacheHitRatio())
+	log.Info().Msgf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(candles.Market).CalculateCacheHitRatio())
 	if len(r.errs) > 0 {
 		log.Info().Errs("errs", r.errs).Msg("Daemon.Run: finished with errors")
 	}
@@ -98,7 +98,7 @@ func (r *Daemon) maybeActionPredictionCreated(prediction types.Prediction, nowTs
 	r.addErrs(&prediction, err)
 }
 
-func (r *Daemon) evolvePrediction(prediction *types.Prediction, m market.IMarket, nowTs int) {
+func (r *Daemon) evolvePrediction(prediction *types.Prediction, m candles.IMarket, nowTs int) {
 	predRunner, errs := NewPredEvolver(prediction, r.market, nowTs)
 	r.addErrs(prediction, errs...)
 	if len(errs) > 0 {
