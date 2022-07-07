@@ -31,8 +31,6 @@ func (p PredictionPrettyPrinter) String() string {
 	// 	p.predictionTypeCoinWillRange()
 	case types.PredictionTypeCoinWillReachBeforeItReaches:
 		p.predictionTypeCoinWillReachBeforeItReaches()
-	case types.PredictionTypeTheFlippening:
-		p.predictionTypeTheFlippening()
 	}
 
 	if p.prediction.PrePredict.Predict != nil {
@@ -73,16 +71,4 @@ func (p PredictionPrettyPrinter) predictionTypeCoinWillReachBeforeItReaches() st
 	willReach := parseNumber(p.prediction.Predict.Predict.Operands[0].Literal.Operands[1].Number, false)
 	beforeIfReaches := parseNumber(p.prediction.Predict.Predict.Operands[1].Operands[0].Literal.Operands[1].Number, false)
 	return fmt.Sprintf("%v will reach %v before it reaches %v", coin, willReach, beforeIfReaches)
-}
-
-func (p PredictionPrettyPrinter) predictionTypeTheFlippening() string {
-	coin1 := legacyParseOperand(p.prediction.Predict.Predict.Literal.Operands[0])
-	coin2 := legacyParseOperand(p.prediction.Predict.Predict.Literal.Operands[1])
-
-	cond := p.prediction.Predict.Predict.Literal
-	temporalPart := fmt.Sprintf("by %v", cond.ToTs)
-	if cond.ToDuration != "" {
-		temporalPart = parseDuration(cond.ToDuration, time.Unix(int64(cond.FromTs), 0))
-	}
-	return fmt.Sprintf("%v will flip %v (in marketcap) %v", coin1, coin2, temporalPart)
 }

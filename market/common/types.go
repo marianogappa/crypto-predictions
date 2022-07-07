@@ -3,9 +3,9 @@ package common
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"time"
-
-	"github.com/marianogappa/predictions/types"
 )
 
 const (
@@ -15,10 +15,6 @@ const (
 	FTX = "ftx"
 	// COINBASE is an enumesque string value representing the COINBASE exchange
 	COINBASE = "coinbase"
-	// HUOBI is an enumesque string value representing the HUOBI exchange
-	HUOBI = "huobi"
-	// KRAKEN is an enumesque string value representing the KRAKEN exchange
-	KRAKEN = "kraken"
 	// KUCOIN is an enumesque string value representing the KUCOIN exchange
 	KUCOIN = "kucoin"
 	// BINANCEUSDMFUTURES is an enumesque string value representing the BINANCEUSDMFUTURES exchange
@@ -62,77 +58,14 @@ type CandlestickProvider interface {
 	//
 	// Some exchanges return results with gaps. In this case, implementations will fill gaps with the next known value.
 	//
-	// * Fails with ErrInvalidMarketPair if the operand's marketPair / asset does not exist at the exchange. In some
+	// * Fails with ErrInvalidMarketPair if the marketSource's marketPair / asset does not exist at the exchange. In some
 	//   cases, an exchange may not have data for a marketPair / asset and still not explicitly return an error.
-	RequestCandlesticks(operand types.Operand, startTimeTs, intervalMinutes int) ([]types.Candlestick, error)
+	RequestCandlesticks(marketSource MarketSource, startTimeTs, intervalMinutes int) ([]Candlestick, error)
 
 	// GetPatience documents the recommended latency a client should observe for requesting the latest candlesticks
 	// for a given market pair. Clients may ignore it, but are more likely to have to deal with empty results, errors
 	// and rate limiting.
 	GetPatience() time.Duration
-}
-
-// CandlesticksToTicks takes a candlestick slice and turns it into a slice of ticks, using their close prices.
-func CandlesticksToTicks(cs []types.Candlestick) []types.Tick {
-	ts := make([]types.Tick, len(cs))
-	for i := 0; i < len(cs); i++ {
-		ts[i] = types.Tick{Timestamp: cs[i].Timestamp, Value: cs[i].ClosePrice}
-	}
-	return ts
-}
-
-// PatchCandlestickHoles takes a slice of candlesticks and it patches any holes in it, either at the beginning or within
-// any pair of candlesticks whose difference in seconds doesn't match the supplied "durSecs", by cloning the latest
-// available candlestick "on the left", or the first candlestick (i.e. "on the right") if it's at the beginning.
-func PatchCandlestickHoles(cs []types.Candlestick, startTimeTs, durSecs int) []types.Candlestick {
-	startTimeTs = NormalizeTimestamp(time.Unix(int64(startTimeTs), 0), time.Duration(durSecs)*time.Second, "TODO_PROVIDER", false)
-	lastTs := startTimeTs - durSecs
-	for len(cs) > 0 && cs[0].Timestamp < lastTs+durSecs {
-		cs = cs[1:]
-	}
-	if len(cs) == 0 {
-		return cs
-	}
-
-	fixedCSS := []types.Candlestick{}
-	for _, candlestick := range cs {
-		if candlestick.Timestamp == lastTs+durSecs {
-			fixedCSS = append(fixedCSS, candlestick)
-			lastTs = candlestick.Timestamp
-			continue
-		}
-		for candlestick.Timestamp >= lastTs+durSecs {
-			clonedCandlestick := candlestick
-			clonedCandlestick.Timestamp = lastTs + durSecs
-			fixedCSS = append(fixedCSS, clonedCandlestick)
-			lastTs += durSecs
-		}
-	}
-	return fixedCSS
-}
-
-// NormalizeTimestamp takes a time and a candlestick interval, and normalizes the timestamp by returning the immediately
-// next multiple of that time as defined by .Truncate(candlestickInterval), unless the time already satisfies it.
-//
-// It also optionally returns the next time (i.e. it appends a candlestick interval to it).
-//
-// TODO: this function only currently supports 1m, 5m, 15m, 1h & 1d intervals. Using other intervals will
-// result in silently incorrect behaviour due to exchanges behaving differently. Please review api_klines files for
-// documented differences in behaviour.
-func NormalizeTimestamp(rawTm time.Time, candlestickInterval time.Duration, provider string, startFromNext bool) int {
-	rawTm = rawTm.UTC()
-	tm := rawTm.Truncate(candlestickInterval).UTC()
-	if tm != rawTm {
-		tm = tm.Add(candlestickInterval)
-	}
-	return int(tm.Add(candlestickInterval * time.Duration(b2i(startFromNext))).Unix())
-}
-
-func b2i(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }
 
 // CandleReqError is an error arising from a call to requestCandlesticks
@@ -145,3 +78,162 @@ type CandleReqError struct {
 }
 
 func (e CandleReqError) Error() string { return e.Err.Error() }
+
+// Candlestick is the generic struct for candlestick data for all supported exchanges.
+type Candlestick struct {
+	// Timestamp is the UNIX timestamp (i.e. seconds since UTC Epoch) at which the candlestick started.
+	Timestamp int `json:"t"`
+
+	// OpenPrice is the price at which the candlestick opened.
+	OpenPrice JSONFloat64 `json:"o"`
+
+	// ClosePrice is the price at which the candlestick closed.
+	ClosePrice JSONFloat64 `json:"c"`
+
+	// LowestPrice is the lowest price reached during the candlestick duration.
+	LowestPrice JSONFloat64 `json:"l"`
+
+	// HighestPrice is the highest price reached during the candlestick duration.
+	HighestPrice JSONFloat64 `json:"h"`
+
+	// Volume is the traded volume in base asset during this candlestick.
+	Volume JSONFloat64 `json:"v"`
+
+	// NumberOfTrades is the total number of filled order book orders in this candlestick.
+	NumberOfTrades int `json:"n,omitempty"`
+}
+
+// ToTicks converts a Candlestick to two Ticks. Lowest value is put first, because since there's no way to tell
+// which one happened first, this library chooses to be pessimistic.
+func (c Candlestick) ToTicks() []Tick {
+	return []Tick{
+		{Timestamp: c.Timestamp, Value: c.LowestPrice},
+		{Timestamp: c.Timestamp, Value: c.HighestPrice},
+	}
+}
+
+// Tick is the closePrice & timestamp of a Candlestick.
+type Tick struct {
+	Timestamp int         `json:"t"`
+	Value     JSONFloat64 `json:"v"`
+}
+
+// Iterator is the interface for a CandlestickIterator. It allows to iterate over both Ticks & Candlesticks.
+type Iterator interface {
+	NextTick() (Tick, error)
+	NextCandlestick() (Candlestick, error)
+}
+
+// JSONFloat64 exists only for the purpose of marshalling floats in a nicer way.
+type JSONFloat64 float64
+
+// MarshalJSON overrides the marshalling of floats in a nicer way.
+func (jf JSONFloat64) MarshalJSON() ([]byte, error) {
+	f := float64(jf)
+	if math.IsInf(f, 0) || math.IsNaN(f) {
+		return nil, errors.New("unsupported value")
+	}
+	bs := []byte(fmt.Sprintf("%.12f", f))
+	var i int
+	for i = len(bs) - 1; i >= 0; i-- {
+		if bs[i] == '0' {
+			continue
+		}
+		if bs[i] == '.' {
+			return bs[:i], nil
+		}
+		break
+	}
+	return bs[:i+1], nil
+}
+
+// MarketSource uniquely identifies what market an Iterator is built for, e.g. the prices of BTC/USDT in BINANCE
+type MarketSource struct {
+	Type       MarketType
+	Provider   string // e.g. "BINANCE", "KUCOIN"
+	BaseAsset  string // e.g. "BTC" in BTC/USDT
+	QuoteAsset string // e.g. "USDT" in BTC/USDT
+}
+
+func (m MarketSource) String() string {
+	return fmt.Sprintf("%v:%v:%v-%v", m.Type.String(), m.Provider, m.BaseAsset, m.QuoteAsset)
+}
+
+// MarketType is the type of market that an Iterator is built for. The only supported MarketType is COIN e.g. BTC/USDT.
+// At the moment it's not a very useful concept, but if MarketCaps are added, then this namespacing will be warranted.
+type MarketType int
+
+const (
+	// UNSUPPORTED represents a yet-unsupported MarketType
+	UNSUPPORTED MarketType = iota
+	// COIN is the basic market pair MarketType e.g. BTC/USDT
+	COIN
+)
+
+func (m MarketType) String() string {
+	switch m {
+	case COIN:
+		return "COIN"
+	default:
+		return "UNSUPPORTED"
+	}
+}
+
+// ISO8601 adds convenience methods for converting ISO8601-formatted date strings.
+type ISO8601 string
+
+// Time converts an ISO8601-formatted date string into a time.Time.
+func (t ISO8601) Time() (time.Time, error) {
+	return time.Parse(time.RFC3339, string(t))
+}
+
+// Seconds converts an ISO8601-formatted date string into a Unix timestamp.
+func (t ISO8601) Seconds() (int, error) {
+	tm, err := t.Time()
+	if err != nil {
+		return 0, fmt.Errorf("failed to convert %v to seconds because %v", string(t), err.Error())
+	}
+	return int(tm.Unix()), nil
+}
+
+// Millis converts an ISO8601-formatted date string into a Javascript millisecond timestamp.
+func (t ISO8601) Millis() (int, error) {
+	tm, err := t.Seconds()
+	if err != nil {
+		return 0, err
+	}
+	return tm * 100, nil
+}
+
+var (
+	// ErrOutOfTicks means: out of ticks
+	ErrOutOfTicks = errors.New("out of ticks")
+
+	// ErrOutOfCandlesticks means: exchange ran out of candlesticks
+	ErrOutOfCandlesticks = errors.New("exchange ran out of candlesticks")
+
+	// ErrOutOfTrades means: exchange ran out of trades
+	ErrOutOfTrades = errors.New("exchange ran out of trades")
+
+	// ErrInvalidMarketPair means: market pair or asset does not exist on exchange
+	ErrInvalidMarketPair = errors.New("market pair or asset does not exist on exchange")
+
+	// ErrRateLimit means: exchange asked us to enhance our calm
+	ErrRateLimit = errors.New("exchange asked us to enhance our calm")
+
+	// From TickIterator
+
+	// ErrNoNewTicksYet means: no new ticks yet
+	ErrNoNewTicksYet = errors.New("no new ticks yet")
+
+	// ErrExchangeReturnedNoTicks means: exchange returned no ticks
+	ErrExchangeReturnedNoTicks = errors.New("exchange returned no ticks")
+
+	// ErrExchangeReturnedOutOfSyncTick means: exchange returned out of sync tick
+	ErrExchangeReturnedOutOfSyncTick = errors.New("exchange returned out of sync tick")
+
+	// From PatchTickHoles
+
+	// ErrOutOfSyncTimestampPatchingHoles means: out of sync timestamp found patching holes
+	ErrOutOfSyncTimestampPatchingHoles = errors.New("out of sync timestamp found patching holes")
+)

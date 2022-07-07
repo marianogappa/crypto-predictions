@@ -2,14 +2,15 @@ package daemon
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewPredRunner(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewPredRunner(t *testing.T) {
 			FromTs:   tInt("2022-02-27 15:20:00"),
 			ToTs:     tInt("2022-03-27 15:20:00"),
 			Operands: []types.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
-			State:    types.ConditionState{Value: types.UNDECIDED, LastTs: 0, LastTicks: map[string]types.Tick{}},
+			State:    types.ConditionState{Value: types.UNDECIDED, LastTs: 0, LastTicks: map[string]common.Tick{}},
 		}
 		literalTrueBoolExpr      = &types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: trueCond}
 		literalFalseBoolExpr     = &types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: falseCond}
@@ -158,7 +159,7 @@ func TestNewPredRunner(t *testing.T) {
 				}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
 			isError:     false,
-			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 15:20:00")}},
+			marketCalls: []marketCall{{marketSource: marketSource("COIN:BINANCE:BTC-USDT"), tm: tp("2022-02-27 15:20:00")}},
 		},
 		{
 			name: "Undecided prediction should make a call with start time in the future, in the next minute",
@@ -172,13 +173,13 @@ func TestNewPredRunner(t *testing.T) {
 						State: types.ConditionState{
 							Value:     types.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
-							LastTicks: map[string]types.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
+							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
 					}},
 				}),
 			nowTs:       tInt("2022-02-28 16:20:00"),
 			isError:     false,
-			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
+			marketCalls: []marketCall{{marketSource: marketSource("COIN:BINANCE:BTC-USDT"), tm: tp("2022-02-27 16:20:00"), startFromNext: true}},
 		},
 		{
 			name: "Undecided prediction should make a call in the future, which is fine because it should return ErrNoNewTicksYet",
@@ -192,53 +193,13 @@ func TestNewPredRunner(t *testing.T) {
 						State: types.ConditionState{
 							Value:     types.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
-							LastTicks: map[string]types.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
+							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
 					}},
 				}),
 			nowTs:       tInt("2022-02-27 15:00:00"), // Earlier than when the tick iterator starts
 			isError:     false,
-			marketCalls: []marketCall{{operand: operand("COIN:BINANCE:BTC-USDT"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
-		},
-		{
-			name: "Undecided prediction should make a call with start time in the future, in the next day (MARKETCAP)",
-			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
-					Predict: types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: &types.Condition{
-						FromTs:   tInt("2022-02-27 15:20:00"),
-						ToTs:     tInt("2022-03-27 15:20:00"),
-						Operands: []types.Operand{operand("MARKETCAP:MESSARI:BTC"), operand("60000")},
-						State: types.ConditionState{
-							Value:     types.UNDECIDED,
-							LastTs:    tInt("2022-02-27 16:20:00"),
-							LastTicks: map[string]types.Tick{"MARKETCAP:MESSARI:BTC": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
-						},
-					}},
-				}),
-			nowTs:       tInt("2022-03-01 16:20:00"),
-			isError:     false,
-			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-27 16:20:00"), startFromNext: true}},
-		},
-		{
-			name: "Undecided MARKETCAP type prediction should make a call regardless of it being in the future",
-			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
-					Predict: types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: &types.Condition{
-						FromTs:   tInt("2022-02-25 15:20:00"),
-						ToTs:     tInt("2022-03-27 15:20:00"),
-						Operands: []types.Operand{operand("MARKETCAP:MESSARI:BTC"), operand("60000")},
-						State: types.ConditionState{
-							Value:     types.UNDECIDED,
-							LastTs:    tInt("2022-02-26 16:20:00"),
-							LastTicks: map[string]types.Tick{"MARKETCAP:MESSARI:BTC": {Timestamp: tInt("2022-02-26 16:20:00"), Value: 60000}},
-						},
-					}},
-				}),
-			nowTs:       tInt("2022-02-27 19:20:00"),
-			isError:     false,
-			marketCalls: []marketCall{{operand: operand("MARKETCAP:MESSARI:BTC"), ts: tpToISO("2022-02-26 16:20:00"), startFromNext: true}},
+			marketCalls: []marketCall{{marketSource: marketSource("COIN:BINANCE:BTC-USDT"), tm: tp("2022-02-27 16:20:00"), startFromNext: true}},
 		},
 	}
 	for _, ts := range tss {
@@ -255,10 +216,7 @@ func TestNewPredRunner(t *testing.T) {
 				t.FailNow()
 
 			}
-			if !reflect.DeepEqual(tm.calls, ts.marketCalls) {
-				t.Logf("expected calls %v but got %v", ts.marketCalls, tm.calls)
-				t.FailNow()
-			}
+			require.Equal(t, tm.calls, ts.marketCalls)
 		})
 	}
 }
@@ -289,6 +247,10 @@ func operand(s string) types.Operand {
 	return op
 }
 
+func marketSource(s string) common.MarketSource {
+	return operand(s).ToMarketSource()
+}
+
 func newPredictionWith(prePredict types.PrePredict, predict types.Predict) types.Prediction {
 	return types.Prediction{
 		UUID:       "ed47db4d-cc0b-4c3c-af18-e6fcbff82338",
@@ -306,11 +268,8 @@ func newPredictionWith(prePredict types.PrePredict, predict types.Predict) types
 
 func tp(s string) time.Time {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	t.UTC()
 	return t
-}
-
-func tpToISO(s string) types.ISO8601 {
-	return types.ISO8601(tp(s).Format(time.RFC3339))
 }
 
 func tInt(s string) int {
@@ -318,8 +277,8 @@ func tInt(s string) int {
 }
 
 type marketCall struct {
-	operand       types.Operand
-	ts            types.ISO8601
+	marketSource  common.MarketSource
+	tm            time.Time
 	startFromNext bool
 }
 
@@ -327,19 +286,19 @@ type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetIterator(operand types.Operand, ts types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
-	m.calls = append(m.calls, marketCall{operand, ts, startFromNext})
+func (m *testMarket) GetIterator(marketSource common.MarketSource, tm time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error) {
+	m.calls = append(m.calls, marketCall{marketSource, tm, startFromNext})
 	return testIterator{}, nil
 }
 
 type testIterator struct{}
 
-func (i testIterator) NextTick() (types.Tick, error) {
-	return types.Tick{}, nil
+func (i testIterator) NextTick() (common.Tick, error) {
+	return common.Tick{}, nil
 }
 
-func (i testIterator) NextCandlestick() (types.Candlestick, error) {
-	return types.Candlestick{}, nil
+func (i testIterator) NextCandlestick() (common.Candlestick, error) {
+	return common.Candlestick{}, nil
 }
 func (i testIterator) IsOutOfTicks() bool {
 	return true

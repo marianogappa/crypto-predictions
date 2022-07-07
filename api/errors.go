@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -71,16 +72,27 @@ var (
 		types.ErrMissingRequiredPrePredictPredictIf: {StatusCode: 400, ErrorCode: "ErrMissingRequiredPrePredictPredictIf", Message: "pre-predict clause must have predictIf if it has either wrongIf or annuledIf. Otherwise, add them directly on predict clause"},
 		types.ErrBoolExprSyntaxError:                {StatusCode: 400, ErrorCode: "ErrBoolExprSyntaxError", Message: "syntax error in bool expression"},
 		types.ErrPredictionFinishedAtStartTime:      {StatusCode: 400, ErrorCode: "ErrPredictionFinishedAtStartTime", Message: "prediction is finished at start time"},
-		types.ErrInvalidMarketPair:                  {StatusCode: 400, ErrorCode: "ErrInvalidMarketPair", Message: "market pair does not exist on exchange"},
-		ErrInvalidRequestBody:                       {StatusCode: 400, ErrorCode: "ErrInvalidRequestBody", Message: "invalid request body"},
-		ErrInvalidRequestJSON:                       {StatusCode: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
-		ErrStorageErrorRetrievingPredictions:        {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},
-		types.ErrStorageErrorRetrievingAccounts:     {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingAccounts", Message: "storage had error retrieving accounts"},
-		ErrStorageErrorStoringPrediction:            {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringPrediction", Message: "storage had error storing predictions"},
-		ErrStorageErrorStoringAccount:               {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringAccount", Message: "storage had error storing accounts"},
-		ErrFailedToSerializePredictions:             {StatusCode: 500, ErrorCode: "ErrFailedToSerializePredictions", Message: "failed to serialize predictions"},
-		ErrFailedToSerializeAccount:                 {StatusCode: 500, ErrorCode: "ErrFailedToSerializeAccount", Message: "failed to serialize account"},
-		ErrFailedToCompilePrediction:                {StatusCode: 500, ErrorCode: "ErrFailedToCompilePrediction", Message: "failed to compile prediction"},
-		ErrPredictionNotFound:                       {StatusCode: 404, ErrorCode: "ErrPredictionNotFound", Message: "prediction not found"},
+
+		// From Market
+		common.ErrInvalidMarketPair:               {StatusCode: 400, ErrorCode: "ErrInvalidMarketPair", Message: "market pair does not exist on exchange"},
+		common.ErrOutOfTicks:                      {StatusCode: 500, ErrorCode: "ErrOutOfTicks", Message: "out of ticks"},
+		common.ErrOutOfCandlesticks:               {StatusCode: 500, ErrorCode: "ErrOutOfCandlesticks", Message: "exchange ran out of candlesticks"},
+		common.ErrOutOfTrades:                     {StatusCode: 500, ErrorCode: "ErrOutOfTrades", Message: "exchange ran out of trades"},
+		common.ErrRateLimit:                       {StatusCode: 500, ErrorCode: "ErrRateLimit", Message: "exchange asked us to enhance our calm"},
+		common.ErrNoNewTicksYet:                   {StatusCode: 500, ErrorCode: "ErrNoNewTicksYet", Message: "no new ticks yet"},
+		common.ErrExchangeReturnedNoTicks:         {StatusCode: 500, ErrorCode: "ErrExchangeReturnedNoTicks", Message: "exchange returned no ticks"},
+		common.ErrExchangeReturnedOutOfSyncTick:   {StatusCode: 500, ErrorCode: "ErrExchangeReturnedOutOfSyncTick", Message: "exchange returned out of sync tick"},
+		common.ErrOutOfSyncTimestampPatchingHoles: {StatusCode: 500, ErrorCode: "ErrOutOfSyncTimestampPatchingHoles", Message: "out of sync timestamp found patching holes"},
+
+		ErrInvalidRequestBody:                   {StatusCode: 400, ErrorCode: "ErrInvalidRequestBody", Message: "invalid request body"},
+		ErrInvalidRequestJSON:                   {StatusCode: 400, ErrorCode: "ErrInvalidRequestJSON", Message: "invalid request JSON"},
+		ErrStorageErrorRetrievingPredictions:    {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingPredictions", Message: "storage had error retrieving predictions"},
+		types.ErrStorageErrorRetrievingAccounts: {StatusCode: 500, ErrorCode: "ErrStorageErrorRetrievingAccounts", Message: "storage had error retrieving accounts"},
+		ErrStorageErrorStoringPrediction:        {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringPrediction", Message: "storage had error storing predictions"},
+		ErrStorageErrorStoringAccount:           {StatusCode: 500, ErrorCode: "ErrStorageErrorStoringAccount", Message: "storage had error storing accounts"},
+		ErrFailedToSerializePredictions:         {StatusCode: 500, ErrorCode: "ErrFailedToSerializePredictions", Message: "failed to serialize predictions"},
+		ErrFailedToSerializeAccount:             {StatusCode: 500, ErrorCode: "ErrFailedToSerializeAccount", Message: "failed to serialize account"},
+		ErrFailedToCompilePrediction:            {StatusCode: 500, ErrorCode: "ErrFailedToCompilePrediction", Message: "failed to compile prediction"},
+		ErrPredictionNotFound:                   {StatusCode: 404, ErrorCode: "ErrPredictionNotFound", Message: "prediction not found"},
 	}
 )

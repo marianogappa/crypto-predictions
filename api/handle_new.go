@@ -6,6 +6,7 @@ import (
 
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
@@ -60,8 +61,8 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 		if len(errs) == 0 {
 			predRunnerErrs := predRunner.Run(true)
 			for _, err := range predRunnerErrs {
-				if errors.Is(err, types.ErrInvalidMarketPair) {
-					return failWith(types.ErrInvalidMarketPair, err, apiResPostPrediction{})
+				if errors.Is(err, common.ErrInvalidMarketPair) {
+					return failWith(common.ErrInvalidMarketPair, err, apiResPostPrediction{})
 				}
 			}
 			if pred.Evaluate().IsFinal() {

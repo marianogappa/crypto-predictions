@@ -20,10 +20,10 @@
 //
 // metric := cache.Metric{Name: "COIN:BINANCE:BTC-USDT", CandlestickInterval: 1 * time.Minute}
 //
-// startISO8601 := types.ISO8601("2022-03-20T12:22:00Z")
+// startISO8601 := common.ISO8601("2022-03-20T12:22:00Z")
 // startTs, err := startISO8601.Seconds()
 //
-// err := cache.Put(metric, []types.Candlestick{{Timestamp: startTs, ClosePrice: 1234, ...}, {Timestamp: startTs+60, ClosePrice: 1234, ...}, ...})
+// err := cache.Put(metric, []common.Candlestick{{Timestamp: startTs, ClosePrice: 1234, ...}, {Timestamp: startTs+60, ClosePrice: 1234, ...}, ...})
 //
 // candlesticks, err := cache.Get(metric, startISO8601)
 //
@@ -39,7 +39,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 )
 
 // MemoryCache implements the in-memory LRU cache layer that this package exposes.
@@ -105,7 +104,7 @@ func NewMemoryCache(cacheSizes map[time.Duration]int) *MemoryCache {
 //
 // * Fails with ErrCacheNotConfiguredForCandlestickInterval if the cache was not configured to have candlesticks of the
 //   candlestick interval of the supplied metric.
-func (c *MemoryCache) Put(metric Metric, candlesticks []types.Candlestick) error {
+func (c *MemoryCache) Put(metric Metric, candlesticks []common.Candlestick) error {
 	if _, ok := c.caches[metric.CandlestickInterval]; !ok {
 		return ErrCacheNotConfiguredForCandlestickInterval
 	}
@@ -128,7 +127,7 @@ func (c *MemoryCache) Put(metric Metric, candlesticks []types.Candlestick) error
 //
 // * Fails with ErrCacheMiss if there are no values available in the cache. Client must handle this error, as it's
 //   completely normal to have cache misses.
-func (c *MemoryCache) Get(metric Metric, initialISO8601 types.ISO8601) ([]types.Candlestick, error) {
+func (c *MemoryCache) Get(metric Metric, initialISO8601 common.ISO8601) ([]common.Candlestick, error) {
 	if _, ok := c.caches[metric.CandlestickInterval]; !ok {
 		return nil, ErrCacheNotConfiguredForCandlestickInterval
 	}

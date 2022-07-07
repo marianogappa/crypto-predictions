@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +65,7 @@ func TestCondition(t *testing.T) {
 	tss := []struct {
 		name     string
 		cond     *Condition
-		ticks    map[string]Tick
+		ticks    map[string]common.Tick
 		err      error
 		expected ConditionState
 	}{
@@ -90,7 +91,7 @@ func TestCondition(t *testing.T) {
 				FromTs:   times[0],
 				ToTs:     times[1],
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {}}, // invalid tick!
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {}}, // invalid tick!
 			err:   errInvalidTickSupplied,
 		},
 		{
@@ -109,7 +110,7 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 61000}}, // not BTC-USDT!
+			ticks: map[string]common.Tick{"COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 61000}}, // not BTC-USDT!
 			err:   anyError,
 			expected: ConditionState{
 				Status:    UNSTARTED,
@@ -127,7 +128,7 @@ func TestCondition(t *testing.T) {
 				FromTs:   times[0],
 				ToTs:     times[1],
 			},
-			ticks: map[string]Tick{
+			ticks: map[string]common.Tick{
 				"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000},
 				"COIN:BINANCE:ETH-USDT": {Timestamp: times[1], Value: 4000}}, // Different timestamp!
 			err: errMismatchingTickTimestampsSupplied,
@@ -148,7 +149,7 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}}, // would be TRUE!
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}}, // would be TRUE!
 			err:   nil,
 			expected: ConditionState{
 				Status:    UNSTARTED,
@@ -168,16 +169,16 @@ func TestCondition(t *testing.T) {
 				State: ConditionState{
 					Status:    STARTED,
 					LastTs:    times[1],
-					LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+					LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 					Value:     UNDECIDED,
 				},
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}}, // would be TRUE, but older!
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}}, // would be TRUE, but older!
 			err:   errOlderTickTimestampSupplied,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -192,17 +193,17 @@ func TestCondition(t *testing.T) {
 				State: ConditionState{
 					Status:    FINISHED,
 					LastTs:    times[0],
-					LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+					LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 					Value:     TRUE,
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 				Value:     TRUE,
 			},
 		},
@@ -217,17 +218,17 @@ func TestCondition(t *testing.T) {
 				State: ConditionState{
 					Status:    STARTED,
 					LastTs:    times[0],
-					LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+					LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 					Value:     UNDECIDED,
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[2], Value: 59500}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[2], Value: 59500}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 				Value:     FALSE,
 			},
 		},
@@ -247,12 +248,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}, "COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 4000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}, "COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 4000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}, "COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 4000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}, "COIN:BINANCE:ETH-USDT": {Timestamp: times[0], Value: 4000}},
 				Value:     TRUE,
 			},
 		},
@@ -272,12 +273,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -297,12 +298,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 				Value:     TRUE,
 			},
 		},
@@ -322,12 +323,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 				Value:     FALSE,
 			},
 		},
@@ -347,12 +348,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.1, // 10% error margin so actually FTM-USDT > 900
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 950}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 950}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 950}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 950}},
 				Value:     TRUE,
 			},
 		},
@@ -372,12 +373,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -397,12 +398,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 				Value:     TRUE,
 			},
 		},
@@ -422,12 +423,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 				Value:     FALSE,
 			},
 		},
@@ -447,12 +448,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.1, // 10% error margin so actually FTM-USDT >= 900
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 900}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 900}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 900}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 900}},
 				Value:     TRUE,
 			},
 		},
@@ -472,12 +473,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -497,12 +498,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 				Value:     TRUE,
 			},
 		},
@@ -522,12 +523,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
 				Value:     FALSE,
 			},
 		},
@@ -547,12 +548,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.1, // 10% error margin, so actually FTM-USDT < 1100
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1050}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1050}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1050}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1050}},
 				Value:     TRUE,
 			},
 		},
@@ -572,12 +573,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -597,12 +598,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 				Value:     TRUE,
 			},
 		},
@@ -622,12 +623,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 61000}},
 				Value:     FALSE,
 			},
 		},
@@ -647,12 +648,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.1, // 10% error margin, so actually FTM-USDT <= 1100
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1100}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1100}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1100}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:FTM-USDT": {Timestamp: times[1], Value: 1100}},
 				Value:     TRUE,
 			},
 		},
@@ -672,12 +673,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    STARTED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 59000}},
 				Value:     UNDECIDED,
 			},
 		},
@@ -697,12 +698,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60000}},
 				Value:     TRUE,
 			},
 		},
@@ -722,12 +723,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60500}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60500}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60500}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 60500}},
 				Value:     TRUE,
 			},
 		},
@@ -747,12 +748,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[0],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[0], Value: 61000}},
 				Value:     TRUE,
 			},
 		},
@@ -772,12 +773,12 @@ func TestCondition(t *testing.T) {
 				},
 				ErrorMarginRatio: 0.0,
 			},
-			ticks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+			ticks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 			err:   nil,
 			expected: ConditionState{
 				Status:    FINISHED,
 				LastTs:    times[1],
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: times[1], Value: 59000}},
 				Value:     FALSE,
 			},
 		},
@@ -813,7 +814,7 @@ func TestConditionClearState(t *testing.T) {
 		State: ConditionState{
 			Status:    STARTED,
 			LastTs:    tInt("2022-01-01 00:00:00"),
-			LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-01-01 00:00:00"), Value: 59000}},
+			LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-01-01 00:00:00"), Value: 59000}},
 			Value:     UNDECIDED,
 		},
 	}

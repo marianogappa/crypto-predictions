@@ -6,6 +6,8 @@ import (
 	"math"
 	"net/url"
 	"time"
+
+	"github.com/marianogappa/predictions/market/common"
 )
 
 var (
@@ -15,7 +17,6 @@ var (
 		PredictionTypeUnsupported:                         true,
 		PredictionTypeCoinWillRange:                       true,
 		PredictionTypeCoinWillReachBeforeItReaches:        true,
-		PredictionTypeTheFlippening:                       true,
 		PredictionTypeCoinWillReachInvalidatedIfItReaches: true,
 	}
 
@@ -97,21 +98,6 @@ var (
 	// ErrUnknownAPIOrderBy means: unknown API order by
 	ErrUnknownAPIOrderBy = errors.New("unknown API order by")
 
-	// ErrOutOfTicks means: out of ticks
-	ErrOutOfTicks = errors.New("out of ticks")
-
-	// ErrOutOfCandlesticks means: exchange ran out of candlesticks
-	ErrOutOfCandlesticks = errors.New("exchange ran out of candlesticks")
-
-	// ErrOutOfTrades means: exchange ran out of trades
-	ErrOutOfTrades = errors.New("exchange ran out of trades")
-
-	// ErrInvalidMarketPair means: market pair or asset does not exist on exchange
-	ErrInvalidMarketPair = errors.New("market pair or asset does not exist on exchange")
-
-	// ErrRateLimit means: exchange asked us to enhance our calm
-	ErrRateLimit = errors.New("exchange asked us to enhance our calm")
-
 	// ErrInvalidExchange means: the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'
 	ErrInvalidExchange = errors.New("the only valid exchanges are 'binance', 'ftx', 'coinbase', 'huobi', 'kraken', 'kucoin' and 'binanceusdmfutures'")
 
@@ -120,22 +106,6 @@ var (
 
 	// ErrQuoteAssetRequired means: quote asset is required (e.g. USDT)
 	ErrQuoteAssetRequired = errors.New("quote asset is required (e.g. USDT)")
-
-	// From TickIterator
-
-	// ErrNoNewTicksYet means: no new ticks yet
-	ErrNoNewTicksYet = errors.New("no new ticks yet")
-
-	// ErrExchangeReturnedNoTicks means: exchange returned no ticks
-	ErrExchangeReturnedNoTicks = errors.New("exchange returned no ticks")
-
-	// ErrExchangeReturnedOutOfSyncTick means: exchange returned out of sync tick
-	ErrExchangeReturnedOutOfSyncTick = errors.New("exchange returned out of sync tick")
-
-	// From PatchTickHoles
-
-	// ErrOutOfSyncTimestampPatchingHoles means: out of sync timestamp found patching holes
-	ErrOutOfSyncTimestampPatchingHoles = errors.New("out of sync timestamp found patching holes")
 
 	// From storage
 
@@ -157,6 +127,11 @@ type Operand struct {
 	QuoteAsset string      // e.g. "USDT" in BTC/USDT, must be empty if Type in {MARKETCAP, NUMBER}
 	Number     JSONFloat64 // e.g. "1.234", must be empty if Type != NUMBER
 	Str        string      // e.g. "COIN:BINANCE:BTC-USDT", "MARKETCAP:MESSARI:BTC", "1.234"
+}
+
+// ToMarketSource translates an Operand to a struct that the market package can work with.
+func (o Operand) ToMarketSource() common.MarketSource {
+	return common.MarketSource{Type: o.Type.toMarketType(), Provider: o.Provider, BaseAsset: o.BaseAsset, QuoteAsset: o.QuoteAsset}
 }
 
 // OperandType is the type of Operand in a condition. Can be NUMBER|COIN|MARKETCAP
@@ -196,6 +171,14 @@ func (v OperandType) String() string {
 		return ""
 	}
 }
+func (v OperandType) toMarketType() common.MarketType {
+	switch v {
+	case COIN:
+		return common.COIN
+	default:
+		return common.UNSUPPORTED
+	}
+}
 
 // ConditionState maintains the state of a condition as it is evolved by calling Condition.Run with Ticks.
 //
@@ -208,13 +191,13 @@ func (v OperandType) String() string {
 type ConditionState struct {
 	Status    ConditionStatus
 	LastTs    int
-	LastTicks map[string]Tick
+	LastTicks map[string]common.Tick
 	Value     ConditionStateValue
 }
 
 // Clone returns a deep copy of ConditionState that does not share any memory with the original struct.
 func (s ConditionState) Clone() ConditionState {
-	clonedLastTicks := make(map[string]Tick, len(s.LastTicks))
+	clonedLastTicks := make(map[string]common.Tick, len(s.LastTicks))
 	for k, v := range s.LastTicks {
 		clonedLastTicks[k] = v
 	}
@@ -568,56 +551,11 @@ func (t ISO8601) Millis() (int, error) {
 	return tm * 100, nil
 }
 
-// Candlestick is the generic struct for candlestick data for all supported exchanges.
-type Candlestick struct {
-	// Timestamp is the UNIX timestamp (i.e. seconds since UTC Epoch) at which the candlestick started.
-	Timestamp int `json:"t"`
-
-	// OpenPrice is the price at which the candlestick opened.
-	OpenPrice JSONFloat64 `json:"o"`
-
-	// ClosePrice is the price at which the candlestick closed.
-	ClosePrice JSONFloat64 `json:"c"`
-
-	// LowestPrice is the lowest price reached during the candlestick duration.
-	LowestPrice JSONFloat64 `json:"l"`
-
-	// HighestPrice is the highest price reached during the candlestick duration.
-	HighestPrice JSONFloat64 `json:"h"`
-
-	// Volume is the traded volume in base asset during this candlestick.
-	Volume JSONFloat64 `json:"v"`
-
-	// NumberOfTrades is the total number of filled order book orders in this candlestick.
-	NumberOfTrades int `json:"n,omitempty"`
-}
-
-// ToTicks converts a Candlestick to two Ticks. Lowest value is put first, because since there's no way to tell
-// which one happened first, this library chooses to be pessimistic.
-func (c Candlestick) ToTicks() []Tick {
-	return []Tick{
-		{Timestamp: c.Timestamp, Value: c.LowestPrice},
-		{Timestamp: c.Timestamp, Value: c.HighestPrice},
-	}
-}
-
 // PredictionStateValueChange represents a database-row for the event of a prediction changing value.
 type PredictionStateValueChange struct {
 	PredictionUUID string
 	StateValue     string
 	CreatedAt      ISO8601
-}
-
-// Tick is the closePrice & timestamp of a Candlestick.
-type Tick struct {
-	Timestamp int         `json:"t"`
-	Value     JSONFloat64 `json:"v"`
-}
-
-// Iterator is the interface for a CandlestickIterator. It allows to iterate over both Ticks & Candlesticks.
-type Iterator interface {
-	NextTick() (Tick, error)
-	NextCandlestick() (Candlestick, error)
 }
 
 // Account represents a post author's social media account, both at the API & database-level.
@@ -653,10 +591,6 @@ const (
 	// "Bitcoin will reach $17k before it reaches $20k"
 	PredictionTypeCoinWillReachBeforeItReaches
 
-	// PredictionTypeTheFlippening is a type of prediction that looks like this:
-	// "Ethereum's marketcap will surpass Bitcoin's marketcap by end of year"
-	PredictionTypeTheFlippening
-
 	// PredictionTypeCoinWillReachInvalidatedIfItReaches is a type of prediction that looks like this:
 	// "If Bitcoin doesn't fall below $10k, it will reach $60k within 3 months"
 	PredictionTypeCoinWillReachInvalidatedIfItReaches
@@ -671,8 +605,6 @@ func PredictionTypeFromString(s string) PredictionType {
 		return PredictionTypeCoinWillRange
 	case "PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES":
 		return PredictionTypeCoinWillReachBeforeItReaches
-	case "PREDICTION_TYPE_THE_FLIPPENING":
-		return PredictionTypeTheFlippening
 	case "PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES":
 		return PredictionTypeCoinWillReachInvalidatedIfItReaches
 	default:
@@ -687,8 +619,6 @@ func (v PredictionType) String() string {
 		return "PREDICTION_TYPE_COIN_WILL_RANGE"
 	case PredictionTypeCoinWillReachBeforeItReaches:
 		return "PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES"
-	case PredictionTypeTheFlippening:
-		return "PREDICTION_TYPE_THE_FLIPPENING"
 	case PredictionTypeCoinWillReachInvalidatedIfItReaches:
 		return "PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES"
 	default:

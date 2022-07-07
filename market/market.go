@@ -1,7 +1,6 @@
 package market
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,13 +14,11 @@ import (
 	"github.com/marianogappa/predictions/market/ftx"
 	"github.com/marianogappa/predictions/market/iterator"
 	"github.com/marianogappa/predictions/market/kucoin"
-	"github.com/marianogappa/predictions/market/messari"
-	"github.com/marianogappa/predictions/types"
 )
 
 // IMarket only exists so that tests can use a test iterator.
 type IMarket interface {
-	GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error)
+	GetIterator(marketSource common.MarketSource, startTime time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error)
 }
 
 // Market struct implements the crypto market.
@@ -32,10 +29,6 @@ type Market struct {
 	exchanges                  map[string]common.Exchange
 	supportedVariableProviders map[string]struct{}
 }
-
-var (
-	errEmptyBaseAsset = errors.New("base asset must be supplied in order to create Tick Iterator")
-)
 
 // NewMarket constructs a market.
 func NewMarket(cacheSizes map[time.Duration]int) Market {
@@ -72,34 +65,17 @@ func (m *Market) SetDebug(debug bool) {
 }
 
 // GetIterator returns a market iterator for a given operand at a given time and for a given candlestick interval.
-func (m Market) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
-	switch operand.Type {
-	case types.COIN:
-		return m.getCoinIterator(operand, initialISO8601, startFromNext, intervalMinutes)
-	case types.MARKETCAP:
-		if operand.Provider != "MESSARI" {
-			return nil, fmt.Errorf("only supported provider for MARKETCAP is 'MESSARI', got %v", operand.Provider)
+func (m Market) GetIterator(marketSource common.MarketSource, startTime time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error) {
+	switch marketSource.Type {
+	case common.COIN:
+		if _, ok := m.supportedVariableProviders[marketSource.Provider]; !ok {
+			return nil, fmt.Errorf("the '%v' provider is not supported for %v", marketSource.Provider, marketSource.String())
 		}
-		return m.getMarketcapIterator(operand, initialISO8601, startFromNext)
+		exchange := m.exchanges[strings.ToLower(marketSource.Provider)]
+		return iterator.NewIterator(marketSource, startTime, m.cache, exchange, m.timeNowFunc, startFromNext, intervalMinutes)
 	default:
-		return nil, fmt.Errorf("invalid operand type %v", operand.Type)
+		return nil, fmt.Errorf("invalid marketSource type %v", marketSource.Type.String())
 	}
-}
-
-func (m Market) getCoinIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
-	if _, ok := m.supportedVariableProviders[operand.Provider]; !ok {
-		return nil, fmt.Errorf("the '%v' provider is not supported for %v:%v-%v", operand.Provider, operand.Provider, operand.BaseAsset, operand.QuoteAsset)
-	}
-	exchange := m.exchanges[strings.ToLower(operand.Provider)]
-	return iterator.NewIterator(operand, initialISO8601, m.cache, exchange, m.timeNowFunc, startFromNext, intervalMinutes)
-}
-
-func (m Market) getMarketcapIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool) (types.Iterator, error) {
-	if operand.BaseAsset == "" {
-		return nil, errEmptyBaseAsset
-	}
-	mess := messari.NewMessari()
-	return iterator.NewIterator(operand, initialISO8601, m.cache, mess, m.timeNowFunc, startFromNext, 60*24)
 }
 
 // CalculateCacheHitRatio returns the hit ratio of the cache of the market. Used to see if the cache is useful.

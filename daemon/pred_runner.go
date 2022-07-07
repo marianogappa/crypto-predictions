@@ -7,13 +7,14 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/market"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/types"
 )
 
 // PredEvolver is the struct that evolves a prediction's state upon reading market data.
 type PredEvolver struct {
 	prediction *types.Prediction
-	tickers    map[string]map[string]types.Iterator
+	tickers    map[string]map[string]common.Iterator
 }
 
 var (
@@ -23,7 +24,7 @@ var (
 // NewPredEvolver is the constructor for PredEvolver.
 func NewPredEvolver(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredEvolver, []error) {
 	errs := []error{}
-	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]types.Iterator)}
+	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]common.Iterator)}
 
 	predStateValue := prediction.Evaluate()
 	if predStateValue != types.ONGOINGPREPREDICTION && predStateValue != types.ONGOINGPREDICTION {
@@ -32,11 +33,11 @@ func NewPredEvolver(prediction *types.Prediction, m market.IMarket, nowTs int) (
 	}
 
 	for _, condition := range prediction.UndecidedConditions() {
-		startISO8601, startFromNext := calculateStartTs(condition)
+		startTime, startFromNext := calculateStartTs(condition)
 
-		result.tickers[condition.Name] = map[string]types.Iterator{}
+		result.tickers[condition.Name] = map[string]common.Iterator{}
 		for _, operand := range condition.NonNumberOperands() {
-			ticker, err := m.GetIterator(operand, startISO8601, startFromNext, 1)
+			ticker, err := m.GetIterator(operand.ToMarketSource(), startTime, startFromNext, 1)
 			if err != nil {
 				errs = append(errs, err)
 				return &result, errs
@@ -64,7 +65,7 @@ func (r *PredEvolver) Run(once bool) []error {
 		for _, cond := range conds {
 			if err := r.runCondition(cond); err != nil {
 				stuckConditions[cond.Name] = struct{}{}
-				if err != types.ErrOutOfTicks && err != types.ErrNoNewTicksYet {
+				if err != common.ErrOutOfTicks && err != common.ErrNoNewTicksYet {
 					errs = append(errs, err)
 				}
 			}
@@ -79,7 +80,7 @@ func (r *PredEvolver) Run(once bool) []error {
 }
 
 func (r *PredEvolver) runCondition(cond *types.Condition) error {
-	ticks := map[string]types.Tick{}
+	ticks := map[string]common.Tick{}
 	for key, ticker := range r.tickers[cond.Name] {
 		tick, err := ticker.NextTick()
 		if err != nil {
@@ -101,7 +102,7 @@ func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[
 	return conds
 }
 
-func calculateStartTs(c *types.Condition) (types.ISO8601, bool) {
+func calculateStartTs(c *types.Condition) (time.Time, bool) {
 	startTs := c.FromTs
 	startFromNext := false
 
@@ -110,5 +111,5 @@ func calculateStartTs(c *types.Condition) (types.ISO8601, bool) {
 		startFromNext = true
 	}
 
-	return types.ISO8601(time.Unix(int64(startTs), 0).Format(time.RFC3339)), startFromNext
+	return time.Unix(int64(startTs), 0).UTC(), startFromNext
 }

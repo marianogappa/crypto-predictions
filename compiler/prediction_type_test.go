@@ -76,24 +76,6 @@ func TestPredictionType(t *testing.T) {
 			expected: types.PredictionTypeCoinWillRange,
 		},
 		{
-			name: "Basic PREDICTION_TYPE_THE_FLIPPENING",
-			pred: `{
-				"reporter": "admin",
-				"postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400",
-				"postedAt": "2022-02-09T10:25:26.000Z",
-				"given": {
-					"main": {
-						"condition": "MARKETCAP:MESSARI:ETH > MARKETCAP:MESSARI:BTC",
-						"toDuration": "2d"
-					}
-				},
-				"predict": {
-					"predict": "main"
-				}
-			}`,
-			expected: types.PredictionTypeTheFlippening,
-		},
-		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES",
 			pred: `{
 				"postUrl": "https://twitter.com/Trader_XO/status/1503690856125145092",

@@ -4,7 +4,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,13 +17,13 @@ type RetryStrategy struct {
 
 // RequesterWithRetry runs an exchange's candlestick request, with a supplied retry strategy.
 type RequesterWithRetry struct {
-	fn       func(string, string, int, int) ([]types.Candlestick, error)
+	fn       func(string, string, int, int) ([]Candlestick, error)
 	Strategy RetryStrategy
 	debug    *bool
 }
 
 // NewRequesterWithRetry constructs a RequesterWithRetry
-func NewRequesterWithRetry(fn func(string, string, int, int) ([]types.Candlestick, error), strategy RetryStrategy, debug *bool) RequesterWithRetry {
+func NewRequesterWithRetry(fn func(string, string, int, int) ([]Candlestick, error), strategy RetryStrategy, debug *bool) RequesterWithRetry {
 	if strategy.Attempts == 0 {
 		strategy.Attempts = 3
 	}
@@ -38,10 +37,10 @@ func NewRequesterWithRetry(fn func(string, string, int, int) ([]types.Candlestic
 }
 
 // Request runs an exchange's candlestick request, with a supplied retry strategy.
-func (r RequesterWithRetry) Request(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (r RequesterWithRetry) Request(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]Candlestick, error) {
 	var (
 		err          error
-		candlesticks []types.Candlestick
+		candlesticks []Candlestick
 		sleepTime    = r.Strategy.FirstSleepTime
 		attempts     = r.Strategy.Attempts
 	)

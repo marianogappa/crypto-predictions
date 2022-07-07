@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -30,8 +29,8 @@ type kucoinCandlestick struct {
 	Turnover float64 // Transaction amount
 }
 
-func responseToCandlesticks(data [][]string) ([]types.Candlestick, error) {
-	candlesticks := make([]types.Candlestick, len(data))
+func responseToCandlesticks(data [][]string) ([]common.Candlestick, error) {
+	candlesticks := make([]common.Candlestick, len(data))
 	for i := 0; i < len(data); i++ {
 		raw := data[i]
 		candlestick := kucoinCandlestick{}
@@ -80,20 +79,20 @@ func responseToCandlesticks(data [][]string) ([]types.Candlestick, error) {
 		}
 		candlestick.Turnover = rawTurnover
 
-		candlesticks[i] = types.Candlestick{
+		candlesticks[i] = common.Candlestick{
 			Timestamp:    candlestick.Time,
-			OpenPrice:    types.JSONFloat64(candlestick.Open),
-			ClosePrice:   types.JSONFloat64(candlestick.Close),
-			LowestPrice:  types.JSONFloat64(candlestick.Low),
-			HighestPrice: types.JSONFloat64(candlestick.High),
-			Volume:       types.JSONFloat64(candlestick.Volume),
+			OpenPrice:    common.JSONFloat64(candlestick.Open),
+			ClosePrice:   common.JSONFloat64(candlestick.Close),
+			LowestPrice:  common.JSONFloat64(candlestick.Low),
+			HighestPrice: common.JSONFloat64(candlestick.High),
+			Volume:       common.JSONFloat64(candlestick.Volume),
 		}
 	}
 
 	return candlesticks, nil
 }
 
-func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]common.Candlestick, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarket/candles", e.apiURL), nil)
 	symbol := fmt.Sprintf("%v-%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
@@ -147,7 +146,7 @@ func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startT
 	if resp.StatusCode == http.StatusTooManyRequests {
 		// In this case we should sleep for 11 seconds due to what it says in the docs.
 		// https://github.com/marianogappa/crypto-predictions/issues/37#issuecomment-1167566211
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrRateLimit, RetryAfter: 11 * time.Second}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrRateLimit, RetryAfter: 11 * time.Second}
 	}
 
 	byts, err := ioutil.ReadAll(resp.Body)
@@ -159,7 +158,7 @@ func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startT
 	err = json.Unmarshal(byts, &maybeResponse)
 	if err == nil && (maybeResponse.Code != "200000" || maybeResponse.Msg != "") {
 		if maybeResponse.Code == "400100" && maybeResponse.Msg == "This pair is not provided at present" {
-			return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrInvalidMarketPair}
+			return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: common.ErrInvalidMarketPair}
 		}
 
 		err := fmt.Errorf("kucoin returned error code! Code: %v, Message: %v", maybeResponse.Code, maybeResponse.Msg)
@@ -181,7 +180,7 @@ func (e *Kucoin) requestCandlesticks(baseAsset string, quoteAsset string, startT
 	}
 
 	if len(candlesticks) == 0 {
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrOutOfCandlesticks}
 	}
 
 	// Reverse slice, because Kucoin returns candlesticks in descending order
