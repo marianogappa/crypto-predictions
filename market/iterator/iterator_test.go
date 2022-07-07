@@ -384,11 +384,6 @@ func (p *testCandlestickProvider) RequestCandlesticks(marketSource common.Market
 
 func (p *testCandlestickProvider) GetPatience() time.Duration { return 0 * time.Second }
 
-func tpToISO(s string) common.ISO8601 {
-	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return common.ISO8601(t.Format(time.RFC3339))
-}
-
 func tp(s string) time.Time {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
 	return t

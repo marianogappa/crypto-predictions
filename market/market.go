@@ -1,7 +1,6 @@
 package market
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -30,10 +29,6 @@ type Market struct {
 	exchanges                  map[string]common.Exchange
 	supportedVariableProviders map[string]struct{}
 }
-
-var (
-	errEmptyBaseAsset = errors.New("base asset must be supplied in order to create Tick Iterator")
-)
 
 // NewMarket constructs a market.
 func NewMarket(cacheSizes map[time.Duration]int) Market {

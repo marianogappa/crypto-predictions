@@ -177,10 +177,6 @@ type candlestickChartParams struct {
 	candlestickInterval time.Duration
 }
 
-func (p candlestickChartParams) startTimeISO8601() types.ISO8601 {
-	return types.ISO8601(p.startTime.Format(time.RFC3339))
-}
-
 func (p candlestickChartParams) candlestickIntervalMinutes() int {
 	return int(p.candlestickInterval / time.Minute)
 }
