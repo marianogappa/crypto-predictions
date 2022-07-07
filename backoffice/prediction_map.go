@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
 )
@@ -98,7 +99,7 @@ func mapifyCondition(c *types.Condition) map[string]interface{} {
 	}
 }
 
-func mapifyLastTick(t types.Tick) map[string]interface{} {
+func mapifyLastTick(t common.Tick) map[string]interface{} {
 	timestamp := time.Unix(int64(t.Timestamp), 0).Format(time.RFC850)
 	return map[string]interface{}{
 		"Timestamp": timestamp,

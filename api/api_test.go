@@ -11,6 +11,7 @@ import (
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/imagebuilder"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/serializer"
@@ -333,7 +334,7 @@ func TestAPI(t *testing.T) {
 				curTime := tp("2020-06-24T00:00:00Z")
 				for i := 0; i <= 60; i++ {
 					for _, coin := range []string{"COIN:BINANCE:BTC-USDT", "COIN:BINANCE:ETH-USDT"} {
-						tick := types.Tick{Timestamp: int(curTime.Unix()), Value: 29000}
+						tick := common.Tick{Timestamp: int(curTime.Unix()), Value: 29000}
 						ctx.market.ticks[coin] = append(ctx.market.ticks[coin], tick)
 					}
 					curTime.Add(1 * time.Hour)
@@ -386,7 +387,7 @@ func TestAPI(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			var (
 				store      = setupTestDB(t)
-				testMarket = newTestMarket(map[string][]types.Tick{})
+				testMarket = newTestMarket(map[string][]common.Tick{})
 				mFetcher   = metadatafetcher.NewMetadataFetcher()
 				daemon     = daemon.NewDaemon(testMarket, store, imagebuilder.PredictionImageBuilder{}, false, false, "")
 			)

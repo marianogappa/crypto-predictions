@@ -102,7 +102,7 @@ func (p *Prediction) CalculateTags() []string {
 // CalculateMainCoin returns the main Operand of this Prediction.
 func (p *Prediction) CalculateMainCoin() Operand {
 	switch p.Type {
-	case PredictionTypeCoinOperatorFloatDeadline, PredictionTypeCoinWillReachBeforeItReaches, PredictionTypeCoinWillRange, PredictionTypeTheFlippening:
+	case PredictionTypeCoinOperatorFloatDeadline, PredictionTypeCoinWillReachBeforeItReaches, PredictionTypeCoinWillRange:
 		return p.Predict.Predict.Literal.Operands[0]
 	default:
 		// In unsupported cases, return the first available operand (Note: non-deterministic due to map).

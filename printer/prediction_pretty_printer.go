@@ -31,8 +31,6 @@ func (p PredictionPrettyPrinter) String() string {
 	// 	p.predictionTypeCoinWillRange()
 	case types.PredictionTypeCoinWillReachBeforeItReaches:
 		p.predictionTypeCoinWillReachBeforeItReaches()
-	case types.PredictionTypeTheFlippening:
-		p.predictionTypeTheFlippening()
 	}
 
 	if p.prediction.PrePredict.Predict != nil {

@@ -5,46 +5,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/stretchr/testify/require"
 )
 
 type operation struct {
 	opType              string
-	operand             types.Operand
+	marketSource        common.MarketSource
 	candlestickInterval time.Duration
-	candlesticks        []types.Candlestick
-	initialISO8601      types.ISO8601
+	candlesticks        []common.Candlestick
+	initialISO8601      common.ISO8601
 	expectedErr         error
-	expectedTicks       []types.Candlestick
+	expectedTicks       []common.Candlestick
 }
 
 func TestCache(t *testing.T) {
-	opBTCUSDT := types.Operand{
-		Type:       types.COIN,
+	opBTCUSDT := common.MarketSource{
+		Type:       common.COIN,
 		Provider:   "BINANCE",
 		BaseAsset:  "BTC",
 		QuoteAsset: "USDT",
-		Str:        "COIN:BINANCE:BTC-USDT",
 	}
-	opETHUSDT := types.Operand{
-		Type:       types.COIN,
+	opETHUSDT := common.MarketSource{
+		Type:       common.COIN,
 		Provider:   "BINANCE",
 		BaseAsset:  "ETH",
 		QuoteAsset: "USDT",
-		Str:        "COIN:BINANCE:ETH-USDT",
-	}
-	opBTC := types.Operand{
-		Type:      types.MARKETCAP,
-		Provider:  "MESSARI",
-		BaseAsset: "BTC",
-		Str:       "MARKETCAP:MESSARI:BTC",
-	}
-	opETH := types.Operand{
-		Type:      types.MARKETCAP,
-		Provider:  "MESSARI",
-		BaseAsset: "ETH",
-		Str:       "MARKETCAP:MESSARI:ETH",
 	}
 
 	tss := []struct {
@@ -57,11 +43,11 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -70,11 +56,11 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					initialISO8601:      types.ISO8601("invalid"),
+					initialISO8601:      common.ISO8601("invalid"),
 					expectedErr:         ErrInvalidISO8601,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -83,9 +69,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks:        []types.Candlestick{},
+					candlesticks:        []common.Candlestick{},
 					expectedErr:         nil,
 				},
 			},
@@ -95,9 +81,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:01"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
 					expectedErr: ErrTimestampMustBeMultipleOfCandlestickInterval,
@@ -109,9 +95,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 0, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
@@ -124,9 +110,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:06:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
@@ -139,9 +125,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:01"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
 					expectedErr: ErrTimestampMustBeMultipleOfCandlestickInterval,
@@ -153,9 +139,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -168,9 +154,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -178,19 +164,19 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opETHUSDT,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -202,9 +188,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -212,9 +198,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -222,11 +208,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -238,9 +224,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -248,9 +234,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-02 03:06:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -258,11 +244,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-02 03:06:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
@@ -275,9 +261,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -285,9 +271,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:07:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-02 03:08:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -295,22 +281,22 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:07:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:07:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-02 03:08:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -322,9 +308,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -332,9 +318,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opETHUSDT,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -342,22 +328,22 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opETHUSDT,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -369,9 +355,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -379,11 +365,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:06:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -392,9 +378,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -402,11 +388,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 03:03:01"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:04:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 03:05:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -418,9 +404,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 16:39:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-02 16:40:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -428,21 +414,21 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 16:39:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 16:39:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTCUSDT,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 1 * time.Minute,
 					initialISO8601:      tpToISO("2020-01-02 16:40:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 16:40:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
@@ -454,11 +440,11 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 03:04:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -467,11 +453,11 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					initialISO8601:      types.ISO8601("invalid"),
+					initialISO8601:      common.ISO8601("invalid"),
 					expectedErr:         ErrInvalidISO8601,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -480,9 +466,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks:        []types.Candlestick{},
+					candlesticks:        []common.Candlestick{},
 					expectedErr:         nil,
 				},
 			},
@@ -492,9 +478,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 03:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
 					expectedErr: ErrTimestampMustBeMultipleOfCandlestickInterval,
@@ -506,9 +492,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 0, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
@@ -521,9 +507,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-04 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -536,9 +522,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -551,9 +537,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2021-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2021-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -561,19 +547,19 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opETH,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2021-01-02 00:00:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2021-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2021-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2021-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -585,9 +571,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -595,9 +581,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -605,11 +591,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -621,9 +607,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -631,9 +617,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-04 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 					},
@@ -641,11 +627,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 						{Timestamp: tInt("2020-01-04 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
@@ -658,9 +644,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -668,9 +654,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-05 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-06 00:00:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -678,22 +664,22 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-05 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-05 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-06 00:00:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -705,9 +691,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -715,9 +701,9 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "PUT",
-					operand:             opETH,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -725,22 +711,22 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opETH,
+					marketSource:        opETHUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-02 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 3456, HighestPrice: 3456, ClosePrice: 3456, LowestPrice: 3456},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 4567, HighestPrice: 4567, ClosePrice: 4567, LowestPrice: 4567},
 					},
@@ -752,9 +738,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -762,11 +748,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-04 00:00:00"),
 					expectedErr:         ErrCacheMiss,
-					expectedTicks:       []types.Candlestick{},
+					expectedTicks:       []common.Candlestick{},
 				},
 			},
 		},
@@ -775,9 +761,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -785,11 +771,11 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-01-01 03:03:01"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-01-02 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-01-03 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -801,9 +787,9 @@ func TestCache(t *testing.T) {
 			ops: []operation{
 				{
 					opType:              "PUT",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
-					candlesticks: []types.Candlestick{
+					candlesticks: []common.Candlestick{
 						{Timestamp: tInt("2020-03-16 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 						{Timestamp: tInt("2020-03-17 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
@@ -811,21 +797,21 @@ func TestCache(t *testing.T) {
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-03-16 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-03-16 00:00:00"), OpenPrice: 1234, HighestPrice: 1234, ClosePrice: 1234, LowestPrice: 1234},
 					},
 				},
 				{
 					opType:              "GET",
-					operand:             opBTC,
+					marketSource:        opBTCUSDT,
 					candlestickInterval: 24 * time.Hour,
 					initialISO8601:      tpToISO("2020-03-17 00:00:00"),
 					expectedErr:         nil,
-					expectedTicks: []types.Candlestick{
+					expectedTicks: []common.Candlestick{
 						{Timestamp: tInt("2020-03-17 00:00:00"), OpenPrice: 2345, HighestPrice: 2345, ClosePrice: 2345, LowestPrice: 2345},
 					},
 				},
@@ -836,12 +822,12 @@ func TestCache(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			cache := NewMemoryCache(map[time.Duration]int{time.Minute: 128, 24 * time.Hour: 128})
 			var (
-				actualCandlesticks []types.Candlestick
+				actualCandlesticks []common.Candlestick
 				actualErr          error
 			)
 
 			for _, op := range ts.ops {
-				metric := Metric{Name: op.operand.Str, CandlestickInterval: op.candlestickInterval}
+				metric := Metric{Name: op.marketSource.String(), CandlestickInterval: op.candlestickInterval}
 				if op.opType == "GET" {
 					actualCandlesticks, actualErr = cache.Get(metric, op.initialISO8601)
 				} else if op.opType == "PUT" {
@@ -867,9 +853,9 @@ func TestCache(t *testing.T) {
 	}
 }
 
-func tpToISO(s string) types.ISO8601 {
+func tpToISO(s string) common.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return types.ISO8601(t.Format(time.RFC3339))
+	return common.ISO8601(t.Format(time.RFC3339))
 }
 
 func tp(s string) time.Time {

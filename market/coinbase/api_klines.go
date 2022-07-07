@@ -12,7 +12,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 )
 
 type successResponse = [][]interface{}
@@ -21,8 +20,8 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-func coinbaseToCandlesticks(response successResponse) ([]types.Candlestick, error) {
-	candlesticks := make([]types.Candlestick, len(response))
+func coinbaseToCandlesticks(response successResponse) ([]common.Candlestick, error) {
+	candlesticks := make([]common.Candlestick, len(response))
 	for i := 0; i < len(response); i++ {
 		raw := response[i]
 		timestampFloat, ok := raw[0].(float64)
@@ -51,13 +50,13 @@ func coinbaseToCandlesticks(response successResponse) ([]types.Candlestick, erro
 			return candlesticks, fmt.Errorf("candlestick %v had volume = %v! Invalid syntax from Coinbase", i, volume)
 		}
 
-		candlestick := types.Candlestick{
+		candlestick := common.Candlestick{
 			Timestamp:    timestamp,
-			LowestPrice:  types.JSONFloat64(lowestPrice),
-			HighestPrice: types.JSONFloat64(highestPrice),
-			OpenPrice:    types.JSONFloat64(openPrice),
-			ClosePrice:   types.JSONFloat64(closePrice),
-			Volume:       types.JSONFloat64(volume),
+			LowestPrice:  common.JSONFloat64(lowestPrice),
+			HighestPrice: common.JSONFloat64(highestPrice),
+			OpenPrice:    common.JSONFloat64(openPrice),
+			ClosePrice:   common.JSONFloat64(closePrice),
+			Volume:       common.JSONFloat64(volume),
 		}
 		candlesticks[i] = candlestick
 	}
@@ -65,7 +64,7 @@ func coinbaseToCandlesticks(response successResponse) ([]types.Candlestick, erro
 	return candlesticks, nil
 }
 
-func (e *Coinbase) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *Coinbase) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]common.Candlestick, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vproducts/%v-%v/candles", e.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 
 	q := req.URL.Query()
@@ -115,7 +114,7 @@ func (e *Coinbase) requestCandlesticks(baseAsset string, quoteAsset string, star
 			return nil, common.CandleReqError{
 				IsNotRetryable: true,
 				IsExchangeSide: true,
-				Err:            types.ErrInvalidMarketPair,
+				Err:            common.ErrInvalidMarketPair,
 			}
 		}
 		return nil, common.CandleReqError{
@@ -141,7 +140,7 @@ func (e *Coinbase) requestCandlesticks(baseAsset string, quoteAsset string, star
 	}
 
 	if len(candlesticks) == 0 {
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrOutOfCandlesticks}
 	}
 
 	// Reverse slice, because Coinbase returns candlesticks in descending order

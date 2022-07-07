@@ -6,16 +6,15 @@ import (
 
 	"github.com/marianogappa/predictions/market/cache"
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
 // Impl is the struct for the market Iterator.
 type Impl struct {
-	candlesticks        []types.Candlestick
+	marketSource        common.MarketSource
+	candlesticks        []common.Candlestick
 	lastTs              int
 	candlestickCache    *cache.MemoryCache
-	operand             types.Operand
 	candlestickProvider common.CandlestickProvider
 	timeNowFunc         func() time.Time
 	intervalMinutes     int
@@ -23,20 +22,15 @@ type Impl struct {
 }
 
 // NewIterator constructs a market Iterator.
-func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*Impl, error) {
-	startTm, err := startISO8601.Time()
-	if err != nil {
-		return nil, cache.ErrInvalidISO8601
-	}
-
-	startTs := common.NormalizeTimestamp(startTm, time.Duration(intervalMinutes)*time.Minute, "TODO_PROVIDER", startFromNext)
-	metric := cache.Metric{Name: operand.Str, CandlestickInterval: time.Duration(intervalMinutes) * time.Minute}
+func NewIterator(marketSource common.MarketSource, startTime time.Time, candlestickCache *cache.MemoryCache, candlestickProvider common.CandlestickProvider, timeNowFunc func() time.Time, startFromNext bool, intervalMinutes int) (*Impl, error) {
+	startTs := common.NormalizeTimestamp(startTime, time.Duration(intervalMinutes)*time.Minute, "TODO_PROVIDER", startFromNext)
+	metric := cache.Metric{Name: marketSource.String(), CandlestickInterval: time.Duration(intervalMinutes) * time.Minute}
 
 	return &Impl{
-		operand:             operand,
+		marketSource:        marketSource,
 		candlestickCache:    candlestickCache,
 		candlestickProvider: candlestickProvider,
-		candlesticks:        []types.Candlestick{},
+		candlesticks:        []common.Candlestick{},
 		timeNowFunc:         timeNowFunc,
 		lastTs:              startTs - intervalMinutes*60,
 		intervalMinutes:     intervalMinutes,
@@ -53,12 +47,12 @@ func NewIterator(operand types.Operand, startISO8601 types.ISO8601, candlestickC
 //
 // - ErrNoNewTicksYet: timestamp is already in the present.
 // - ErrExchangeReturnedNoTicks: exchange got the request and returned no results.
-func (t *Impl) NextTick() (types.Tick, error) {
+func (t *Impl) NextTick() (common.Tick, error) {
 	cs, err := t.NextCandlestick()
 	if err != nil {
-		return types.Tick{}, err
+		return common.Tick{}, err
 	}
-	return types.Tick{Timestamp: cs.Timestamp, Value: cs.ClosePrice}, nil
+	return common.Tick{Timestamp: cs.Timestamp, Value: cs.ClosePrice}, nil
 }
 
 // NextCandlestick is the "Next" iterator function, providing the next available Candlestick (as opposed to Tick).
@@ -70,7 +64,7 @@ func (t *Impl) NextTick() (types.Tick, error) {
 //
 // - ErrNoNewTicksYet: timestamp is already in the present.
 // - ErrExchangeReturnedNoTicks: exchange got the request and returned no results.
-func (t *Impl) NextCandlestick() (types.Candlestick, error) {
+func (t *Impl) NextCandlestick() (common.Candlestick, error) {
 	// If the candlesticks buffer is empty, try to get candlesticks from the cache.
 	if len(t.candlesticks) == 0 && t.candlestickCache != nil {
 		ticks, err := t.candlestickCache.Get(t.metric, t.nextISO8601())
@@ -89,19 +83,19 @@ func (t *Impl) NextCandlestick() (types.Candlestick, error) {
 
 	// If we reach here, before asking the exchange, let's see if it's too early to have new values.
 	if t.nextTime().After(t.timeNowFunc().Add(-t.candlestickProvider.GetPatience() - time.Duration(t.candlestickDurationSecs())*time.Second)) {
-		return types.Candlestick{}, types.ErrNoNewTicksYet
+		return common.Candlestick{}, common.ErrNoNewTicksYet
 	}
 
 	// If we reach here, the buffer was empty and the cache was empty too. Last chance: try the exchange.
-	candlesticks, err := t.candlestickProvider.RequestCandlesticks(t.operand, t.nextTs(), t.intervalMinutes)
+	candlesticks, err := t.candlestickProvider.RequestCandlesticks(t.marketSource, t.nextTs(), t.intervalMinutes)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
 
 	// If the exchange returned early candlesticks, prune them.
 	candlesticks = t.pruneOlderCandlesticks(candlesticks)
 	if len(candlesticks) == 0 {
-		return types.Candlestick{}, types.ErrExchangeReturnedNoTicks
+		return common.Candlestick{}, common.ErrExchangeReturnedNoTicks
 	}
 
 	// The first retrieved candlestick from the exchange must be exactly the required one.
@@ -109,7 +103,7 @@ func (t *Impl) NextCandlestick() (types.Candlestick, error) {
 	if candlesticks[0].Timestamp != nextTs {
 		expected := time.Unix(int64(nextTs), 0).Format(time.RFC3339)
 		actual := time.Unix(int64(candlesticks[0].Timestamp), 0).Format(time.RFC3339)
-		return types.Candlestick{}, fmt.Errorf("%w: expected %v but got %v", types.ErrExchangeReturnedOutOfSyncTick, expected, actual)
+		return common.Candlestick{}, fmt.Errorf("%w: expected %v but got %v", common.ErrExchangeReturnedOutOfSyncTick, expected, actual)
 	}
 
 	// Put in the cache for future uses.
@@ -128,8 +122,8 @@ func (t *Impl) NextCandlestick() (types.Candlestick, error) {
 	return candlestick, nil
 }
 
-func (t *Impl) nextISO8601() types.ISO8601 {
-	return types.ISO8601(t.nextTime().Format(time.RFC3339))
+func (t *Impl) nextISO8601() common.ISO8601 {
+	return common.ISO8601(t.nextTime().Format(time.RFC3339))
 }
 
 func (t *Impl) nextTime() time.Time {
@@ -144,7 +138,7 @@ func (t *Impl) candlestickDurationSecs() int {
 	return t.intervalMinutes * 60
 }
 
-func (t *Impl) pruneOlderCandlesticks(candlesticks []types.Candlestick) []types.Candlestick {
+func (t *Impl) pruneOlderCandlesticks(candlesticks []common.Candlestick) []common.Candlestick {
 	nextTs := t.nextTs()
 	for _, tick := range candlesticks {
 		if tick.Timestamp < nextTs {

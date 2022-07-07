@@ -1,12 +1,10 @@
 package bitstamp
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 )
 
 // Bitstamp struct enables requesting candlesticks from Bitstamp
@@ -45,16 +43,15 @@ func NewBitstamp() *Bitstamp {
 // received right before the gap as many times as gaps, or the first candlestick if the gaps is at the start.
 //
 // Most of the usage of this method is with 1 minute intervals, the interval used to follow predictions.
-func (e *Bitstamp) RequestCandlesticks(operand types.Operand, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *Bitstamp) RequestCandlesticks(marketSource common.MarketSource, startTimeTs int, intervalMinutes int) ([]common.Candlestick, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	candlesticks, err := e.requestCandlesticks(operand.BaseAsset, operand.QuoteAsset, startTimeTs, intervalMinutes)
+	candlesticks, err := e.requestCandlesticks(marketSource.BaseAsset, marketSource.QuoteAsset, startTimeTs, intervalMinutes)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(candlesticks)
 	return common.PatchCandlestickHoles(candlesticks, startTimeTs, 60*intervalMinutes), nil
 }
 

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +25,7 @@ func TestJsonFloat64(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(ts.expected, func(t *testing.T) {
-			bs, err := json.Marshal(types.JSONFloat64(ts.f))
+			bs, err := json.Marshal(JSONFloat64(ts.f))
 			if err != nil {
 				t.Fatalf("Marshalling failed with %v", err)
 			}
@@ -46,7 +45,7 @@ func TestJsonFloat64Fails(t *testing.T) {
 	}
 	for _, ts := range tss {
 		t.Run(fmt.Sprintf("%f", ts.f), func(t *testing.T) {
-			_, err := json.Marshal(types.JSONFloat64(ts.f))
+			_, err := json.Marshal(JSONFloat64(ts.f))
 			if err == nil {
 				t.Fatal("Expected marshalling to fail")
 			}
@@ -55,7 +54,7 @@ func TestJsonFloat64Fails(t *testing.T) {
 }
 
 func TestToMillis(t *testing.T) {
-	ms, err := types.ISO8601("2021-07-04T14:14:18Z").Millis()
+	ms, err := ISO8601("2021-07-04T14:14:18Z").Millis()
 	if err != nil {
 		t.Fatalf("should not have errored, but errored with %v", err)
 	}
@@ -63,14 +62,14 @@ func TestToMillis(t *testing.T) {
 		t.Fatalf("expected ms to be %v but were %v", 162540805800, ms)
 	}
 
-	_, err = types.ISO8601("invalid").Millis()
+	_, err = ISO8601("invalid").Millis()
 	if err == nil {
 		t.Fatal("should have errored, but didn't")
 	}
 }
 
 func TestCandlestickToTicks(t *testing.T) {
-	ticks := types.Candlestick{
+	ticks := Candlestick{
 		Timestamp:      1499040000,
 		OpenPrice:      f(0.01634790),
 		ClosePrice:     f(0.01577100),
@@ -84,7 +83,7 @@ func TestCandlestickToTicks(t *testing.T) {
 		t.Fatalf("expected len(ticks) == 2 but was %v", len(ticks))
 	}
 
-	expectedTicks := []types.Tick{
+	expectedTicks := []Tick{
 		{
 			Timestamp: 1499040000,
 			Value:     f(0.01575800),
@@ -100,35 +99,35 @@ func TestCandlestickToTicks(t *testing.T) {
 	}
 }
 
-func f(fl float64) types.JSONFloat64 {
-	return types.JSONFloat64(fl)
+func f(fl float64) JSONFloat64 {
+	return JSONFloat64(fl)
 }
 
 func TestPatchCandlestickHoles(t *testing.T) {
 	tss := []struct {
 		name         string
-		candlesticks []types.Candlestick
+		candlesticks []Candlestick
 		startTs      int
 		durSecs      int
-		expected     []types.Candlestick
+		expected     []Candlestick
 	}{
 		{
 			name:         "Base case",
-			candlesticks: []types.Candlestick{},
+			candlesticks: []Candlestick{},
 			startTs:      120,
 			durSecs:      60,
-			expected:     []types.Candlestick{},
+			expected:     []Candlestick{},
 		},
 		{
 			name: "Does not need to do anything",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
 			startTs: 120,
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
@@ -136,7 +135,7 @@ func TestPatchCandlestickHoles(t *testing.T) {
 		},
 		{
 			name: "Removes older entries returned",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: 60, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
@@ -144,7 +143,7 @@ func TestPatchCandlestickHoles(t *testing.T) {
 			},
 			startTs: 120,
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: 120, OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
@@ -152,22 +151,22 @@ func TestPatchCandlestickHoles(t *testing.T) {
 		},
 		{
 			name: "Removes older entries returned, leaving nothing",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: 60, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 			},
 			startTs:  120,
 			durSecs:  60,
-			expected: []types.Candlestick{},
+			expected: []Candlestick{},
 		},
 		{
 			name: "Needs to add an initial tick",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
 			startTs: 120,
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: 120, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
@@ -175,13 +174,13 @@ func TestPatchCandlestickHoles(t *testing.T) {
 		},
 		{
 			name: "Needs to add an initial tick, as well as in the middle",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 360, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
 			startTs: 120,
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: 120, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 180, OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: 240, OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
@@ -191,14 +190,14 @@ func TestPatchCandlestickHoles(t *testing.T) {
 		},
 		{
 			name: "Adjusts start time to zero seconds",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
 			startTs: tInt("2020-01-02 00:02:58"),
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
@@ -206,14 +205,14 @@ func TestPatchCandlestickHoles(t *testing.T) {
 		},
 		{
 			name: "Adjusts start time to zero seconds rounding up",
-			candlesticks: []types.Candlestick{
+			candlesticks: []Candlestick{
 				{Timestamp: tInt("2020-01-02 00:03:00"), OpenPrice: 1, HighestPrice: 1, ClosePrice: 1, LowestPrice: 1},
 				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
 			startTs: tInt("2020-01-02 00:03:02"),
 			durSecs: 60,
-			expected: []types.Candlestick{
+			expected: []Candlestick{
 				{Timestamp: tInt("2020-01-02 00:04:00"), OpenPrice: 2, HighestPrice: 2, ClosePrice: 2, LowestPrice: 2},
 				{Timestamp: tInt("2020-01-02 00:05:00"), OpenPrice: 3, HighestPrice: 3, ClosePrice: 3, LowestPrice: 3},
 			},
@@ -239,171 +238,171 @@ func tInt(s string) int {
 func TestNormalizeTimestamp(t *testing.T) {
 	tss := []struct {
 		name                string
-		tm                  types.ISO8601
+		tm                  ISO8601
 		candlestickInterval time.Duration
 		provider            string
 		startFromNext       bool
-		expected            types.ISO8601
+		expected            ISO8601
 	}{
 		{
 			name:                "1m, BINANCE, startFromNext = false",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 1 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:43:00Z"),
+			expected:            ISO8601("2021-01-02T01:43:00Z"),
 		},
 		{
 			name:                "1m, BINANCE, startFromNext = true",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 1 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T01:44:00Z"),
+			expected:            ISO8601("2021-01-02T01:44:00Z"),
 		},
 		{
 			name:                "1m, BINANCE, startFromNext = false, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:42:00Z"),
+			tm:                  ISO8601("2021-01-02T01:42:00Z"),
 			candlestickInterval: 1 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:42:00Z"),
+			expected:            ISO8601("2021-01-02T01:42:00Z"),
 		},
 		{
 			name:                "1m, BINANCE, startFromNext = true, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:42:00Z"),
+			tm:                  ISO8601("2021-01-02T01:42:00Z"),
 			candlestickInterval: 1 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T01:43:00Z"),
+			expected:            ISO8601("2021-01-02T01:43:00Z"),
 		},
 		{
 			name:                "5m, BINANCE, startFromNext = false",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 5 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+			expected:            ISO8601("2021-01-02T01:45:00Z"),
 		},
 		{
 			name:                "5m, BINANCE, startFromNext = true",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 5 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T01:50:00Z"),
+			expected:            ISO8601("2021-01-02T01:50:00Z"),
 		},
 		{
 			name:                "5m, BINANCE, startFromNext = false, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			tm:                  ISO8601("2021-01-02T01:45:00Z"),
 			candlestickInterval: 5 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+			expected:            ISO8601("2021-01-02T01:45:00Z"),
 		},
 		{
 			name:                "5m, BINANCE, startFromNext = true, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			tm:                  ISO8601("2021-01-02T01:45:00Z"),
 			candlestickInterval: 5 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T01:50:00Z"),
+			expected:            ISO8601("2021-01-02T01:50:00Z"),
 		},
 		{
 			name:                "15m, BINANCE, startFromNext = false",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 15 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+			expected:            ISO8601("2021-01-02T01:45:00Z"),
 		},
 		{
 			name:                "15m, BINANCE, startFromNext = true",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 15 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+			expected:            ISO8601("2021-01-02T02:00:00Z"),
 		},
 		{
 			name:                "15m, BINANCE, startFromNext = false, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			tm:                  ISO8601("2021-01-02T01:45:00Z"),
 			candlestickInterval: 15 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T01:45:00Z"),
+			expected:            ISO8601("2021-01-02T01:45:00Z"),
 		},
 		{
 			name:                "15m, BINANCE, startFromNext = true, already normalized",
-			tm:                  types.ISO8601("2021-01-02T01:45:00Z"),
+			tm:                  ISO8601("2021-01-02T01:45:00Z"),
 			candlestickInterval: 15 * time.Minute,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+			expected:            ISO8601("2021-01-02T02:00:00Z"),
 		},
 		{
 			name:                "1h, BINANCE, startFromNext = false",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 1 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+			expected:            ISO8601("2021-01-02T02:00:00Z"),
 		},
 		{
 			name:                "1h, BINANCE, startFromNext = true",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 1 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T03:00:00Z"),
+			expected:            ISO8601("2021-01-02T03:00:00Z"),
 		},
 		{
 			name:                "1h, BINANCE, startFromNext = false, already normalized",
-			tm:                  types.ISO8601("2021-01-02T02:00:00Z"),
+			tm:                  ISO8601("2021-01-02T02:00:00Z"),
 			candlestickInterval: 1 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T02:00:00Z"),
+			expected:            ISO8601("2021-01-02T02:00:00Z"),
 		},
 		{
 			name:                "1h, BINANCE, startFromNext = true, already normalized",
-			tm:                  types.ISO8601("2021-01-02T02:00:00Z"),
+			tm:                  ISO8601("2021-01-02T02:00:00Z"),
 			candlestickInterval: 1 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-02T03:00:00Z"),
+			expected:            ISO8601("2021-01-02T03:00:00Z"),
 		},
 		{
 			name:                "1d, BINANCE, startFromNext = false",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 24 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-03T00:00:00Z"),
+			expected:            ISO8601("2021-01-03T00:00:00Z"),
 		},
 		{
 			name:                "1d, BINANCE, startFromNext = true",
-			tm:                  types.ISO8601("2021-01-02T01:42:24Z"),
+			tm:                  ISO8601("2021-01-02T01:42:24Z"),
 			candlestickInterval: 24 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-04T00:00:00Z"),
+			expected:            ISO8601("2021-01-04T00:00:00Z"),
 		},
 		{
 			name:                "1d, BINANCE, startFromNext = false, already normalized",
-			tm:                  types.ISO8601("2021-01-02T00:00:00Z"),
+			tm:                  ISO8601("2021-01-02T00:00:00Z"),
 			candlestickInterval: 24 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       false,
-			expected:            types.ISO8601("2021-01-02T00:00:00Z"),
+			expected:            ISO8601("2021-01-02T00:00:00Z"),
 		},
 		{
 			name:                "1d, BINANCE, startFromNext = true, already normalized",
-			tm:                  types.ISO8601("2021-01-02T00:00:00Z"),
+			tm:                  ISO8601("2021-01-02T00:00:00Z"),
 			candlestickInterval: 24 * time.Hour,
 			provider:            "BINANCE",
 			startFromNext:       true,
-			expected:            types.ISO8601("2021-01-03T00:00:00Z"),
+			expected:            ISO8601("2021-01-03T00:00:00Z"),
 		},
 	}
 	for _, ts := range tss {

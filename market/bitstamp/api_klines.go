@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,38 +23,38 @@ type responseDataOHLC struct {
 	Open      string `json:"open"`
 }
 
-func (o responseDataOHLC) toCandlestick() (types.Candlestick, error) {
-	c := types.Candlestick{}
+func (o responseDataOHLC) toCandlestick() (common.Candlestick, error) {
+	c := common.Candlestick{}
 
 	timestamp, err := strconv.Atoi(o.Timestamp)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
 	c.Timestamp = timestamp
 
 	rawFloat, err := strconv.ParseFloat(o.Close, 64)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
-	c.ClosePrice = types.JSONFloat64(rawFloat)
+	c.ClosePrice = common.JSONFloat64(rawFloat)
 
 	rawFloat, err = strconv.ParseFloat(o.Open, 64)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
-	c.OpenPrice = types.JSONFloat64(rawFloat)
+	c.OpenPrice = common.JSONFloat64(rawFloat)
 
 	rawFloat, err = strconv.ParseFloat(o.High, 64)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
-	c.HighestPrice = types.JSONFloat64(rawFloat)
+	c.HighestPrice = common.JSONFloat64(rawFloat)
 
 	rawFloat, err = strconv.ParseFloat(o.Low, 64)
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
-	c.LowestPrice = types.JSONFloat64(rawFloat)
+	c.LowestPrice = common.JSONFloat64(rawFloat)
 
 	return c, nil
 }
@@ -81,8 +80,8 @@ type response struct {
 	Data   responseData    `json:"data"`
 }
 
-func (r response) toCandlesticks() ([]types.Candlestick, error) {
-	cs := []types.Candlestick{}
+func (r response) toCandlesticks() ([]common.Candlestick, error) {
+	cs := []common.Candlestick{}
 
 	for _, item := range r.Data.OHLC {
 		c, err := item.toCandlestick()
@@ -102,7 +101,7 @@ func (r response) toError() error {
 	return errors.New(strings.Join(ss, ", "))
 }
 
-func (e *Bitstamp) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *Bitstamp) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]common.Candlestick, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vohlc/%v%v/", e.apiURL, strings.ToLower(baseAsset), strings.ToLower(quoteAsset)), nil)
 
 	// Bitstamp has the unusual strategy of returning the snapped timestamp to the past rather than the future, so
@@ -111,7 +110,7 @@ func (e *Bitstamp) requestCandlesticks(baseAsset string, quoteAsset string, star
 
 	q := req.URL.Query()
 	q.Add("start", fmt.Sprintf("%v", startTimeSecs))
-	q.Add("step", fmt.Sprintf("%v", intervalMinutes))
+	q.Add("step", fmt.Sprintf("%v", intervalMinutes*60))
 	q.Add("limit", "1000")
 
 	req.URL.RawQuery = q.Encode()
@@ -126,11 +125,11 @@ func (e *Bitstamp) requestCandlesticks(baseAsset string, quoteAsset string, star
 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		// https://www.bitstamp.net/api/#what-is-api
-		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrRateLimit}
+		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: common.ErrRateLimit}
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: types.ErrInvalidMarketPair}
+		return nil, common.CandleReqError{IsNotRetryable: true, IsExchangeSide: true, Err: common.ErrInvalidMarketPair}
 	}
 
 	// Catch-all for non-200 errors
@@ -164,7 +163,7 @@ func (e *Bitstamp) requestCandlesticks(baseAsset string, quoteAsset string, star
 	}
 
 	if len(candlesticks) == 0 {
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrOutOfCandlesticks}
 	}
 
 	return candlesticks, nil

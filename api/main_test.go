@@ -8,10 +8,11 @@ import (
 	"os/user"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/marianogappa/predictions/market/common"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -96,43 +97,43 @@ func (t testFetcher) Fetch(url *url.URL) (fetcherTypes.PostMetadata, error) {
 }
 
 type testMarket struct {
-	ticks map[string][]types.Tick
+	ticks map[string][]common.Tick
 }
 
-func newTestMarket(ticks map[string][]types.Tick) *testMarket {
+func newTestMarket(ticks map[string][]common.Tick) *testMarket {
 	return &testMarket{ticks}
 }
 
-func (m *testMarket) GetIterator(operand types.Operand, initialISO8601 types.ISO8601, startFromNext bool, intervalMinutes int) (types.Iterator, error) {
-	if _, ok := m.ticks[operand.Str]; !ok {
-		return nil, types.ErrInvalidMarketPair
+func (m *testMarket) GetIterator(marketSource common.MarketSource, startTime time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error) {
+	if _, ok := m.ticks[marketSource.String()]; !ok {
+		return nil, common.ErrInvalidMarketPair
 	}
-	return newTestIterator(m.ticks[operand.Str]), nil
+	return newTestIterator(m.ticks[marketSource.String()]), nil
 }
 
 type testIterator struct {
-	ticks []types.Tick
+	ticks []common.Tick
 }
 
-func newTestIterator(ticks []types.Tick) types.Iterator {
+func newTestIterator(ticks []common.Tick) common.Iterator {
 	return &testIterator{ticks}
 }
 
-func (i *testIterator) NextTick() (types.Tick, error) {
+func (i *testIterator) NextTick() (common.Tick, error) {
 	if len(i.ticks) > 0 {
 		tick := i.ticks[0]
 		i.ticks = i.ticks[1:]
 		return tick, nil
 	}
-	return types.Tick{}, types.ErrOutOfTicks
+	return common.Tick{}, common.ErrOutOfTicks
 }
 
-func (i *testIterator) NextCandlestick() (types.Candlestick, error) {
+func (i *testIterator) NextCandlestick() (common.Candlestick, error) {
 	tick, err := i.NextTick()
 	if err != nil {
-		return types.Candlestick{}, err
+		return common.Candlestick{}, err
 	}
-	return types.Candlestick{OpenPrice: tick.Value, HighestPrice: tick.Value, LowestPrice: tick.Value, ClosePrice: tick.Value}, nil
+	return common.Candlestick{OpenPrice: tick.Value, HighestPrice: tick.Value, LowestPrice: tick.Value, ClosePrice: tick.Value}, nil
 }
 
 func (i *testIterator) IsOutOfTicks() bool {

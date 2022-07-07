@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
@@ -144,7 +145,7 @@ func (compilerPrediction) PrepareJSONSchema(schema *jsonschema.Schema) error {
 				State: compiler.ConditionState{
 					Status: "STARTED",
 					LastTs: 1651162692,
-					LastTicks: map[string]types.Tick{
+					LastTicks: map[string]common.Tick{
 						"COIN:BINANCE:BTC-USDT": {
 							Timestamp: 1651162692,
 							Value:     41000,

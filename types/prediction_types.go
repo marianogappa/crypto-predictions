@@ -3,6 +3,8 @@ package types
 import (
 	"math"
 	"time"
+
+	"github.com/marianogappa/predictions/market/common"
 )
 
 // PredictionTypeCoinWillReachBeforeItReachesWrapper is a prediction type. This type decorator provides value facades.
@@ -125,7 +127,7 @@ func (p PredictionTypeCoinOperatorFloatDeadlineWrapper) EndTime() time.Time {
 
 // EndTimeTruncatedDueToResultInvalidation is the time the prediction finished or will finish, truncating for possible
 // UI issues.
-func (p PredictionTypeCoinOperatorFloatDeadlineWrapper) EndTimeTruncatedDueToResultInvalidation(candlesticks []Candlestick) time.Time {
+func (p PredictionTypeCoinOperatorFloatDeadlineWrapper) EndTimeTruncatedDueToResultInvalidation(candlesticks []common.Candlestick) time.Time {
 	return endTimeTruncatedDueToResultInvalidation(p.P, p.P.Predict.Predict.Literal.Clone(), p.EndTime(), candlesticks)
 }
 
@@ -189,11 +191,11 @@ func (p PredictionTypeCoinWillReachInvalidatedIfItReachesWrapper) EndTime() time
 
 // EndTimeTruncatedDueToResultInvalidation is the time the prediction finished or will finish, truncating for possible
 // UI issues.
-func (p PredictionTypeCoinWillReachInvalidatedIfItReachesWrapper) EndTimeTruncatedDueToResultInvalidation(candlesticks []Candlestick) time.Time {
+func (p PredictionTypeCoinWillReachInvalidatedIfItReachesWrapper) EndTimeTruncatedDueToResultInvalidation(candlesticks []common.Candlestick) time.Time {
 	return endTimeTruncatedDueToResultInvalidation(p.P, p.P.Predict.Predict.Literal.Clone(), p.EndTime(), candlesticks)
 }
 
-func endTimeTruncatedDueToResultInvalidation(p Prediction, condition Condition, endTime time.Time, candlesticks []Candlestick) time.Time {
+func endTimeTruncatedDueToResultInvalidation(p Prediction, condition Condition, endTime time.Time, candlesticks []common.Candlestick) time.Time {
 	if p.State.Status != FINISHED || p.State.Value != INCORRECT || len(candlesticks) < 2 {
 		return endTime
 	}
@@ -214,12 +216,12 @@ func endTimeTruncatedDueToResultInvalidation(p Prediction, condition Condition, 
 		penultimateTimestamp   = penultimateCandlestick.Timestamp
 		diffSeconds            = lastTimestamp - penultimateTimestamp
 		nextTimestamp          = lastTimestamp + diffSeconds // Tick timestamp must be in the future
-		lowTick                = Tick{Timestamp: nextTimestamp, Value: lastCandlestick.LowestPrice}
-		highTick               = Tick{Timestamp: nextTimestamp + 1, Value: lastCandlestick.HighestPrice}
+		lowTick                = common.Tick{Timestamp: nextTimestamp, Value: lastCandlestick.LowestPrice}
+		highTick               = common.Tick{Timestamp: nextTimestamp + 1, Value: lastCandlestick.HighestPrice}
 	)
 
-	_ = condition.Run(map[string]Tick{coin: lowTick})
-	_ = condition.Run(map[string]Tick{coin: highTick})
+	_ = condition.Run(map[string]common.Tick{coin: lowTick})
+	_ = condition.Run(map[string]common.Tick{coin: highTick})
 
 	if condition.Evaluate() != TRUE {
 		return endTime

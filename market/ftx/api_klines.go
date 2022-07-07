@@ -11,7 +11,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 )
 
 //[
@@ -41,17 +40,17 @@ type response struct {
 	Result  []responseCandlestick `json:"result"`
 }
 
-func (r response) toCandlesticks() []types.Candlestick {
-	candlesticks := make([]types.Candlestick, len(r.Result))
+func (r response) toCandlesticks() []common.Candlestick {
+	candlesticks := make([]common.Candlestick, len(r.Result))
 	for i := 0; i < len(r.Result); i++ {
 		raw := r.Result[i]
-		candlestick := types.Candlestick{
+		candlestick := common.Candlestick{
 			Timestamp:    int(raw.Time) / 1000,
-			OpenPrice:    types.JSONFloat64(raw.Open),
-			ClosePrice:   types.JSONFloat64(raw.Close),
-			LowestPrice:  types.JSONFloat64(raw.Low),
-			HighestPrice: types.JSONFloat64(raw.High),
-			Volume:       types.JSONFloat64(raw.Volume),
+			OpenPrice:    common.JSONFloat64(raw.Open),
+			ClosePrice:   common.JSONFloat64(raw.Close),
+			LowestPrice:  common.JSONFloat64(raw.Low),
+			HighestPrice: common.JSONFloat64(raw.High),
+			Volume:       common.JSONFloat64(raw.Volume),
 		}
 		candlesticks[i] = candlestick
 	}
@@ -59,7 +58,7 @@ func (r response) toCandlesticks() []types.Candlestick {
 	return candlesticks
 }
 
-func (e *FTX) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *FTX) requestCandlesticks(baseAsset string, quoteAsset string, startTimeSecs int, intervalMinutes int) ([]common.Candlestick, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vmarkets/%v/%v/candles", e.apiURL, strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset)), nil)
 	q := req.URL.Query()
 
@@ -99,7 +98,7 @@ func (e *FTX) requestCandlesticks(baseAsset string, quoteAsset string, startTime
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, common.CandleReqError{IsNotRetryable: true, Err: types.ErrInvalidMarketPair}
+		return nil, common.CandleReqError{IsNotRetryable: true, Err: common.ErrInvalidMarketPair}
 	}
 
 	byts, err := ioutil.ReadAll(resp.Body)
@@ -128,7 +127,7 @@ func (e *FTX) requestCandlesticks(baseAsset string, quoteAsset string, startTime
 
 	candlesticks := maybeResponse.toCandlesticks()
 	if len(candlesticks) == 0 {
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrOutOfCandlesticks}
 	}
 
 	return candlesticks, nil

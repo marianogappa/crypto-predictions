@@ -3,6 +3,8 @@ package types
 import (
 	"reflect"
 	"testing"
+
+	"github.com/marianogappa/predictions/market/common"
 )
 
 func TestPrePredictEvaluate(t *testing.T) {
@@ -527,7 +529,7 @@ func TestPrePredictClearState(t *testing.T) {
 					State: ConditionState{
 						Status:    FINISHED,
 						LastTs:    12345,
-						LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+						LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 						Value:     TRUE,
 					},
 				},
@@ -538,7 +540,7 @@ func TestPrePredictClearState(t *testing.T) {
 					State: ConditionState{
 						Status:    FINISHED,
 						LastTs:    12345,
-						LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+						LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 						Value:     TRUE,
 					},
 				},
@@ -548,7 +550,7 @@ func TestPrePredictClearState(t *testing.T) {
 			State: ConditionState{
 				Status:    FINISHED,
 				LastTs:    12345,
-				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 				Value:     TRUE,
 			},
 		},

@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/marianogappa/predictions/market/common"
-	"github.com/marianogappa/predictions/types"
 )
 
 type errorResponse struct {
@@ -26,7 +25,7 @@ func (r errorResponse) toError() error {
 		return nil
 	}
 	if r.Code == eRRINVALIDSYMBOL {
-		return types.ErrInvalidMarketPair
+		return common.ErrInvalidMarketPair
 	}
 	return fmt.Errorf("binance returned error code! Code: %v, Message: %v", r.Code, r.Msg)
 }
@@ -59,8 +58,8 @@ func interfaceToFloatRoundInt(i interface{}) (int, bool) {
 	return int(f), true
 }
 
-func (r successfulResponse) toCandlesticks() ([]types.Candlestick, error) {
-	candlesticks := make([]types.Candlestick, len(r.ResponseCandlesticks))
+func (r successfulResponse) toCandlesticks() ([]common.Candlestick, error) {
+	candlesticks := make([]common.Candlestick, len(r.ResponseCandlesticks))
 	for i := 0; i < len(r.ResponseCandlesticks); i++ {
 		raw := r.ResponseCandlesticks[i]
 		candlestick := binanceCandlestick{}
@@ -185,19 +184,19 @@ type binanceCandlestick struct {
 	takerBuyQuoteAssetVolume float64
 }
 
-func (c binanceCandlestick) toCandlestick() types.Candlestick {
-	return types.Candlestick{
+func (c binanceCandlestick) toCandlestick() common.Candlestick {
+	return common.Candlestick{
 		Timestamp:      int(c.openAt.Unix()),
-		OpenPrice:      types.JSONFloat64(c.openPrice),
-		ClosePrice:     types.JSONFloat64(c.closePrice),
-		LowestPrice:    types.JSONFloat64(c.lowPrice),
-		HighestPrice:   types.JSONFloat64(c.highPrice),
-		Volume:         types.JSONFloat64(c.volume),
+		OpenPrice:      common.JSONFloat64(c.openPrice),
+		ClosePrice:     common.JSONFloat64(c.closePrice),
+		LowestPrice:    common.JSONFloat64(c.lowPrice),
+		HighestPrice:   common.JSONFloat64(c.highPrice),
+		Volume:         common.JSONFloat64(c.volume),
 		NumberOfTrades: c.tradeCount,
 	}
 }
 
-func (e *BinanceUSDMFutures) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]types.Candlestick, error) {
+func (e *BinanceUSDMFutures) requestCandlesticks(baseAsset string, quoteAsset string, startTimeTs int, intervalMinutes int) ([]common.Candlestick, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("%vklines", e.apiURL), nil)
 	symbol := fmt.Sprintf("%v%v", strings.ToUpper(baseAsset), strings.ToUpper(quoteAsset))
 
@@ -282,7 +281,7 @@ func (e *BinanceUSDMFutures) requestCandlesticks(baseAsset string, quoteAsset st
 	}
 
 	if len(candlesticks) == 0 {
-		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: types.ErrOutOfCandlesticks}
+		return nil, common.CandleReqError{IsNotRetryable: false, IsExchangeSide: true, Err: common.ErrOutOfCandlesticks}
 	}
 
 	if e.debug {

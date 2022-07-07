@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/request"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
@@ -127,11 +128,11 @@ func (r response) parse() parsedResponse {
 }
 
 type predictionSummary struct {
-	TickMap  map[string][]types.Tick `json:"tickMap"`
-	Coin     string                  `json:"coin"`
-	Goal     types.JSONFloat64       `json:"goal"`
-	Operator string                  `json:"operator"`
-	Deadline types.ISO8601           `json:"deadline"`
+	TickMap  map[string][]common.Tick `json:"tickMap"`
+	Coin     string                   `json:"coin"`
+	Goal     types.JSONFloat64        `json:"goal"`
+	Operator string                   `json:"operator"`
+	Deadline types.ISO8601            `json:"deadline"`
 }
 type parsedResponse struct {
 	Status               int

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/market/common"
 )
 
-func (c *MemoryCache) put(metric Metric, candlesticks []types.Candlestick) error {
+func (c *MemoryCache) put(metric Metric, candlesticks []common.Candlestick) error {
 	var lastTimestamp int
 	for i, candlestick := range candlesticks {
 		if lastTimestamp != 0 && candlestick.Timestamp-lastTimestamp != int(metric.CandlestickInterval/time.Second) {
@@ -31,9 +31,9 @@ func (c *MemoryCache) put(metric Metric, candlesticks []types.Candlestick) error
 
 		elem, ok := c.caches[metric.CandlestickInterval].Get(key)
 		if !ok {
-			elem = [500]types.Candlestick{}
+			elem = [500]common.Candlestick{}
 		}
-		typedElem := elem.([500]types.Candlestick)
+		typedElem := elem.([500]common.Candlestick)
 		typedElem[index] = candlestick
 		c.caches[metric.CandlestickInterval].Add(key, typedElem)
 
@@ -43,23 +43,23 @@ func (c *MemoryCache) put(metric Metric, candlesticks []types.Candlestick) error
 	return nil
 }
 
-func (c *MemoryCache) get(metric Metric, startingTimestamp int) ([]types.Candlestick, error) {
+func (c *MemoryCache) get(metric Metric, startingTimestamp int) ([]common.Candlestick, error) {
 	var (
 		candlestickTime = time.Unix(int64(startingTimestamp), 0)
 		truncatedTime   = candlestickTime.Truncate(metric.CandlestickInterval * 500)
 		key             = fmt.Sprintf("%v-%v-%v", metric.Name, metric.CandlestickInterval.String(), truncatedTime.Format(time.RFC3339))
 		index           = int(candlestickTime.Sub(truncatedTime) / metric.CandlestickInterval)
-		candlesticks    = []types.Candlestick{}
+		candlesticks    = []common.Candlestick{}
 	)
 
 	elem, ok := c.caches[metric.CandlestickInterval].Get(key)
 	if !ok {
 		c.CacheMisses++
-		return []types.Candlestick{}, ErrCacheMiss
+		return []common.Candlestick{}, ErrCacheMiss
 	}
-	typedElem := elem.([500]types.Candlestick)
+	typedElem := elem.([500]common.Candlestick)
 	for i := index; i <= 499; i++ {
-		if typedElem[i] == (types.Candlestick{}) {
+		if typedElem[i] == (common.Candlestick{}) {
 			break
 		}
 		candlesticks = append(candlesticks, typedElem[i])

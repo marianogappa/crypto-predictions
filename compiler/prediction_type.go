@@ -70,14 +70,6 @@ var (
 				pred.Predict.Predict.Operands[0].Literal.Operands[0] == pred.Predict.Predict.Operands[1].Operands[0].Literal.Operands[0] &&
 				pred.Predict.Predict.Operands[0].Literal.Operator != pred.Predict.Predict.Operands[1].Operands[0].Literal.Operator
 		},
-		types.PredictionTypeTheFlippening: func(pred types.Prediction) bool {
-			return pred.PrePredict.Predict == nil && pred.PrePredict.AnnulledIf == nil &&
-				pred.PrePredict.WrongIf == nil && pred.Predict.AnnulledIf == nil && pred.Predict.WrongIf == nil &&
-				pred.Predict.Predict.Operator == types.LITERAL && len(pred.Predict.Predict.Literal.Operands) == 2 &&
-				pred.Predict.Predict.Literal.Operands[0].Type == types.MARKETCAP &&
-				pred.Predict.Predict.Literal.Operands[1].Type == types.MARKETCAP &&
-				pred.Predict.Predict.Literal.Operator == ">"
-		},
 	}
 )
 
