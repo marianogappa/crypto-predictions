@@ -6,8 +6,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/marianogappa/predictions/market"
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles"
+	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/types"
 )
 
@@ -22,7 +22,7 @@ var (
 )
 
 // NewPredEvolver is the constructor for PredEvolver.
-func NewPredEvolver(prediction *types.Prediction, m market.IMarket, nowTs int) (*PredEvolver, []error) {
+func NewPredEvolver(prediction *types.Prediction, m candles.IMarket, nowTs int) (*PredEvolver, []error) {
 	errs := []error{}
 	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]common.Iterator)}
 

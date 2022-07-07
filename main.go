@@ -13,11 +13,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/api"
 	"github.com/marianogappa/predictions/backoffice"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/imagebuilder"
-	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
 )
@@ -88,7 +88,7 @@ func main() {
 		}
 
 		// The market component queries all exchange APIs for market data.
-		market = market.NewMarket(marketCacheSizes)
+		market = candles.NewMarket(marketCacheSizes)
 
 		// The metadataFetcher component queries the Twitter/Youtube APIs for social post metadata, e.g. timestamps.
 		metadataFetcher = metadatafetcher.NewMetadataFetcher()

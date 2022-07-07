@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/compiler"
-	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
@@ -16,11 +16,11 @@ import (
 // PredictionSerializer is the component that serializes a Prediction to a string representation, to be persisted or
 // returned in an API call.
 type PredictionSerializer struct {
-	mkt *market.IMarket
+	mkt *candles.IMarket
 }
 
 // NewPredictionSerializer constructs a PredictionSerializer.
-func NewPredictionSerializer(market *market.IMarket) PredictionSerializer {
+func NewPredictionSerializer(market *candles.IMarket) PredictionSerializer {
 	return PredictionSerializer{mkt: market}
 }
 

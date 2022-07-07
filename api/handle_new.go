@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/daemon"
-	"github.com/marianogappa/predictions/market/common"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"

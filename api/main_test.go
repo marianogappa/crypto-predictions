@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/market/common"
+	"github.com/marianogappa/crypto-candles/candles/common"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/rs/zerolog/log"

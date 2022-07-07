@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/imagebuilder"
-	"github.com/marianogappa/predictions/market"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/swaggest/rest/nethttp"
@@ -23,7 +23,7 @@ import (
 // API is the main API struct.
 type API struct {
 	mux          *web.Service
-	mkt          market.IMarket
+	mkt          candles.IMarket
 	store        statestorage.StateStorage
 	mFetcher     metadatafetcher.MetadataFetcher
 	NowFunc      func() time.Time
@@ -33,7 +33,7 @@ type API struct {
 
 // NewAPI is the constructor for the API.
 func NewAPI(
-	mkt market.IMarket,
+	mkt candles.IMarket,
 	store statestorage.StateStorage,
 	mFetcher metadatafetcher.MetadataFetcher,
 	imgBuilder imagebuilder.PredictionImageBuilder,
