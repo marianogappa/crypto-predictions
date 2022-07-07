@@ -6,20 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSerialize(t *testing.T) {
 	tss := []struct {
 		name     string
-		pred     types.Prediction
+		pred     core.Prediction
 		err      error
 		expected string
 	}{
 		{
 			name: "Happy Case",
-			pred: types.Prediction{
+			pred: core.Prediction{
 				Version:    "1.0.0",
 				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
 				Reporter:   "admin",
@@ -27,13 +27,13 @@ func TestSerialize(t *testing.T) {
 				PostText:   "",
 				PostedAt:   tpToISO("2020-01-02 00:00:00"),
 				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
-				Given: map[string]*types.Condition{
+				Given: map[string]*core.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
-						Operands: []types.Operand{
-							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+						Operands: []core.Operand{
+							{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+							{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 						ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -41,16 +41,16 @@ func TestSerialize(t *testing.T) {
 						ErrorMarginRatio: 0.03,
 					},
 				},
-				PrePredict: types.PrePredict{
-					Predict: &types.BoolExpr{
-						Operator: types.LITERAL,
+				PrePredict: core.PrePredict{
+					Predict: &core.BoolExpr{
+						Operator: core.LITERAL,
 						Operands: nil,
-						Literal: &types.Condition{
+						Literal: &core.Condition{
 							Name:     "main",
 							Operator: "<=",
-							Operands: []types.Operand{
-								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+							Operands: []core.Operand{
+								{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -61,16 +61,16 @@ func TestSerialize(t *testing.T) {
 					AnnulledIfPredictIsFalse:          true,
 					IgnoreUndecidedIfPredictIsDefined: true,
 				},
-				Predict: types.Predict{
-					Predict: types.BoolExpr{
-						Operator: types.LITERAL,
+				Predict: core.Predict{
+					Predict: core.BoolExpr{
+						Operator: core.LITERAL,
 						Operands: nil,
-						Literal: &types.Condition{
+						Literal: &core.Condition{
 							Name:     "main",
 							Operator: "<=",
-							Operands: []types.Operand{
-								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+							Operands: []core.Operand{
+								{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:           int(tp("2020-01-02 00:00:00").Unix()),
 							ToTs:             int(tp("2020-01-04 00:00:00").Unix()),
@@ -80,7 +80,7 @@ func TestSerialize(t *testing.T) {
 					},
 					IgnoreUndecidedIfPredictIsDefined: true,
 				},
-				Type: types.PredictionTypeCoinOperatorFloatDeadline,
+				Type: core.PredictionTypeCoinOperatorFloatDeadline,
 			},
 			err: nil,
 			expected: `{
@@ -162,9 +162,9 @@ func TestSerialize(t *testing.T) {
 	}
 }
 
-func tpToISO(s string) types.ISO8601 {
+func tpToISO(s string) core.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return types.ISO8601(t.Format(time.RFC3339))
+	return core.ISO8601(t.Format(time.RFC3339))
 }
 
 func tp(s string) time.Time {

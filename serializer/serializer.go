@@ -8,8 +8,8 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/printer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -26,7 +26,7 @@ func NewPredictionSerializer(market *candles.IMarket) PredictionSerializer {
 
 // PreSerialize serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing it to a
 // JSON []byte.
-func (s PredictionSerializer) PreSerialize(p *types.Prediction) (compiler.Prediction, error) {
+func (s PredictionSerializer) PreSerialize(p *core.Prediction) (compiler.Prediction, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
 		return compiler.Prediction{}, err
@@ -57,7 +57,7 @@ func (s PredictionSerializer) PreSerialize(p *types.Prediction) (compiler.Predic
 
 // PreSerializeForDB serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing it
 // to a JSON []byte.
-func (s PredictionSerializer) PreSerializeForDB(p *types.Prediction) (compiler.Prediction, error) {
+func (s PredictionSerializer) PreSerializeForDB(p *core.Prediction) (compiler.Prediction, error) {
 	pp, err := marshalPrePredict(p.PrePredict)
 	if err != nil {
 		return compiler.Prediction{}, err
@@ -85,7 +85,7 @@ func (s PredictionSerializer) PreSerializeForDB(p *types.Prediction) (compiler.P
 
 // Serialize serializes a Prediction to a JSON []byte. It is meant to be used for persisting, but must not be used
 // by the API. There's a separate PreSerializeForAPI method for that purpose.
-func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
+func (s PredictionSerializer) Serialize(p *core.Prediction) ([]byte, error) {
 	pre, err := s.PreSerialize(p)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (s PredictionSerializer) Serialize(p *types.Prediction) ([]byte, error) {
 
 // SerializeForDB serializes a Prediction to a JSON []byte. It is meant to be used for persisting, but must only be used
 // by the DB.
-func (s PredictionSerializer) SerializeForDB(p *types.Prediction) ([]byte, error) {
+func (s PredictionSerializer) SerializeForDB(p *core.Prediction) ([]byte, error) {
 	pre, err := s.PreSerializeForDB(p)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (s PredictionSerializer) SerializeForDB(p *types.Prediction) ([]byte, error
 
 // PreSerializeForAPI serializes a Prediction to a compiler.Prediction, but doesn't take the extra step of serializing
 // it to a JSON []byte. It is meant to be used only by the API.
-func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSummary bool) (compiler.Prediction, error) {
+func (s PredictionSerializer) PreSerializeForAPI(p *core.Prediction, includeSummary bool) (compiler.Prediction, error) {
 	pred := compiler.Prediction{
 		UUID:            p.UUID,
 		Version:         p.Version,
@@ -137,7 +137,7 @@ func (s PredictionSerializer) PreSerializeForAPI(p *types.Prediction, includeSum
 }
 
 // SerializeForAPI serializes a Prediction to a JSON []byte. It is meant to be used only by the API.
-func (s PredictionSerializer) SerializeForAPI(p *types.Prediction, includeSummary bool) ([]byte, error) {
+func (s PredictionSerializer) SerializeForAPI(p *core.Prediction, includeSummary bool) ([]byte, error) {
 	pred, err := s.PreSerializeForAPI(p, includeSummary)
 	if err != nil {
 		return nil, err
@@ -146,20 +146,20 @@ func (s PredictionSerializer) SerializeForAPI(p *types.Prediction, includeSummar
 	return json.Marshal(pred)
 }
 
-func marshalInnerCondition(c *types.Condition) string {
+func marshalInnerCondition(c *core.Condition) string {
 	if c.Operator == "BETWEEN" {
 		return fmt.Sprintf(`%v BETWEEN %v AND %v`, c.Operands[0].Str, c.Operands[1].Str, c.Operands[2].Str)
 	}
 	return fmt.Sprintf(`%v %v %v`, c.Operands[0].Str, c.Operator, c.Operands[1].Str)
 }
 
-func marshalGiven(given map[string]*types.Condition) map[string]compiler.Condition {
+func marshalGiven(given map[string]*core.Condition) map[string]compiler.Condition {
 	result := map[string]compiler.Condition{}
 	for key, cond := range given {
 		c := compiler.Condition{
 			Condition:        marshalInnerCondition(cond),
-			FromISO8601:      types.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
-			ToISO8601:        types.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
+			FromISO8601:      core.ISO8601(time.Unix(int64(cond.FromTs), 0).Format(time.RFC3339)),
+			ToISO8601:        core.ISO8601(time.Unix(int64(cond.ToTs), 0).Format(time.RFC3339)),
 			ToDuration:       cond.ToDuration,
 			Assumed:          cond.Assumed,
 			ErrorMarginRatio: cond.ErrorMarginRatio,
@@ -175,7 +175,7 @@ func marshalGiven(given map[string]*types.Condition) map[string]compiler.Conditi
 	return result
 }
 
-func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
+func marshalBoolExpr(b *core.BoolExpr, nestLevel int) (*string, error) {
 	if b == nil {
 		return nil, nil
 	}
@@ -185,11 +185,11 @@ func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 		suffix = ")"
 	}
 	switch b.Operator {
-	case types.LITERAL:
+	case core.LITERAL:
 		return &b.Literal.Name, nil
-	case types.AND, types.OR:
+	case core.AND, core.OR:
 		operator := " and "
-		if b.Operator == types.OR {
+		if b.Operator == core.OR {
 			operator = " or "
 		}
 		operands := []string{}
@@ -205,7 +205,7 @@ func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 		}
 		s := fmt.Sprintf("%v%v%v", prefix, strings.Join(operands, operator), suffix)
 		return &s, nil
-	case types.NOT:
+	case core.NOT:
 		operand, err := marshalBoolExpr(b.Operands[0], nestLevel+1)
 		if err != nil {
 			return nil, err
@@ -216,7 +216,7 @@ func marshalBoolExpr(b *types.BoolExpr, nestLevel int) (*string, error) {
 	return nil, fmt.Errorf("marshalBoolExpr: unknown operator '%v'", b.Operator)
 }
 
-func marshalPrePredict(pp types.PrePredict) (*compiler.PrePredict, error) {
+func marshalPrePredict(pp core.PrePredict) (*compiler.PrePredict, error) {
 	wrongIf, err := marshalBoolExpr(pp.WrongIf, 0)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func marshalPrePredict(pp types.PrePredict) (*compiler.PrePredict, error) {
 	return result, nil
 }
 
-func marshalPredict(p types.Predict) (compiler.Predict, error) {
+func marshalPredict(p core.Predict) (compiler.Predict, error) {
 	wrongIf, err := marshalBoolExpr(p.WrongIf, 0)
 	if err != nil {
 		return compiler.Predict{}, err
@@ -261,7 +261,7 @@ func marshalPredict(p types.Predict) (compiler.Predict, error) {
 	return result, nil
 }
 
-func marshalPredictionState(ps types.PredictionState) compiler.PredictionState {
+func marshalPredictionState(ps core.PredictionState) compiler.PredictionState {
 	return compiler.PredictionState{
 		Status: ps.Status.String(),
 		LastTs: ps.LastTs,
@@ -292,7 +292,7 @@ type Account struct {
 
 // PreSerialize serializes an Account to a compiler.Account, but doesn't take the extra step of serializing it to a
 // JSON []byte.
-func (s AccountSerializer) PreSerialize(p *types.Account) (Account, error) {
+func (s AccountSerializer) PreSerialize(p *core.Account) (Account, error) {
 	thumbs := []string{}
 	for _, thumb := range p.Thumbnails {
 		thumbs = append(thumbs, thumb.String())
@@ -316,7 +316,7 @@ func (s AccountSerializer) PreSerialize(p *types.Account) (Account, error) {
 }
 
 // Serialize serializes an Account to a JSON []byte.
-func (s AccountSerializer) Serialize(p *types.Account) ([]byte, error) {
+func (s AccountSerializer) Serialize(p *core.Account) ([]byte, error) {
 	acc, err := s.PreSerialize(p)
 	if err != nil {
 		return nil, err

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher/types"
-	coreTypes "github.com/marianogappa/predictions/types"
 )
 
 // MetadataFetcher is the main struct for fetching metadata from Twitter.
@@ -49,7 +49,7 @@ func (f MetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 	}
 
 	return types.PostMetadata{
-		Author: coreTypes.Account{
+		Author: core.Account{
 			URL:           userURL,
 			AccountType:   "TWITTER",
 			FollowerCount: tweet.FollowersCount,
@@ -61,7 +61,7 @@ func (f MetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 		},
 		PostTitle:     tweet.TweetText,
 		PostText:      tweet.TweetText,
-		PostCreatedAt: coreTypes.ISO8601(tweet.TweetCreatedAt.Format(time.RFC3339)), // TODO
+		PostCreatedAt: core.ISO8601(tweet.TweetCreatedAt.Format(time.RFC3339)), // TODO
 		PostType:      types.TWITTER,
 	}, nil
 }

@@ -16,8 +16,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/marianogappa/crypto-candles/candles"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -40,7 +40,7 @@ func NewPredictionImageBuilder(m candles.IMarket, files embed.FS, chromePath str
 // execute the Chrome binary. Prediction must be well-formed. Building candlestick chart depends on Internet access,
 // and the market communicates with an exchange's API that might be offline, might decide to 429, etc. A lot can
 // go wrong unfortunately.
-func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, account types.Account) (string, error) {
+func (r PredictionImageBuilder) BuildImageBase64(prediction core.Prediction, account core.Account) (string, error) {
 	url, err := r.BuildImage(prediction, account)
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (r PredictionImageBuilder) BuildImageBase64(prediction types.Prediction, ac
 // execute the Chrome binary. Prediction must be well-formed. Building candlestick chart depends on Internet access,
 // and the market communicates with an exchange's API that might be offline, might decide to 429, etc. A lot can
 // go wrong unfortunately.
-func (r PredictionImageBuilder) BuildImage(prediction types.Prediction, account types.Account) (string, error) {
+func (r PredictionImageBuilder) BuildImage(prediction core.Prediction, account core.Account) (string, error) {
 	if r.chromePath == "" {
 		return "", errors.New("daemon.buildImageAction: PREDICTIONS_CHROME_PATH env not set")
 	}

@@ -1,4 +1,4 @@
-package types
+package core
 
 // PrePredict represents the initial, non-main prediction step.
 type PrePredict struct {

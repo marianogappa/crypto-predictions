@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,7 +60,7 @@ func TestTwitterHappyCase(t *testing.T) {
 	}
 
 	expected := mfTypes.PostMetadata{
-		Author: types.Account{
+		Author: core.Account{
 			URL:           mURL("https://twitter.com/rovercrc"),
 			AccountType:   "TWITTER",
 			Handle:        "rovercrc",
@@ -73,7 +73,7 @@ func TestTwitterHappyCase(t *testing.T) {
 		},
 		PostTitle:     "Where are the bears now? 🐻🔫",
 		PostText:      "Where are the bears now? 🐻🔫",
-		PostCreatedAt: types.ISO8601("2022-03-24T15:26:16Z"),
+		PostCreatedAt: core.ISO8601("2022-03-24T15:26:16Z"),
 		PostType:      mfTypes.TWITTER,
 	}
 

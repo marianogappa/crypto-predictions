@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/rs/zerolog/log"
-
-	"github.com/marianogappa/predictions/types"
 )
 
-func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
+func printBoolExpr(e *core.BoolExpr, nestLevel int) string {
 	if e == nil {
 		return ""
 	}
@@ -27,7 +26,7 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 		operands = append(operands, s)
 	}
 	switch e.Operator {
-	case types.AND, types.OR:
+	case core.AND, core.OR:
 		if len(operands) == 0 {
 			return ""
 		}
@@ -36,11 +35,11 @@ func printBoolExpr(e *types.BoolExpr, nestLevel int) string {
 		}
 
 		connector := " and "
-		if e.Operator == types.OR {
+		if e.Operator == core.OR {
 			connector = " or "
 		}
 		return fmt.Sprintf("%v%v%v", prefix, strings.Join(operands, connector), postfix)
-	case types.NOT:
+	case core.NOT:
 		return fmt.Sprintf("%vNOT %v%v", prefix, operands[0], postfix)
 	default:
 		// TODO: this if is due to a bug that needs to be fixed

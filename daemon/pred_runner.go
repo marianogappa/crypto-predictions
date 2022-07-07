@@ -8,12 +8,12 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/crypto-candles/candles/common"
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
 // PredEvolver is the struct that evolves a prediction's state upon reading market data.
 type PredEvolver struct {
-	prediction *types.Prediction
+	prediction *core.Prediction
 	tickers    map[string]map[string]common.Iterator
 }
 
@@ -22,12 +22,12 @@ var (
 )
 
 // NewPredEvolver is the constructor for PredEvolver.
-func NewPredEvolver(prediction *types.Prediction, m candles.IMarket, nowTs int) (*PredEvolver, []error) {
+func NewPredEvolver(prediction *core.Prediction, m candles.IMarket, nowTs int) (*PredEvolver, []error) {
 	errs := []error{}
 	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]common.Iterator)}
 
 	predStateValue := prediction.Evaluate()
-	if predStateValue != types.ONGOINGPREPREDICTION && predStateValue != types.ONGOINGPREDICTION {
+	if predStateValue != core.ONGOINGPREPREDICTION && predStateValue != core.ONGOINGPREDICTION {
 		errs = append(errs, errPredictionAtFinalStateAtCreation)
 		return nil, errs
 	}
@@ -79,7 +79,7 @@ func (r *PredEvolver) Run(once bool) []error {
 	return errs
 }
 
-func (r *PredEvolver) runCondition(cond *types.Condition) error {
+func (r *PredEvolver) runCondition(cond *core.Condition) error {
 	ticks := map[string]common.Tick{}
 	for key, ticker := range r.tickers[cond.Name] {
 		tick, err := ticker.NextTick()
@@ -92,8 +92,8 @@ func (r *PredEvolver) runCondition(cond *types.Condition) error {
 	return cond.Run(ticks)
 }
 
-func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[string]struct{}) []*types.Condition {
-	conds := []*types.Condition{}
+func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[string]struct{}) []*core.Condition {
+	conds := []*core.Condition{}
 	for _, cond := range r.prediction.ActionableUndecidedConditions() {
 		if _, ok := stuckConditions[cond.Name]; !ok {
 			conds = append(conds, cond)
@@ -102,7 +102,7 @@ func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[
 	return conds
 }
 
-func calculateStartTs(c *types.Condition) (time.Time, bool) {
+func calculateStartTs(c *core.Condition) (time.Time, bool) {
 	startTs := c.FromTs
 	startFromNext := false
 

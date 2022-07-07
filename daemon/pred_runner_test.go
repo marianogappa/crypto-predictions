@@ -9,28 +9,28 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles/common"
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewPredRunner(t *testing.T) {
 	var (
-		trueCond      = &types.Condition{State: types.ConditionState{Value: types.TRUE}}
-		falseCond     = &types.Condition{State: types.ConditionState{Value: types.FALSE}}
-		undecidedCond = &types.Condition{
+		trueCond      = &core.Condition{State: core.ConditionState{Value: core.TRUE}}
+		falseCond     = &core.Condition{State: core.ConditionState{Value: core.FALSE}}
+		undecidedCond = &core.Condition{
 			FromTs:   tInt("2022-02-27 15:20:00"),
 			ToTs:     tInt("2022-03-27 15:20:00"),
-			Operands: []types.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
-			State:    types.ConditionState{Value: types.UNDECIDED, LastTs: 0, LastTicks: map[string]common.Tick{}},
+			Operands: []core.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
+			State:    core.ConditionState{Value: core.UNDECIDED, LastTs: 0, LastTicks: map[string]common.Tick{}},
 		}
-		literalTrueBoolExpr      = &types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: trueCond}
-		literalFalseBoolExpr     = &types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: falseCond}
-		literalUndecidedBoolExpr = &types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: undecidedCond}
+		literalTrueBoolExpr      = &core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: trueCond}
+		literalFalseBoolExpr     = &core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: falseCond}
+		literalUndecidedBoolExpr = &core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: undecidedCond}
 	)
 
 	tss := []struct {
 		name        string
-		prediction  types.Prediction
+		prediction  core.Prediction
 		nowTs       int
 		isError     bool
 		marketCalls []marketCall
@@ -38,8 +38,8 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Correct prediction makes no calls",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
+				core.PrePredict{},
+				core.Predict{
 					Predict: *literalTrueBoolExpr,
 				}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
@@ -49,8 +49,8 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Incorrect prediction makes no calls",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
+				core.PrePredict{},
+				core.Predict{
 					Predict: *literalFalseBoolExpr,
 				}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
@@ -60,10 +60,10 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "False pre-prediction makes no calls",
 			prediction: newPredictionWith(
-				types.PrePredict{
+				core.PrePredict{
 					Predict: literalFalseBoolExpr,
 				},
-				types.Predict{}),
+				core.Predict{}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
 			isError:     true,
 			marketCalls: nil,
@@ -71,10 +71,10 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Wrong pre-prediction makes no calls",
 			prediction: newPredictionWith(
-				types.PrePredict{
+				core.PrePredict{
 					WrongIf: literalTrueBoolExpr,
 				},
-				types.Predict{}),
+				core.Predict{}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
 			isError:     true,
 			marketCalls: nil,
@@ -82,10 +82,10 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Annulled pre-prediction makes no calls",
 			prediction: newPredictionWith(
-				types.PrePredict{
+				core.PrePredict{
 					AnnulledIf: literalTrueBoolExpr,
 				},
-				types.Predict{}),
+				core.Predict{}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
 			isError:     true,
 			marketCalls: nil,
@@ -93,12 +93,12 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Annulled pre-prediction makes no calls even if all undecided boolexprs everywhere",
 			prediction: newPredictionWith(
-				types.PrePredict{
+				core.PrePredict{
 					AnnulledIf: literalTrueBoolExpr,
 					WrongIf:    literalUndecidedBoolExpr,
 					Predict:    literalUndecidedBoolExpr,
 				},
-				types.Predict{
+				core.Predict{
 					AnnulledIf: literalUndecidedBoolExpr,
 					WrongIf:    literalUndecidedBoolExpr,
 					Predict:    *literalUndecidedBoolExpr,
@@ -110,8 +110,8 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Annulled prediction makes no calls even if all undecided boolexprs everywhere",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
+				core.PrePredict{},
+				core.Predict{
 					AnnulledIf: literalTrueBoolExpr,
 					WrongIf:    literalUndecidedBoolExpr,
 					Predict:    *literalUndecidedBoolExpr,
@@ -123,12 +123,12 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Wrong pre-prediction makes no calls even if all undecided boolexprs everywhere",
 			prediction: newPredictionWith(
-				types.PrePredict{
+				core.PrePredict{
 					AnnulledIf: literalFalseBoolExpr,
 					WrongIf:    literalTrueBoolExpr,
 					Predict:    literalUndecidedBoolExpr,
 				},
-				types.Predict{
+				core.Predict{
 					AnnulledIf: literalUndecidedBoolExpr,
 					WrongIf:    literalUndecidedBoolExpr,
 					Predict:    *literalUndecidedBoolExpr,
@@ -140,8 +140,8 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Wrong prediction makes no calls even if all undecided boolexprs everywhere",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
+				core.PrePredict{},
+				core.Predict{
 					AnnulledIf: literalFalseBoolExpr,
 					WrongIf:    literalTrueBoolExpr,
 					Predict:    *literalUndecidedBoolExpr,
@@ -153,8 +153,8 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Undecided prediction should make a call",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
+				core.PrePredict{},
+				core.Predict{
 					Predict: *literalUndecidedBoolExpr,
 				}),
 			nowTs:       tInt("2022-02-27 15:20:00"),
@@ -164,14 +164,14 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Undecided prediction should make a call with start time in the future, in the next minute",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
-					Predict: types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: &types.Condition{
+				core.PrePredict{},
+				core.Predict{
+					Predict: core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: &core.Condition{
 						FromTs:   tInt("2022-02-27 15:20:00"),
 						ToTs:     tInt("2022-03-27 15:20:00"),
-						Operands: []types.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
-						State: types.ConditionState{
-							Value:     types.UNDECIDED,
+						Operands: []core.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
+						State: core.ConditionState{
+							Value:     core.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
 							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
@@ -184,14 +184,14 @@ func TestNewPredRunner(t *testing.T) {
 		{
 			name: "Undecided prediction should make a call in the future, which is fine because it should return ErrNoNewTicksYet",
 			prediction: newPredictionWith(
-				types.PrePredict{},
-				types.Predict{
-					Predict: types.BoolExpr{Operator: types.LITERAL, Operands: nil, Literal: &types.Condition{
+				core.PrePredict{},
+				core.Predict{
+					Predict: core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: &core.Condition{
 						FromTs:   tInt("2022-02-27 15:20:00"),
 						ToTs:     tInt("2022-03-27 15:20:00"),
-						Operands: []types.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
-						State: types.ConditionState{
-							Value:     types.UNDECIDED,
+						Operands: []core.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
+						State: core.ConditionState{
+							Value:     core.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
 							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
@@ -221,19 +221,19 @@ func TestNewPredRunner(t *testing.T) {
 	}
 }
 
-func mapOperand(v string) (types.Operand, error) {
+func mapOperand(v string) (core.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: types.JSONFloat64(f), Str: v}, nil
+		return core.Operand{Type: core.NUMBER, Number: core.JSONFloat64(f), Str: v}, nil
 	}
 	strVariable := `(COIN|MARKETCAP):([A-Z]+):([A-Z]+)(-([A-Z]+))?`
 	rxVariable := regexp.MustCompile(fmt.Sprintf("^%v$", strVariable))
 	matches := rxVariable.FindStringSubmatch(v)
 
-	operandType, _ := types.OperandTypeFromString(matches[1])
+	operandType, _ := core.OperandTypeFromString(matches[1])
 
-	return types.Operand{
+	return core.Operand{
 		Type:       operandType,
 		Provider:   matches[2],
 		BaseAsset:  matches[3],
@@ -242,7 +242,7 @@ func mapOperand(v string) (types.Operand, error) {
 	}, nil
 }
 
-func operand(s string) types.Operand {
+func operand(s string) core.Operand {
 	op, _ := mapOperand(s)
 	return op
 }
@@ -251,16 +251,16 @@ func marketSource(s string) common.MarketSource {
 	return operand(s).ToMarketSource()
 }
 
-func newPredictionWith(prePredict types.PrePredict, predict types.Predict) types.Prediction {
-	return types.Prediction{
+func newPredictionWith(prePredict core.PrePredict, predict core.Predict) core.Prediction {
+	return core.Prediction{
 		UUID:       "ed47db4d-cc0b-4c3c-af18-e6fcbff82338",
 		Version:    "1.0.0",
-		CreatedAt:  types.ISO8601("2022-02-27 15:14:00"),
+		CreatedAt:  core.ISO8601("2022-02-27 15:14:00"),
 		PostAuthor: "JohnDoe",
 		PostText:   "Test prediction!",
-		PostedAt:   types.ISO8601("2022-02-27 15:14:00"),
+		PostedAt:   core.ISO8601("2022-02-27 15:14:00"),
 		PostURL:    "https://twitter.com/trader1sz/status/1494458312238247950",
-		Given:      map[string]*types.Condition{},
+		Given:      map[string]*core.Condition{},
 		PrePredict: prePredict,
 		Predict:    predict,
 	}

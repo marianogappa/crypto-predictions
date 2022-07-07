@@ -7,9 +7,9 @@ import (
 
 	pq "github.com/lib/pq"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,10 +19,10 @@ func TestPostgres(t *testing.T) {
 			name: "prediction upsert: base case",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{UUIDs: []string{prediction.UUID}}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{UUIDs: []string{prediction.UUID}}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
@@ -35,10 +35,10 @@ func TestPostgres(t *testing.T) {
 				prediction2, _ := compile(t, sampleRawPrediction)
 				prediction2.PostURL = "http://different.url"
 
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction1, &prediction2})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction1, &prediction2})
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 2)
 				require.Equal(t, prediction1.PostURL, actualPreds[0].PostURL)
@@ -50,7 +50,7 @@ func TestPostgres(t *testing.T) {
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
 
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction, &prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction, &prediction})
 				require.NotNil(t, err)
 				postgresErr := err.(*pq.Error)
 				require.Equal(t, "ON CONFLICT DO UPDATE command cannot affect row a second time", postgresErr.Message)
@@ -60,18 +60,18 @@ func TestPostgres(t *testing.T) {
 			name: "prediction hide",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.HidePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -80,7 +80,7 @@ func TestPostgres(t *testing.T) {
 			name: "prediction unhide",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.HidePrediction(prediction.UUID)
@@ -89,12 +89,12 @@ func TestPostgres(t *testing.T) {
 				err = store.UnhidePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Hidden: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Hidden: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -103,18 +103,18 @@ func TestPostgres(t *testing.T) {
 			name: "prediction delete",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.DeletePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -123,7 +123,7 @@ func TestPostgres(t *testing.T) {
 			name: "prediction undelete",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.DeletePrediction(prediction.UUID)
@@ -132,12 +132,12 @@ func TestPostgres(t *testing.T) {
 				err = store.UndeletePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Deleted: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Deleted: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -146,18 +146,18 @@ func TestPostgres(t *testing.T) {
 			name: "prediction pause",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.PausePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -166,7 +166,7 @@ func TestPostgres(t *testing.T) {
 			name: "prediction unpause",
 			test: func(t *testing.T, store StateStorage) {
 				prediction, _ := compile(t, sampleRawPrediction)
-				_, err := store.UpsertPredictions([]*types.Prediction{&prediction})
+				_, err := store.UpsertPredictions([]*core.Prediction{&prediction})
 				require.Nil(t, err)
 
 				err = store.PausePrediction(prediction.UUID)
@@ -175,12 +175,12 @@ func TestPostgres(t *testing.T) {
 				err = store.UnpausePrediction(prediction.UUID)
 				require.Nil(t, err)
 
-				actualPreds, err := store.GetPredictions(types.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
+				actualPreds, err := store.GetPredictions(core.APIFilters{Paused: pBool(false)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 1)
 				require.Equal(t, prediction.PostURL, actualPreds[0].PostURL)
 
-				actualPreds, err = store.GetPredictions(types.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
+				actualPreds, err = store.GetPredictions(core.APIFilters{Paused: pBool(true)}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualPreds, 0)
 			},
@@ -189,10 +189,10 @@ func TestPostgres(t *testing.T) {
 			name: "account upsert: base case",
 			test: func(t *testing.T, store StateStorage) {
 				_, account := compile(t, sampleRawPrediction)
-				_, err := store.UpsertAccounts([]*types.Account{account})
+				_, err := store.UpsertAccounts([]*core.Account{account})
 				require.Nil(t, err)
 
-				actualAccounts, err := store.GetAccounts(types.APIAccountFilters{URLs: []string{account.URL.String()}}, []string{}, 0, 0)
+				actualAccounts, err := store.GetAccounts(core.APIAccountFilters{URLs: []string{account.URL.String()}}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualAccounts, 1)
 				require.Equal(t, account.Handle, actualAccounts[0].Handle)
@@ -205,10 +205,10 @@ func TestPostgres(t *testing.T) {
 				_, account2 := compile(t, sampleRawPrediction)
 				account2.URL, _ = url.Parse("http://twitter.com/different")
 				account2.Handle = "different"
-				_, err := store.UpsertAccounts([]*types.Account{account1, account2})
+				_, err := store.UpsertAccounts([]*core.Account{account1, account2})
 				require.Nil(t, err)
 
-				actualAccounts, err := store.GetAccounts(types.APIAccountFilters{}, []string{}, 0, 0)
+				actualAccounts, err := store.GetAccounts(core.APIAccountFilters{}, []string{}, 0, 0)
 				require.Nil(t, err)
 				require.Len(t, actualAccounts, 2)
 				require.Equal(t, account1.Handle, actualAccounts[0].Handle)
@@ -220,7 +220,7 @@ func TestPostgres(t *testing.T) {
 			test: func(t *testing.T, store StateStorage) {
 				_, account1 := compile(t, sampleRawPrediction)
 				_, account2 := compile(t, sampleRawPrediction)
-				_, err := store.UpsertAccounts([]*types.Account{account1, account2})
+				_, err := store.UpsertAccounts([]*core.Account{account1, account2})
 				require.NotNil(t, err)
 				postgresErr := err.(*pq.Error)
 				require.Equal(t, "ON CONFLICT DO UPDATE command cannot affect row a second time", postgresErr.Message)
@@ -236,9 +236,9 @@ func TestPostgres(t *testing.T) {
 	}
 }
 
-func tpToISO(s string) types.ISO8601 {
+func tpToISO(s string) core.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return types.ISO8601(t.Format(time.RFC3339))
+	return core.ISO8601(t.Format(time.RFC3339))
 }
 
 type storeTest struct {
@@ -270,13 +270,13 @@ func addTestFetcher(mf *metadatafetcher.MetadataFetcher) {
 	postAuthorURL, _ := url.Parse("https://twitter.com/CryptoCapo_")
 	mf.Fetchers = []metadatafetcher.SpecificFetcher{
 		testFetcher{isCorrectFetcher: true, postMetadata: fetcherTypes.PostMetadata{
-			Author:        types.Account{Handle: "test author", URL: postAuthorURL},
+			Author:        core.Account{Handle: "test author", URL: postAuthorURL},
 			PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 		}, err: nil},
 	}
 }
 
-func compile(t *testing.T, rawPrediction []byte) (types.Prediction, *types.Account) {
+func compile(t *testing.T, rawPrediction []byte) (core.Prediction, *core.Account) {
 	mf := metadatafetcher.NewMetadataFetcher()
 	addTestFetcher(mf)
 	compiledPrediction, account, err := compiler.NewPredictionCompiler(mf, time.Now).Compile(sampleRawPrediction)

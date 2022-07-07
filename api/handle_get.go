@@ -6,8 +6,8 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/usecase"
 )
@@ -36,7 +36,7 @@ type apiReqGetPredictions struct {
 }
 
 func (a *API) getPredictions(req apiReqGetPredictions) apiResponse[apiResGetPredictions] {
-	filters := types.APIFilters{
+	filters := core.APIFilters{
 		Tags:                  req.Tags,
 		AuthorHandles:         req.AuthorHandles,
 		AuthorURLs:            req.AuthorURLs,

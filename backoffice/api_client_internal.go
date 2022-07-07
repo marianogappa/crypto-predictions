@@ -6,8 +6,8 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/request"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -85,8 +85,8 @@ type responseData struct {
 
 func (r response) parse() parsedResponse {
 	var (
-		pred        *types.Prediction
-		preds       *[]types.Prediction
+		pred        *core.Prediction
+		preds       *[]core.Prediction
 		predSummary *predictionSummary
 		stored      = r.Data.Stored
 		pc          = compiler.NewPredictionCompiler(nil, nil)
@@ -97,7 +97,7 @@ func (r response) parse() parsedResponse {
 		pred = &p
 	}
 	if r.Data.Predictions != nil {
-		preds = &[]types.Prediction{}
+		preds = &[]core.Prediction{}
 		for _, rawPred := range *r.Data.Predictions {
 			p, _, _ := pc.Compile(rawPred)
 			(*preds) = append((*preds), p)
@@ -130,17 +130,17 @@ func (r response) parse() parsedResponse {
 type predictionSummary struct {
 	TickMap  map[string][]common.Tick `json:"tickMap"`
 	Coin     string                   `json:"coin"`
-	Goal     types.JSONFloat64        `json:"goal"`
+	Goal     core.JSONFloat64         `json:"goal"`
 	Operator string                   `json:"operator"`
-	Deadline types.ISO8601            `json:"deadline"`
+	Deadline core.ISO8601             `json:"deadline"`
 }
 type parsedResponse struct {
 	Status               int
 	ErrorMessage         string
 	InternalErrorMessage string
 	ErrorCode            string
-	Prediction           *types.Prediction
-	Predictions          *[]types.Prediction
+	Prediction           *core.Prediction
+	Predictions          *[]core.Prediction
 	PredictionSummary    *predictionSummary
 	Stored               *bool
 	Base64Image          *string

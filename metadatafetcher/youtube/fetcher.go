@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/marianogappa/predictions/core"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 )
 
 // MetadataFetcher is the main struct for fetching metadata from Youtube.
@@ -76,7 +76,7 @@ func (f MetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, error) 
 	}
 
 	return mfTypes.PostMetadata{
-		Author: types.Account{
+		Author: core.Account{
 			URL:           chURL,
 			AccountType:   "YOUTUBE",
 			FollowerCount: channel.SubscriberCount,

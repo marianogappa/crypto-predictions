@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
-func printCondition(c types.Condition, ignoreFromTs bool) string {
+func printCondition(c core.Condition, ignoreFromTs bool) string {
 	fromTs := formatTs(c.FromTs)
 	toTs := formatTs(c.ToTs)
 
@@ -159,11 +159,11 @@ var (
 	}
 )
 
-func parseOperand(op types.Operand, useDollarSign bool) (string, bool) {
-	if op.Type == types.NUMBER {
+func parseOperand(op core.Operand, useDollarSign bool) (string, bool) {
+	if op.Type == core.NUMBER {
 		return parseNumber(op.Number, useDollarSign), useDollarSign
 	}
-	if op.Type == types.MARKETCAP {
+	if op.Type == core.MARKETCAP {
 		return fmt.Sprintf("%v's MarketCap", op.BaseAsset), false
 	}
 	suffix := ""
@@ -182,12 +182,12 @@ func parseOperand(op types.Operand, useDollarSign bool) (string, bool) {
 	return parsedMarket, quoteAssetIsStableCoin
 }
 
-func legacyParseOperand(op types.Operand) string {
+func legacyParseOperand(op core.Operand) string {
 	s, _ := parseOperand(op, false)
 	return s
 }
 
-func parseNumber(num types.JSONFloat64, useDollarSign bool) string {
+func parseNumber(num core.JSONFloat64, useDollarSign bool) string {
 	dollarSign := ""
 	if useDollarSign {
 		dollarSign = "$"

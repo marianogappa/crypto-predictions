@@ -3,7 +3,7 @@ package types
 import (
 	"errors"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
 // PostType is the website used for the post, e.g. Twitter, Youtube.
@@ -25,10 +25,10 @@ var (
 
 // PostMetadata contains the metadata gathered about a post by querying a website's API about it.
 type PostMetadata struct {
-	Author             types.Account
+	Author             core.Account
 	PostTitle          string
 	PostText           string
-	PostCreatedAt      types.ISO8601
+	PostCreatedAt      core.ISO8601
 	PostType           PostType
 	ThumbnailImgSmall  string
 	ThumbnailImgMedium string

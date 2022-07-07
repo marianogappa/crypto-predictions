@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/usecase"
 )
 
@@ -66,7 +66,7 @@ func (a *API) predictionRefetchAccount(uuid string) apiResponse[apiResStored] {
 		return failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: error fetching metadata for url: %v", ErrFailedToCompilePrediction, pred.PostURL), apiResStored{})
 	}
 
-	if _, err := a.store.UpsertAccounts([]*types.Account{&metadata.Author}); err != nil {
+	if _, err := a.store.UpsertAccounts([]*core.Account{&metadata.Author}); err != nil {
 		return failWith(ErrStorageErrorStoringAccount, fmt.Errorf("%w: error storing account: %v", ErrStorageErrorStoringAccount, err), apiResStored{})
 	}
 
@@ -92,36 +92,36 @@ func (a *API) predictionClearState(uuid string) apiResponse[apiResStored] {
 	}
 
 	pred.ClearState()
-	if _, err := a.store.UpsertPredictions([]*types.Prediction{&pred}); err != nil {
+	if _, err := a.store.UpsertPredictions([]*core.Prediction{&pred}); err != nil {
 		return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: error storing prediction: %v", ErrStorageErrorStoringPrediction, err), apiResStored{})
 	}
 	return apiResponse[apiResStored]{Status: 200, Data: apiResStored{Stored: true}}
 }
 
-func getPredictionByUUIDOrURL[D any](uuid, url string, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
+func getPredictionByUUIDOrURL[D any](uuid, url string, store statestorage.StateStorage, zero D) (core.Prediction, *apiResponse[D]) {
 	if uuid != "" {
-		return getPredictionByFilter(types.APIFilters{UUIDs: []string{uuid}, URLs: []string{}}, store, zero)
+		return getPredictionByFilter(core.APIFilters{UUIDs: []string{uuid}, URLs: []string{}}, store, zero)
 	}
-	return getPredictionByFilter(types.APIFilters{UUIDs: []string{}, URLs: []string{url}}, store, zero)
+	return getPredictionByFilter(core.APIFilters{UUIDs: []string{}, URLs: []string{url}}, store, zero)
 }
 
-func getPredictionByUUID[D any](uuid string, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
-	return getPredictionByFilter(types.APIFilters{UUIDs: []string{uuid}}, store, zero)
+func getPredictionByUUID[D any](uuid string, store statestorage.StateStorage, zero D) (core.Prediction, *apiResponse[D]) {
+	return getPredictionByFilter(core.APIFilters{UUIDs: []string{uuid}}, store, zero)
 }
 
-func getPredictionByFilter[D any](filter types.APIFilters, store statestorage.StateStorage, zero D) (types.Prediction, *apiResponse[D]) {
+func getPredictionByFilter[D any](filter core.APIFilters, store statestorage.StateStorage, zero D) (core.Prediction, *apiResponse[D]) {
 	ps, err := store.GetPredictions(filter, nil, 0, 0)
 	if err != nil {
 		errResp := failWith(ErrPredictionNotFound, err, zero)
-		return types.Prediction{}, &errResp
+		return core.Prediction{}, &errResp
 	}
 	if len(ps) == 0 {
 		errResp := failWith(ErrPredictionNotFound, ErrPredictionNotFound, zero)
-		return types.Prediction{}, &errResp
+		return core.Prediction{}, &errResp
 	}
 	if len(ps) != 1 {
 		errResp := failWith(ErrFailedToCompilePrediction, fmt.Errorf("%w: expected to find exactly one prediction but found %v", ErrFailedToCompilePrediction, len(ps)), zero)
-		return types.Prediction{}, &errResp
+		return core.Prediction{}, &errResp
 	}
 	return ps[0], nil
 }

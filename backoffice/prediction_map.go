@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles/common"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/printer"
-	"github.com/marianogappa/predictions/types"
 )
 
-func predictionToMap(p types.Prediction) map[string]interface{} {
+func predictionToMap(p core.Prediction) map[string]interface{} {
 	urlType := "UNKNOWN"
 	urlSiteSpecificID := ""
 	u, err := url.Parse(p.PostURL)
@@ -53,7 +53,7 @@ func predictionToMap(p types.Prediction) map[string]interface{} {
 	return m
 }
 
-func mapifyGiven(given map[string]*types.Condition) map[string]interface{} {
+func mapifyGiven(given map[string]*core.Condition) map[string]interface{} {
 	if given == nil {
 		return nil
 	}
@@ -64,7 +64,7 @@ func mapifyGiven(given map[string]*types.Condition) map[string]interface{} {
 	return m
 }
 
-func mapifyCondition(c *types.Condition) map[string]interface{} {
+func mapifyCondition(c *core.Condition) map[string]interface{} {
 	if c == nil {
 		return nil
 	}
@@ -107,7 +107,7 @@ func mapifyLastTick(t common.Tick) map[string]interface{} {
 	}
 }
 
-func mapifyPrePredict(prePredict types.PrePredict) map[string]interface{} {
+func mapifyPrePredict(prePredict core.PrePredict) map[string]interface{} {
 	return map[string]interface{}{
 		"WrongIf":                           mapifyBoolExpr(prePredict.WrongIf),
 		"AnnulledIf":                        mapifyBoolExpr(prePredict.AnnulledIf),
@@ -117,7 +117,7 @@ func mapifyPrePredict(prePredict types.PrePredict) map[string]interface{} {
 	}
 }
 
-func mapifyBoolExpr(b *types.BoolExpr) map[string]interface{} {
+func mapifyBoolExpr(b *core.BoolExpr) map[string]interface{} {
 	if b == nil {
 		return nil
 	}
@@ -134,7 +134,7 @@ func mapifyBoolExpr(b *types.BoolExpr) map[string]interface{} {
 	}
 }
 
-func mapifyPredict(predict types.Predict) map[string]interface{} {
+func mapifyPredict(predict core.Predict) map[string]interface{} {
 	return map[string]interface{}{
 		"WrongIf":                           mapifyBoolExpr(predict.WrongIf),
 		"AnnulledIf":                        mapifyBoolExpr(predict.AnnulledIf),
@@ -143,7 +143,7 @@ func mapifyPredict(predict types.Predict) map[string]interface{} {
 	}
 }
 
-func mapifyState(state types.PredictionState) map[string]interface{} {
+func mapifyState(state core.PredictionState) map[string]interface{} {
 	return map[string]interface{}{
 		"Status": state.Status.String(),
 		"LastTs": state.LastTs,
