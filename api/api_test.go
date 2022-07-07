@@ -10,13 +10,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -289,13 +289,13 @@ func TestAPI(t *testing.T) {
 			name: "getPagesPrediction with url",
 			test: func(t *testing.T, a *API, ctx testContext) {
 				// Create sample predictions with different attributes
-				samplePreds := []types.Prediction{}
-				sampleAccounts := []*types.Account{}
+				samplePreds := []core.Prediction{}
+				sampleAccounts := []*core.Account{}
 				for i := 0; i < 10; i++ {
 					samplePred, sampleAccount := compile(t, sampleRawPrediction)
 					samplePred.UUID = uuid.NewString()
 					samplePred.PostURL = fmt.Sprintf("https://twitter.com/differentUser/status/%v", i)
-					samplePred.PostedAt = types.ISO8601(fmt.Sprintf("2020-06-26T00:00:0%vZ", i))
+					samplePred.PostedAt = core.ISO8601(fmt.Sprintf("2020-06-26T00:00:0%vZ", i))
 					samplePred.PostAuthor = fmt.Sprintf("User%v", i)
 					samplePred.PostAuthorURL = fmt.Sprintf("https://twitter.com/user%v", i)
 
@@ -405,15 +405,15 @@ func addTestFetcher(mf *metadatafetcher.MetadataFetcher) {
 	postAuthorURL, _ := url.Parse("https://twitter.com/CryptoCapo_")
 	mf.Fetchers = []metadatafetcher.SpecificFetcher{
 		testFetcher{isCorrectFetcher: true, postMetadata: fetcherTypes.PostMetadata{
-			Author:        types.Account{Handle: "test author", URL: postAuthorURL},
+			Author:        core.Account{Handle: "test author", URL: postAuthorURL},
 			PostCreatedAt: tpToISO("2022-01-02 00:00:00"),
 		}, err: nil},
 	}
 }
 
-func tpToISO(s string) types.ISO8601 {
+func tpToISO(s string) core.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return types.ISO8601(t.Format(time.RFC3339))
+	return core.ISO8601(t.Format(time.RFC3339))
 }
 
 type testContext struct {
@@ -448,7 +448,7 @@ var (
 	}`)
 )
 
-func compile(t *testing.T, rawPrediction []byte) (types.Prediction, *types.Account) {
+func compile(t *testing.T, rawPrediction []byte) (core.Prediction, *core.Account) {
 	mf := metadatafetcher.NewMetadataFetcher()
 	addTestFetcher(mf)
 	compiledPrediction, account, err := compiler.NewPredictionCompiler(mf, time.Now).Compile(sampleRawPrediction)
@@ -456,7 +456,7 @@ func compile(t *testing.T, rawPrediction []byte) (types.Prediction, *types.Accou
 	return compiledPrediction, account
 }
 
-func serialize(t *testing.T, prediction types.Prediction) string {
+func serialize(t *testing.T, prediction core.Prediction) string {
 	rawPrediction, err := serializer.NewPredictionSerializer(nil).Serialize(&prediction)
 	require.Nil(t, err)
 	return string(rawPrediction)

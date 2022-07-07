@@ -6,8 +6,8 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/swaggest/jsonschema-go"
 	"github.com/swaggest/usecase"
 )
@@ -50,21 +50,21 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	predictionsByUUID[UUID(mainCompilerPred.UUID)] = mainCompilerPred
 
 	// Latest Predictions
-	predictions, err := a.store.GetPredictions(types.APIFilters{}, []string{types.PredictionsPostedAtDesc.String()}, 10, 0)
+	predictions, err := a.store.GetPredictions(core.APIFilters{}, []string{core.PredictionsPostedAtDesc.String()}, 10, 0)
 	latestPredictionUUIDs, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
 	}
 
 	// Latest Predictions by same author URL
-	predictions, err = a.store.GetPredictions(types.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{types.PredictionsPostedAtDesc.String()}, 5, 0)
+	predictions, err = a.store.GetPredictions(core.APIFilters{AuthorURLs: []string{pred.PostAuthorURL}}, []string{core.PredictionsPostedAtDesc.String()}, 5, 0)
 	latestPredictionSameAuthorURL, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
 	}
 
 	// Latest Predictions by same coin
-	predictions, err = a.store.GetPredictions(types.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{types.PredictionsPostedAtDesc.String()}, 5, 0)
+	predictions, err = a.store.GetPredictions(core.APIFilters{Tags: []string{pred.CalculateMainCoin().Str}}, []string{core.PredictionsPostedAtDesc.String()}, 5, 0)
 	latestPredictionSameCoinUUID, predictionsByUUID, errResp := collectPredictions(predictions, err, predictionsByUUID, mainCompilerPred)
 	if errResp != nil {
 		return *errResp
@@ -73,9 +73,9 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	accountURLSet := map[URL]struct{}{}
 
 	// Get the top 10 Accounts by follower count
-	topAccounts, err := a.store.GetAccounts(types.APIAccountFilters{}, []string{types.AccountFollowerCountDesc.String()}, 10, 0)
+	topAccounts, err := a.store.GetAccounts(core.APIAccountFilters{}, []string{core.AccountFollowerCountDesc.String()}, 10, 0)
 	if err != nil {
-		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
+		return failWith(core.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
 	top10AccountURLsByFollowerCount := []URL{}
 	for _, account := range topAccounts {
@@ -99,9 +99,9 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 	}
 
 	// Get all accounts from the slice
-	allAccounts, err := a.store.GetAccounts(types.APIAccountFilters{URLs: accountURLs}, []string{}, 0, 0)
+	allAccounts, err := a.store.GetAccounts(core.APIAccountFilters{URLs: accountURLs}, []string{}, 0, 0)
 	if err != nil {
-		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
+		return failWith(core.ErrStorageErrorRetrievingAccounts, err, apiResGetPagesPrediction{})
 	}
 
 	accountsByURL := map[URL]serializer.Account{}
@@ -127,7 +127,7 @@ func (a *API) getPagesPrediction(id string) apiResponse[apiResGetPagesPrediction
 }
 
 func collectPredictions(
-	predictions []types.Prediction,
+	predictions []core.Prediction,
 	err error,
 	predictionsByUUID map[UUID]compiler.Prediction,
 	mainPrediction compiler.Prediction,

@@ -14,8 +14,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/printer"
-	"github.com/marianogappa/predictions/types"
 )
 
 const (
@@ -116,7 +116,7 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal().Msg("Couldn't find index.hmtl")
 	}
 
-	res := s.apiClient.get(getBody{Filters: types.APIFilters{
+	res := s.apiClient.get(getBody{Filters: core.APIFilters{
 		AuthorHandles:         trim(strings.Split(rawAuthors, ",")),
 		UUIDs:                 trim(strings.Split(rawUUIDs, ",")),
 		PredictionStateValues: trim(strings.Split(rawStatuses, ",")),
@@ -130,7 +130,7 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	data["GetPredictionsErrCode"] = res.ErrorCode
 	data["GetPredictionsInternalErrorMessage"] = res.InternalErrorMessage
 
-	preds := []types.Prediction{}
+	preds := []core.Prediction{}
 	if res.Predictions != nil {
 		preds = *res.Predictions
 	}
@@ -157,7 +157,7 @@ func (s UI) indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, data)
 }
 
-func predictionToFlags(pred types.Prediction) string {
+func predictionToFlags(pred core.Prediction) string {
 	var flags string
 
 	if pred.Paused {
@@ -176,7 +176,7 @@ func predictionToFlags(pred types.Prediction) string {
 	return flags
 }
 
-func isoToAgo(iso types.ISO8601) string {
+func isoToAgo(iso core.ISO8601) string {
 	tm, _ := iso.Time()
 	dur := time.Since(tm)
 	if dur < 1*time.Minute {
@@ -197,13 +197,13 @@ func isoToAgo(iso types.ISO8601) string {
 	return fmt.Sprintf("%v months ago", int(dur/(24*30*time.Hour)))
 }
 
-func predictionValueToEmoji(v types.PredictionStateValue) string {
+func predictionValueToEmoji(v core.PredictionStateValue) string {
 	switch v {
-	case types.ANNULLED:
+	case core.ANNULLED:
 		return "🏳️"
-	case types.CORRECT:
+	case core.CORRECT:
 		return "✅"
-	case types.INCORRECT:
+	case core.INCORRECT:
 		return "❌"
 	default:
 		return "⏳"
@@ -248,7 +248,7 @@ func (s UI) predictionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.Status == 200 {
-		res = s.apiClient.get(getBody{Filters: types.APIFilters{
+		res = s.apiClient.get(getBody{Filters: core.APIFilters{
 			UUIDs: []string{uuid},
 		}})
 	}
@@ -287,7 +287,7 @@ func (s UI) predictionPageHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal().Msg("Couldn't find prediction.html")
 	}
 
-	res := s.apiClient.predictionPage(getBody{Filters: types.APIFilters{
+	res := s.apiClient.predictionPage(getBody{Filters: core.APIFilters{
 		URLs: []string{url},
 	}})
 

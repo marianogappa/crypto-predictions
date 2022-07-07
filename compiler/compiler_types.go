@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"github.com/marianogappa/crypto-candles/candles/common"
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 	"github.com/swaggest/jsonschema-go"
 )
 
@@ -24,8 +24,8 @@ type PredictionState struct {
 // Condition is each of the conditions that form a prediction, e.g. "COIN:BINANCE:BTC-USDT <= 29000 within 3 weeks".
 type Condition struct {
 	Condition        string         `json:"condition" required:"true" example:"COIN:BINANCE:BTC-USDT <= 29000"`
-	FromISO8601      types.ISO8601  `json:"fromISO8601" format:"date-time" example:"2022-01-26T22:35:43Z"`
-	ToISO8601        types.ISO8601  `json:"toISO8601" format:"date-time" example:"2023-01-01T00:00:00Z"`
+	FromISO8601      core.ISO8601   `json:"fromISO8601" format:"date-time" example:"2022-01-26T22:35:43Z"`
+	ToISO8601        core.ISO8601   `json:"toISO8601" format:"date-time" example:"2023-01-01T00:00:00Z"`
 	ToDuration       string         `json:"toDuration" example:"eoy"`
 	Assumed          []string       `json:"assumed" example:"[\"toDuration\"]"`
 	State            ConditionState `json:"state"`
@@ -54,11 +54,11 @@ type Predict struct {
 type Prediction struct {
 	UUID            string               `json:"uuid" format:"uuid" description:"Prediction's primary key." example:"3a7bc95e-480d-4232-8e8b-f848d5389806"`
 	Version         string               `json:"version" description:"Set to 1.0.0." example:"1.0.0"`
-	CreatedAt       types.ISO8601        `json:"createdAt" description:"This is automatically calculated when created." format:"date-time" example:"2022-01-26T22:35:43Z"`
+	CreatedAt       core.ISO8601         `json:"createdAt" description:"This is automatically calculated when created." format:"date-time" example:"2022-01-26T22:35:43Z"`
 	Reporter        string               `json:"reporter" description:"Set to admin for now." required:"true" minLength:"1" example:"admin"`
 	PostAuthor      string               `json:"postAuthor" description:"This is automatically calculated based on the tweet/youtube video in postUrl." example:"CryptoCapo_"`
 	PostAuthorURL   string               `json:"postAuthorURL,omitempty" description:"This is automatically calculated based on the tweet/youtube video in postUrl." example:"https://twitter.com/CryptoCapo_"`
-	PostedAt        types.ISO8601        `json:"postedAt" description:"This is automatically calculated based on the tweet/youtube video in postUrl." format:"date-time" example:"2022-01-26T22:35:43Z"`
+	PostedAt        core.ISO8601         `json:"postedAt" description:"This is automatically calculated based on the tweet/youtube video in postUrl." format:"date-time" example:"2022-01-26T22:35:43Z"`
 	PostURL         string               `json:"postUrl" description:"The tweet/youtube video's URL." required:"true" format:"uri" example:"https://twitter.com/CryptoCapo_/status/1486467919064322051"`
 	Given           map[string]Condition `json:"given,omitempty" description:"The conditions that form this prediction." required:"true"`
 	PrePredict      *PrePredict          `json:"prePredict,omitempty"`
@@ -80,32 +80,32 @@ type PredictionSummary struct {
 	OtherCoin string `json:"otherCoin,omitempty"`
 
 	// Only in "PredictionTypeCoinOperatorFloatDeadline" type
-	Goal                                    types.JSONFloat64 `json:"goal,omitempty"`
-	GoalWithError                           types.JSONFloat64 `json:"goalWithError,omitempty"`
-	EndedAtTruncatedDueToResultInvalidation types.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
+	Goal                                    core.JSONFloat64 `json:"goal,omitempty"`
+	GoalWithError                           core.JSONFloat64 `json:"goalWithError,omitempty"`
+	EndedAtTruncatedDueToResultInvalidation core.ISO8601     `json:"endedAtTruncatedDueToResultInvalidation,omitempty"`
 
 	// Only in "PredictionTypeCoinWillReachInvalidatedIfItReaches"
-	InvalidatedIfItReaches types.JSONFloat64 `json:"invalidatedIfItReaches,omitempty"`
+	InvalidatedIfItReaches core.JSONFloat64 `json:"invalidatedIfItReaches,omitempty"`
 
 	// Only in "PredictionWillRange type"
-	RangeLow           types.JSONFloat64 `json:"rangeLow,omitempty"`
-	RangeLowWithError  types.JSONFloat64 `json:"rangeLowWithError,omitempty"`
-	RangeHigh          types.JSONFloat64 `json:"rangeHigh,omitempty"`
-	RangeHighWithError types.JSONFloat64 `json:"rangeHighWithError,omitempty"`
+	RangeLow           core.JSONFloat64 `json:"rangeLow,omitempty"`
+	RangeLowWithError  core.JSONFloat64 `json:"rangeLowWithError,omitempty"`
+	RangeHigh          core.JSONFloat64 `json:"rangeHigh,omitempty"`
+	RangeHighWithError core.JSONFloat64 `json:"rangeHighWithError,omitempty"`
 
 	// Only in "PredictionWillReachBeforeItReaches type"
-	WillReach                types.JSONFloat64 `json:"willReach,omitempty"`
-	WillReachWithError       types.JSONFloat64 `json:"willReachWithError,omitempty"`
-	BeforeItReaches          types.JSONFloat64 `json:"beforeItReaches,omitempty"`
-	BeforeItReachesWithError types.JSONFloat64 `json:"beforeItReachesWithError,omitempty"`
+	WillReach                core.JSONFloat64 `json:"willReach,omitempty"`
+	WillReachWithError       core.JSONFloat64 `json:"willReachWithError,omitempty"`
+	BeforeItReaches          core.JSONFloat64 `json:"beforeItReaches,omitempty"`
+	BeforeItReachesWithError core.JSONFloat64 `json:"beforeItReachesWithError,omitempty"`
 
 	// In all prediction types
 	CandlestickMap   map[string][]common.Candlestick `json:"candlestickMap,omitempty"`
 	Coin             string                          `json:"coin,omitempty"`
-	ErrorMarginRatio types.JSONFloat64               `json:"errorMarginRatio,omitempty"`
+	ErrorMarginRatio core.JSONFloat64                `json:"errorMarginRatio,omitempty"`
 	Operator         string                          `json:"operator,omitempty"`
-	Deadline         types.ISO8601                   `json:"deadline,omitempty"`
-	EndedAt          types.ISO8601                   `json:"endedAt,omitempty"`
+	Deadline         core.ISO8601                    `json:"deadline,omitempty"`
+	EndedAt          core.ISO8601                    `json:"endedAt,omitempty"`
 	PredictionType   string                          `json:"predictionType,omitempty"`
 }
 

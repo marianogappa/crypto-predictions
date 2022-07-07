@@ -4,16 +4,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPredictionType(t *testing.T) {
 	tss := []struct {
 		name, pred string
-		expected   types.PredictionType
+		expected   core.PredictionType
 	}{
 		{
 			name: "Basic PREDICTION_TYPE_COIN_OPERATOR_FLOAT_DEADLINE",
@@ -31,7 +31,7 @@ func TestPredictionType(t *testing.T) {
 					"predict": "main"
 				}
 			}`,
-			expected: types.PredictionTypeCoinOperatorFloatDeadline,
+			expected: core.PredictionTypeCoinOperatorFloatDeadline,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_INVALIDATED_IF_IT_REACHES",
@@ -55,7 +55,7 @@ func TestPredictionType(t *testing.T) {
 				  "ignoreUndecidedIfPredictIsDefined": true
 				}
 			  }`,
-			expected: types.PredictionTypeCoinWillReachInvalidatedIfItReaches,
+			expected: core.PredictionTypeCoinWillReachInvalidatedIfItReaches,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_RANGE",
@@ -73,7 +73,7 @@ func TestPredictionType(t *testing.T) {
 					"predict": "main"
 				}
 			}`,
-			expected: types.PredictionTypeCoinWillRange,
+			expected: core.PredictionTypeCoinWillRange,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_COIN_WILL_REACH_BEFORE_IT_REACHES",
@@ -96,7 +96,7 @@ func TestPredictionType(t *testing.T) {
 				  "predict": "a and (not b)"
 				}
 			  }`,
-			expected: types.PredictionTypeCoinWillReachBeforeItReaches,
+			expected: core.PredictionTypeCoinWillReachBeforeItReaches,
 		},
 		{
 			name: "Basic PREDICTION_TYPE_UNSUPPORTED",
@@ -216,7 +216,7 @@ func TestPredictionType(t *testing.T) {
 					"value": "ONGOING_PREDICTION"
 				}
 			}`,
-			expected: types.PredictionTypeUnsupported,
+			expected: core.PredictionTypeUnsupported,
 		},
 	}
 	for _, ts := range tss {
@@ -224,7 +224,7 @@ func TestPredictionType(t *testing.T) {
 			pc := NewPredictionCompiler(metadatafetcher.NewMetadataFetcher(), nil)
 			pc.metadataFetcher.Fetchers = []metadatafetcher.SpecificFetcher{
 				newTestMetadataFetcher(mfTypes.PostMetadata{
-					Author:        types.Account{Handle: "CryptoCapo_"},
+					Author:        core.Account{Handle: "CryptoCapo_"},
 					PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 				}, nil),
 			}

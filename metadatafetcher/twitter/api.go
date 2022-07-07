@@ -10,8 +10,8 @@ import (
 
 	"github.com/dghubble/oauth1"
 	"github.com/drswork/go-twitter/twitter"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/request"
-	"github.com/marianogappa/predictions/types"
 )
 
 var (
@@ -90,7 +90,7 @@ type responseIncludesUsers struct {
 	Name          string                             `json:"name"`
 	Username      string                             `json:"username"`
 	Verified      bool                               `json:"verified"`
-	CreatedAt     types.ISO8601                      `json:"created_at"`
+	CreatedAt     core.ISO8601                       `json:"created_at"`
 	ProfileImgURL string                             `json:"profile_image_url"`
 	PublicMetrics responseIncludesUsersPublicMetrics `json:"public_metrics"`
 }
@@ -109,14 +109,14 @@ func responseToTweet(r response) (Tweet, error) {
 	if len(r.Errors) > 0 {
 		return Tweet{}, fmt.Errorf("there are errors in Twitter's API response: %v", string(r.Errors))
 	}
-	tweetCreatedAt, err := types.ISO8601(r.Data.CreatedAt).Time()
+	tweetCreatedAt, err := core.ISO8601(r.Data.CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, fmt.Errorf("while parsing r.Data.CreatedAt (%v) as ISO8601: %w", r.Data.CreatedAt, err)
 	}
 	if len(r.Includes.Users) < 1 {
 		return Tweet{}, fmt.Errorf("expecting len(r.Includes.Users) to be >= 1, but was %v", len(r.Includes.Users))
 	}
-	userCreatedAt, err := types.ISO8601(r.Includes.Users[0].CreatedAt).Time()
+	userCreatedAt, err := core.ISO8601(r.Includes.Users[0].CreatedAt).Time()
 	if err != nil {
 		return Tweet{}, fmt.Errorf("while parsing r.Includes.Users[0].CreatedAt (%v) as ISO8601: %w", r.Includes.Users[0].CreatedAt, err)
 	}

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
 // PredictionPrettyPrinter builds a human-readable description of a prediction, e.g.:
 // "Bitcoin will be below $17k in 2 weeks"
 type PredictionPrettyPrinter struct {
-	prediction types.Prediction
+	prediction core.Prediction
 }
 
 // NewPredictionPrettyPrinter constructs a PredictionPrettyPrinter.
-func NewPredictionPrettyPrinter(p types.Prediction) PredictionPrettyPrinter {
+func NewPredictionPrettyPrinter(p core.Prediction) PredictionPrettyPrinter {
 	return PredictionPrettyPrinter{prediction: p}
 }
 
@@ -22,14 +22,14 @@ func NewPredictionPrettyPrinter(p types.Prediction) PredictionPrettyPrinter {
 // "Bitcoin will be below $17k in 2 weeks"
 func (p PredictionPrettyPrinter) String() string {
 	switch p.prediction.Type {
-	case types.PredictionTypeCoinOperatorFloatDeadline:
+	case core.PredictionTypeCoinOperatorFloatDeadline:
 		// TODO: this if is necessary because there's a bug where some predictions are miscategorised
 		if p.prediction.Predict.Predict.Literal != nil && len(p.prediction.Predict.Predict.Literal.Operands) == 2 {
 			return p.predictionTypeCoinOperatorFloatDeadline()
 		}
-	// case types.PREDICTION_TYPE_COIN_WILL_RANGE:
+	// case core.PREDICTION_TYPE_COIN_WILL_RANGE:
 	// 	p.predictionTypeCoinWillRange()
-	case types.PredictionTypeCoinWillReachBeforeItReaches:
+	case core.PredictionTypeCoinWillReachBeforeItReaches:
 		p.predictionTypeCoinWillReachBeforeItReaches()
 	}
 

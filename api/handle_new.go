@@ -6,9 +6,9 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/daemon"
 	"github.com/marianogappa/predictions/serializer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggest/usecase"
 )
@@ -56,7 +56,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 	}
 
 	// If the state is empty, run one tick to see if the prediction is decided at start time. If so, it's invalid.
-	if pred.State == (types.PredictionState{}) {
+	if pred.State == (core.PredictionState{}) {
 		predRunner, errs := daemon.NewPredEvolver(&pred, a.mkt, int(a.NowFunc().Unix()))
 		if len(errs) == 0 {
 			predRunnerErrs := predRunner.Run(true)
@@ -66,7 +66,7 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 				}
 			}
 			if pred.Evaluate().IsFinal() {
-				return failWith(types.ErrPredictionFinishedAtStartTime, types.ErrPredictionFinishedAtStartTime, apiResPostPrediction{})
+				return failWith(core.ErrPredictionFinishedAtStartTime, core.ErrPredictionFinishedAtStartTime, apiResPostPrediction{})
 			}
 			// The evaluation will set the initial state for the prediction, but we want the Daemon to pick it up
 			// as UNSTARTED so that it will post the initial tweet, so let's clear the state.
@@ -76,13 +76,13 @@ func (a *API) postPrediction(req apiReqPostPrediction) apiResponse[apiResPostPre
 
 	if req.Store {
 		// N.B. as per interface, UpsertPredictions may add UUIDs in-place on predictions
-		_, err = a.store.UpsertPredictions([]*types.Prediction{&pred})
+		_, err = a.store.UpsertPredictions([]*core.Prediction{&pred})
 		if err != nil {
 			return failWith(ErrStorageErrorStoringPrediction, err, apiResPostPrediction{})
 		}
 
 		if account != nil {
-			_, err := a.store.UpsertAccounts([]*types.Account{account})
+			_, err := a.store.UpsertAccounts([]*core.Account{account})
 			if err != nil {
 				return failWith(ErrStorageErrorStoringPrediction, err, apiResPostPrediction{})
 			}

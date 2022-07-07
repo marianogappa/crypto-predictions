@@ -1,4 +1,4 @@
-package types
+package core
 
 // Predict represents the main Prediction step.
 type Predict struct {

@@ -3,24 +3,24 @@ package statestorage
 import (
 	"database/sql"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
 // StateStorage is the interface to the storage-layer. Currently the only implementation is Postgres.
 // It might be wise to keep this interface, because Postgres might be convenient but it's a terrible choice for
 // this engine's persistence needs.
 type StateStorage interface {
-	GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error)
-	GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error)
+	GetPredictions(filters core.APIFilters, orderBys []string, limit, offset int) ([]core.Prediction, error)
+	GetAccounts(filters core.APIAccountFilters, orderBys []string, limit, offset int) ([]core.Account, error)
 	// TODO: add interface contract
-	UpsertPredictions([]*types.Prediction) ([]*types.Prediction, error)
-	UpsertAccounts([]*types.Account) ([]*types.Account, error)
-	LogPredictionStateValueChange(types.PredictionStateValueChange) error
+	UpsertPredictions([]*core.Prediction) ([]*core.Prediction, error)
+	UpsertAccounts([]*core.Account) ([]*core.Account, error)
+	LogPredictionStateValueChange(core.PredictionStateValueChange) error
 
-	NonPendingPredictionInteractionExists(types.PredictionInteraction) (bool, error)
-	InsertPredictionInteraction(types.PredictionInteraction) error
-	GetPendingPredictionInteractions() ([]types.PredictionInteraction, error)
-	UpdatePredictionInteractionStatus(types.PredictionInteraction) error
+	NonPendingPredictionInteractionExists(core.PredictionInteraction) (bool, error)
+	InsertPredictionInteraction(core.PredictionInteraction) error
+	GetPendingPredictionInteractions() ([]core.PredictionInteraction, error)
+	UpdatePredictionInteractionStatus(core.PredictionInteraction) error
 
 	PausePrediction(uuid string) error
 	UnpausePrediction(uuid string) error

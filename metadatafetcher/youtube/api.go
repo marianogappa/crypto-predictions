@@ -5,8 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/request"
-	"github.com/marianogappa/predictions/types"
 )
 
 // Youtube is the main struct for the Youtube component that interacts with Youtube via the Youtube API.
@@ -32,7 +32,7 @@ type Video struct {
 	VideoTitle           string
 	VideoDescription     string
 	VideoID              string
-	PublishedAt          types.ISO8601
+	PublishedAt          core.ISO8601
 	ChannelID            string
 	ChannelTitle         string
 	ThumbnailDefaultURL  string
@@ -58,7 +58,7 @@ type responseSnippetThumbnails struct {
 }
 
 type responseSnippet struct {
-	PublishedAt  types.ISO8601             `json:"publishedAt"`
+	PublishedAt  core.ISO8601              `json:"publishedAt"`
 	ChannelID    string                    `json:"channelId"`
 	Title        string                    `json:"title"`
 	Description  string                    `json:"description"`
@@ -122,7 +122,7 @@ func (t Youtube) getVideoByID(id string) (Video, error) {
 type Channel struct {
 	ID                  string
 	URL                 string
-	PublishedAt         types.ISO8601
+	PublishedAt         core.ISO8601
 	Title               string
 	Description         string
 	ThumbnailDefaultURL string
@@ -171,7 +171,7 @@ type channelsResponseStatistics struct {
 type channelsResponseSnippet struct {
 	Title       string                            `json:"title"`
 	Description string                            `json:"description"`
-	PublishedAt types.ISO8601                     `json:"publishedAt"`
+	PublishedAt core.ISO8601                      `json:"publishedAt"`
 	Thumbnails  channelsResponseSnippetThumbnails `json:"thumbnails"`
 }
 

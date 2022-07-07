@@ -16,8 +16,8 @@ import (
 	"github.com/google/uuid"
 	pq "github.com/lib/pq"
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -86,20 +86,20 @@ func (s *PostgresDBStateStorage) DB() *sql.DB {
 
 func predictionsBuildOrderBy(orderBys []string) string {
 	if len(orderBys) == 0 {
-		orderBys = []string{types.PredictionsCreatedAtDesc.String()}
+		orderBys = []string{core.PredictionsCreatedAtDesc.String()}
 	}
 	resultArr := []string{}
 	for _, orderBy := range orderBys {
 		switch orderBy {
-		case types.PredictionsCreatedAtDesc.String():
+		case core.PredictionsCreatedAtDesc.String():
 			resultArr = append(resultArr, "created_at DESC")
-		case types.PredictionsCreatedAtAsc.String():
+		case core.PredictionsCreatedAtAsc.String():
 			resultArr = append(resultArr, "created_at ASC")
-		case types.PredictionsPostedAtDesc.String():
+		case core.PredictionsPostedAtDesc.String():
 			resultArr = append(resultArr, "posted_at DESC")
-		case types.PredictionsPostedAtAsc.String():
+		case core.PredictionsPostedAtAsc.String():
 			resultArr = append(resultArr, "posted_at ASC")
-		case types.PredictionsUUIDAsc.String():
+		case core.PredictionsUUIDAsc.String():
 			resultArr = append(resultArr, "uuid ASC")
 		}
 	}
@@ -107,7 +107,7 @@ func predictionsBuildOrderBy(orderBys []string) string {
 }
 
 // GetPredictions SELECTs predictions from the database.
-func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBys []string, limit, offset int) ([]types.Prediction, error) {
+func (s PostgresDBStateStorage) GetPredictions(filters core.APIFilters, orderBys []string, limit, offset int) ([]core.Prediction, error) {
 	where, args := (&pgWhereBuilder{}).addFilters([]filterable{
 		pgPredictionsAuthorHandles{filters.AuthorHandles},
 		pgPredictionsAuthorURLs{filters.AuthorURLs},
@@ -141,7 +141,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 	}
 	defer rows.Close()
 
-	result := []types.Prediction{}
+	result := []core.Prediction{}
 	for rows.Next() {
 		var (
 			clUUID, clBlob                []byte
@@ -151,7 +151,7 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 		if err != nil {
 			log.Info().Msgf("error reading predictions fields from db, with error: %v\n", err)
 		}
-		var pred types.Prediction
+		var pred core.Prediction
 		if pred, _, err = compiler.NewPredictionCompiler(nil, nil).Compile(clBlob); err != nil {
 			log.Info().Msgf("read corrupted prediction from db, with error: %v\n", err)
 			continue
@@ -168,16 +168,16 @@ func (s PostgresDBStateStorage) GetPredictions(filters types.APIFilters, orderBy
 
 func accountsBuildOrderBy(orderBys []string) string {
 	if len(orderBys) == 0 {
-		orderBys = []string{types.AccountFollowerCountDesc.String()}
+		orderBys = []string{core.AccountFollowerCountDesc.String()}
 	}
 	resultArr := []string{}
 	for _, orderBy := range orderBys {
 		switch orderBy {
-		case types.AccountCreatedAtDesc.String():
+		case core.AccountCreatedAtDesc.String():
 			resultArr = append(resultArr, "created_at DESC")
-		case types.AccountCreatedAtAsc.String():
+		case core.AccountCreatedAtAsc.String():
 			resultArr = append(resultArr, "created_at ASC")
-		case types.AccountFollowerCountDesc.String():
+		case core.AccountFollowerCountDesc.String():
 			resultArr = append(resultArr, "follower_count DESC")
 		}
 	}
@@ -185,7 +185,7 @@ func accountsBuildOrderBy(orderBys []string) string {
 }
 
 // GetAccounts SELECTs accounts from the database.
-func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, orderBys []string, limit, offset int) ([]types.Account, error) {
+func (s PostgresDBStateStorage) GetAccounts(filters core.APIAccountFilters, orderBys []string, limit, offset int) ([]core.Account, error) {
 	where, args := (&pgWhereBuilder{}).addFilters([]filterable{
 		pgAccountsHandles{filters.Handles},
 		pgAccountsURLs{filters.URLs},
@@ -209,10 +209,10 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 	}
 	defer rows.Close()
 
-	result := []types.Account{}
+	result := []core.Account{}
 	for rows.Next() {
 		var (
-			a          types.Account
+			a          core.Account
 			dbURL      string
 			thumbnails []string
 			createdAt  pq.NullTime
@@ -248,7 +248,7 @@ func (s PostgresDBStateStorage) GetAccounts(filters types.APIAccountFilters, ord
 }
 
 // UpsertPredictions UPSERTs predictions to the database.
-func (s PostgresDBStateStorage) UpsertPredictions(ps []*types.Prediction) ([]*types.Prediction, error) {
+func (s PostgresDBStateStorage) UpsertPredictions(ps []*core.Prediction) ([]*core.Prediction, error) {
 	if len(ps) == 0 {
 		return ps, nil
 	}
@@ -366,7 +366,7 @@ func (s *PostgresDBStateStorage) UndeletePrediction(uuid string) error {
 }
 
 // UpsertAccounts UPSERTs accounts to the database.
-func (s PostgresDBStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Account, error) {
+func (s PostgresDBStateStorage) UpsertAccounts(as []*core.Account) ([]*core.Account, error) {
 	if len(as) == 0 {
 		return as, nil
 	}
@@ -385,7 +385,7 @@ func (s PostgresDBStateStorage) UpsertAccounts(as []*types.Account) ([]*types.Ac
 }
 
 // LogPredictionStateValueChange logs the fact that a prediction changed PredictionStateValue to the database.
-func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.PredictionStateValueChange) error {
+func (s PostgresDBStateStorage) LogPredictionStateValueChange(c core.PredictionStateValueChange) error {
 	_, err := s.db.Exec(`
 		INSERT INTO prediction_state_value_change
 		(prediction_uuid, state_value, created_at)
@@ -397,7 +397,7 @@ func (s PostgresDBStateStorage) LogPredictionStateValueChange(c types.Prediction
 }
 
 // NonPendingPredictionInteractionExists checks the database to see if a predictions creation or finalization Tweet post happened.
-func (s PostgresDBStateStorage) NonPendingPredictionInteractionExists(interaction types.PredictionInteraction) (bool, error) {
+func (s PostgresDBStateStorage) NonPendingPredictionInteractionExists(interaction core.PredictionInteraction) (bool, error) {
 	var exists bool
 	res, err := s.db.Query(`
 	SELECT EXISTS(SELECT * FROM prediction_interactions WHERE prediction_uuid = $1 AND post_url = $2 AND action_type = $3 AND status != 'PENDING');
@@ -413,7 +413,7 @@ func (s PostgresDBStateStorage) NonPendingPredictionInteractionExists(interactio
 }
 
 // InsertPredictionInteraction logs the fact that a Tweet was sent when a prediction was created or finalized.
-func (s PostgresDBStateStorage) InsertPredictionInteraction(i types.PredictionInteraction) error {
+func (s PostgresDBStateStorage) InsertPredictionInteraction(i core.PredictionInteraction) error {
 	_, err := s.db.Query(`
 	INSERT INTO prediction_interactions (uuid, prediction_uuid, post_url, action_type, interaction_post_url, status, error) VALUES ($1, $2, $3, $4, $5, $6, $7);
 		`, uuid.NewString(), i.PredictionUUID, i.PostURL, i.ActionType, i.InteractionPostURL, i.Status, i.Error)
@@ -424,7 +424,7 @@ func (s PostgresDBStateStorage) InsertPredictionInteraction(i types.PredictionIn
 }
 
 // UpdatePredictionInteractionStatus changes the status of a PredictionInteraction.
-func (s PostgresDBStateStorage) UpdatePredictionInteractionStatus(i types.PredictionInteraction) error {
+func (s PostgresDBStateStorage) UpdatePredictionInteractionStatus(i core.PredictionInteraction) error {
 	res, err := s.db.Exec(`
 	UPDATE prediction_interactions SET status = $1, error = $2 WHERE post_url = $3 AND action_type = $4 AND prediction_uuid = $5 AND status = 'PENDING';
 		`, i.Status, i.Error, i.PostURL, i.ActionType, i.PredictionUUID)
@@ -442,16 +442,16 @@ func (s PostgresDBStateStorage) UpdatePredictionInteractionStatus(i types.Predic
 }
 
 // GetPendingPredictionInteractions SELECTs pending prediction interactions from the database.
-func (s PostgresDBStateStorage) GetPendingPredictionInteractions() ([]types.PredictionInteraction, error) {
+func (s PostgresDBStateStorage) GetPendingPredictionInteractions() ([]core.PredictionInteraction, error) {
 	rows, err := s.db.Query("SELECT prediction_uuid, post_url, action_type, interaction_post_url, status FROM prediction_interactions WHERE status = 'PENDING' ORDER BY created_at")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	interactions := []types.PredictionInteraction{}
+	interactions := []core.PredictionInteraction{}
 	for rows.Next() {
-		var row types.PredictionInteraction
+		var row core.PredictionInteraction
 
 		if err := rows.Scan(&row.PredictionUUID, &row.PostURL, &row.ActionType, &row.InteractionPostURL, &row.Status); err != nil {
 			log.Info().Err(err).Msg("error reading prediction interaction from db")
@@ -530,7 +530,7 @@ type pgPredictionsPredictionStateValues struct{ predictionStateValues []string }
 func (f pgPredictionsPredictionStateValues) filter() (string, []interface{}) {
 	args := []interface{}{}
 	for _, rawPredictionStateValue := range f.predictionStateValues {
-		if _, err := types.PredictionStateValueFromString(rawPredictionStateValue); err != nil {
+		if _, err := core.PredictionStateValueFromString(rawPredictionStateValue); err != nil {
 			continue
 		}
 		args = append(args, rawPredictionStateValue)
@@ -546,7 +546,7 @@ type pgPredictionsPredictionStateStatuses struct{ predictionStateStatuses []stri
 func (f pgPredictionsPredictionStateStatuses) filter() (string, []interface{}) {
 	args := []interface{}{}
 	for _, rawPredictionStateStatus := range f.predictionStateStatuses {
-		if _, err := types.ConditionStatusFromString(rawPredictionStateStatus); err != nil {
+		if _, err := core.ConditionStatusFromString(rawPredictionStateStatus); err != nil {
 			continue
 		}
 		args = append(args, rawPredictionStateStatus)
@@ -638,7 +638,7 @@ func (f pgIncludeUIUnsupported) filter() (string, []interface{}) {
 		return "", nil
 	}
 	args := []interface{}{}
-	for predictionType := range types.UIUnsupportedPredictionTypes {
+	for predictionType := range core.UIUnsupportedPredictionTypes {
 		args = append(args, predictionType.String())
 	}
 	if len(args) > 0 {

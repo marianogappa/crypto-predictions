@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/marianogappa/predictions/metadatafetcher/twitter"
-	"github.com/marianogappa/predictions/metadatafetcher/types"
+	core "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/metadatafetcher/youtube"
 )
 
@@ -19,7 +19,7 @@ func TestMetadataFetcherFetchInvalidURL(t *testing.T) {
 
 func TestMetadataFetcherFetchNoValidFetchers(t *testing.T) {
 	_, err := NewMetadataFetcher().Fetch("https://unsupportedsite.com?v=123456543")
-	if err != types.ErrNoMetadataFound {
+	if err != core.ErrNoMetadataFound {
 		t.Errorf("should have failed with no metadata found")
 	}
 }

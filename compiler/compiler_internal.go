@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 )
 
 var (
@@ -26,31 +26,31 @@ var (
 	rxDurationHours     = regexp.MustCompile(`([0-9]+)h`)
 )
 
-func mapOperandForTests(v string) (types.Operand, error) {
+func mapOperandForTests(v string) (core.Operand, error) {
 	return mapOperand(v)
 }
 
-func mapOperand(v string) (types.Operand, error) {
+func mapOperand(v string) (core.Operand, error) {
 	v = strings.ToUpper(v)
 	f, err := strconv.ParseFloat(v, 64)
 	if err == nil {
-		return types.Operand{Type: types.NUMBER, Number: types.JSONFloat64(f), Str: v}, nil
+		return core.Operand{Type: core.NUMBER, Number: core.JSONFloat64(f), Str: v}, nil
 	}
 	matches := rxVariable.FindStringSubmatch(v)
 	if len(matches) == 0 {
-		return types.Operand{}, fmt.Errorf("%w: operand %v doesn't parse to float nor match the regex %v", types.ErrInvalidOperand, v, strVariable)
+		return core.Operand{}, fmt.Errorf("%w: operand %v doesn't parse to float nor match the regex %v", core.ErrInvalidOperand, v, strVariable)
 	}
-	operandType, _ := types.OperandTypeFromString(matches[1])
-	if operandType == types.MARKETCAP && matches[5] != "" {
-		return types.Operand{}, types.ErrNonEmptyQuoteAssetOnNonCoin
+	operandType, _ := core.OperandTypeFromString(matches[1])
+	if operandType == core.MARKETCAP && matches[5] != "" {
+		return core.Operand{}, core.ErrNonEmptyQuoteAssetOnNonCoin
 	}
-	if operandType == types.COIN && matches[5] == "" {
-		return types.Operand{}, types.ErrEmptyQuoteAsset
+	if operandType == core.COIN && matches[5] == "" {
+		return core.Operand{}, core.ErrEmptyQuoteAsset
 	}
 	if matches[3] == matches[5] {
-		return types.Operand{}, types.ErrEqualBaseQuoteAssets
+		return core.Operand{}, core.ErrEqualBaseQuoteAssets
 	}
-	return types.Operand{
+	return core.Operand{
 		Type:       operandType,
 		Provider:   matches[2],
 		BaseAsset:  matches[3],
@@ -59,8 +59,8 @@ func mapOperand(v string) (types.Operand, error) {
 	}, nil
 }
 
-func mapOperands(ss []string) ([]types.Operand, error) {
-	ops := []types.Operand{}
+func mapOperands(ss []string) ([]core.Operand, error) {
+	ops := []core.Operand{}
 	for _, s := range ss {
 		op, err := mapOperand(s)
 		if err != nil {
@@ -123,16 +123,16 @@ func parseDuration(dur string, fromTime time.Time) (time.Duration, error) {
 		num, _ := strconv.Atoi(matches[1])
 		return time.Duration(num) * time.Hour, nil
 	}
-	return 0, fmt.Errorf("%w: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", types.ErrInvalidDuration, dur)
+	return 0, fmt.Errorf("%w: %v, only `[0-9]+[mwdh]` or `eoy` are accepted", core.ErrInvalidDuration, dur)
 }
 
-func mapFromTs(c Condition, postedAt types.ISO8601) (int, error) {
+func mapFromTs(c Condition, postedAt core.ISO8601) (int, error) {
 	s, err := c.FromISO8601.Seconds()
 	if err == nil {
 		return s, nil
 	}
 	if c.FromISO8601 != "" && err != nil {
-		return 0, fmt.Errorf("%w for condition: %v", types.ErrInvalidFromISO8601, c.FromISO8601)
+		return 0, fmt.Errorf("%w for condition: %v", core.ErrInvalidFromISO8601, c.FromISO8601)
 	}
 	return postedAt.Seconds()
 }
@@ -143,10 +143,10 @@ func mapToTs(c Condition, fromTs int) (int, error) {
 		return s, nil
 	}
 	if c.ToISO8601 != "" && err != nil {
-		return 0, fmt.Errorf("%w for condition: %v", types.ErrInvalidToISO8601, c.ToISO8601)
+		return 0, fmt.Errorf("%w for condition: %v", core.ErrInvalidToISO8601, c.ToISO8601)
 	}
 	if c.ToISO8601 == "" && c.ToDuration == "" {
-		return 0, types.ErrOneOfToISO8601ToDurationRequired
+		return 0, core.ErrOneOfToISO8601ToDurationRequired
 	}
 	fromTime := time.Unix(int64(fromTs), 0)
 	duration, err := parseDuration(c.ToDuration, fromTime)
@@ -156,7 +156,7 @@ func mapToTs(c Condition, fromTs int) (int, error) {
 	return int(fromTime.Add(duration).Unix()), nil
 }
 
-func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condition, error) {
+func mapCondition(c Condition, name string, postedAt core.ISO8601) (core.Condition, error) {
 	var (
 		operator    string
 		strOperands []string
@@ -165,7 +165,7 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 	if len(matchCondition) == 0 {
 		matchCondition := rxBetweenCondition.FindStringSubmatch(c.Condition)
 		if len(matchCondition) == 0 {
-			return types.Condition{}, fmt.Errorf("%w; expecting regex match for '%v' or '%v' but got '%v'", types.ErrInvalidConditionSyntax, rxCondition, rxBetweenCondition, c.Condition)
+			return core.Condition{}, fmt.Errorf("%w; expecting regex match for '%v' or '%v' but got '%v'", core.ErrInvalidConditionSyntax, rxCondition, rxBetweenCondition, c.Condition)
 		}
 		operator = "BETWEEN"
 		strOperands = []string{matchCondition[1], matchCondition[8], matchCondition[15]}
@@ -176,38 +176,38 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 
 	operands, err := mapOperands(strOperands)
 	if err != nil {
-		return types.Condition{}, fmt.Errorf("while parsing condition's operands: %w", err)
+		return core.Condition{}, fmt.Errorf("while parsing condition's operands: %w", err)
 	}
 
 	if operator != ">" && operator != "<" && operator != ">=" && operator != "<=" && operator != "BETWEEN" {
-		return types.Condition{}, fmt.Errorf("%w %v", types.ErrUnknownConditionOperator, operator)
+		return core.Condition{}, fmt.Errorf("%w %v", core.ErrUnknownConditionOperator, operator)
 	}
 
 	if c.ErrorMarginRatio > 0.3 {
-		return types.Condition{}, fmt.Errorf("%w, but was %v", types.ErrErrorMarginRatioAbove30, c.ErrorMarginRatio)
+		return core.Condition{}, fmt.Errorf("%w, but was %v", core.ErrErrorMarginRatioAbove30, c.ErrorMarginRatio)
 	}
 
-	stateValue, err := types.ConditionStateValueFromString(c.State.Value)
+	stateValue, err := core.ConditionStateValueFromString(c.State.Value)
 	if err != nil {
-		return types.Condition{}, fmt.Errorf("while parsing condition's stateValue: %w", err)
+		return core.Condition{}, fmt.Errorf("while parsing condition's stateValue: %w", err)
 	}
 
-	stateStatus, err := types.ConditionStatusFromString(c.State.Status)
+	stateStatus, err := core.ConditionStatusFromString(c.State.Status)
 	if err != nil {
-		return types.Condition{}, fmt.Errorf("while parsing condition's stateStatus: %w", err)
+		return core.Condition{}, fmt.Errorf("while parsing condition's stateStatus: %w", err)
 	}
 
 	fromTs, err := mapFromTs(c, postedAt)
 	if err != nil {
-		return types.Condition{}, fmt.Errorf("while parsing condition's fromTs: %w", err)
+		return core.Condition{}, fmt.Errorf("while parsing condition's fromTs: %w", err)
 	}
 
 	toTs, err := mapToTs(c, fromTs)
 	if err != nil {
-		return types.Condition{}, fmt.Errorf("while parsing condition's toTs: %w", err)
+		return core.Condition{}, fmt.Errorf("while parsing condition's toTs: %w", err)
 	}
 
-	return types.Condition{
+	return core.Condition{
 		Name:             name,
 		Operator:         operator,
 		Operands:         operands,
@@ -216,7 +216,7 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 		ToTs:             toTs,
 		ToDuration:       c.ToDuration,
 		Assumed:          c.Assumed,
-		State: types.ConditionState{
+		State: core.ConditionState{
 			Status:    stateStatus,
 			LastTs:    c.State.LastTs,
 			LastTicks: c.State.LastTicks,
@@ -225,7 +225,7 @@ func mapCondition(c Condition, name string, postedAt types.ISO8601) (types.Condi
 	}, nil
 }
 
-func mapBoolExpr(expr *string, def map[string]*types.Condition) (*types.BoolExpr, error) {
+func mapBoolExpr(expr *string, def map[string]*core.Condition) (*core.BoolExpr, error) {
 	if expr == nil {
 		return nil, nil
 	}

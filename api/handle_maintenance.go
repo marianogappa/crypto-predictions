@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/marianogappa/predictions/compiler"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggest/usecase"
 )
@@ -38,7 +38,7 @@ func (a *API) maintenance(req apiReqMaintenance) apiResponse[apiResMaintenance] 
 
 func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiResponse[apiResMaintenance] {
 	preds, err := a.store.GetPredictions(
-		types.APIFilters{},
+		core.APIFilters{},
 		[]string{},
 		0, 0,
 	)
@@ -47,7 +47,7 @@ func (a *API) ensureAllPredictionsHavePostAuthorURL(req apiReqMaintenance) apiRe
 	}
 
 	// Fetch and upsert all accounts
-	predsToUpdate := []*types.Prediction{}
+	predsToUpdate := []*core.Prediction{}
 	for _, pred := range preds {
 		if pred.PostAuthorURL != "" {
 			continue
@@ -88,7 +88,7 @@ func (a *API) recalculatePredictionTypeOnAllPredictions(req apiReqMaintenance) a
 	scanner := statestorage.NewAllPredictionsScanner(a.store)
 	var fixedCount, totalCount int
 
-	var prediction types.Prediction
+	var prediction core.Prediction
 	for scanner.Scan(&prediction) {
 		totalCount++
 		predType := compiler.CalculatePredictionType(prediction)
@@ -98,7 +98,7 @@ func (a *API) recalculatePredictionTypeOnAllPredictions(req apiReqMaintenance) a
 
 		log.Info().Msgf("Changing prediction %v from %v to %v", prediction.PostURL, prediction.Type, predType)
 		prediction.Type = predType
-		if _, err := a.store.UpsertPredictions([]*types.Prediction{&prediction}); err != nil {
+		if _, err := a.store.UpsertPredictions([]*core.Prediction{&prediction}); err != nil {
 			return failWith(ErrStorageErrorStoringPrediction, fmt.Errorf("%w: failed to upsert predictions: %v", ErrStorageErrorStoringPrediction, err), apiResMaintenance{})
 		}
 		fixedCount++

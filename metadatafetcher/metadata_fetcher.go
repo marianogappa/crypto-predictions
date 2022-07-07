@@ -3,7 +3,7 @@ package metadatafetcher
 import (
 	"net/url"
 
-	"github.com/marianogappa/predictions/metadatafetcher/types"
+	core "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/metadatafetcher/youtube"
 
 	"github.com/marianogappa/predictions/metadatafetcher/twitter"
@@ -12,7 +12,7 @@ import (
 // SpecificFetcher is the interface for a concrete fetcher, e.g. youtube.Fetcher, twitter.Fetcher.
 type SpecificFetcher interface {
 	IsCorrectFetcher(url *url.URL) bool
-	Fetch(url *url.URL) (types.PostMetadata, error)
+	Fetch(url *url.URL) (core.PostMetadata, error)
 }
 
 // MetadataFetcher is the main struct for the social media account metadata fetcher.
@@ -27,10 +27,10 @@ func NewMetadataFetcher() *MetadataFetcher {
 
 // Fetch takes a URL string, loops through the available fetchers looking for the correct one, and then requests
 // metadata for that URL using the specific fetcher.
-func (f MetadataFetcher) Fetch(rawURL string) (types.PostMetadata, error) {
+func (f MetadataFetcher) Fetch(rawURL string) (core.PostMetadata, error) {
 	url, err := url.Parse(rawURL)
 	if err != nil {
-		return types.PostMetadata{}, err
+		return core.PostMetadata{}, err
 	}
 
 	for _, fetcher := range f.Fetchers {
@@ -43,5 +43,5 @@ func (f MetadataFetcher) Fetch(rawURL string) (types.PostMetadata, error) {
 		}
 		return m, nil
 	}
-	return types.PostMetadata{}, types.ErrNoMetadataFound
+	return core.PostMetadata{}, core.ErrNoMetadataFound
 }

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,7 +24,7 @@ func NewPredictionCompiler(fetcher *metadatafetcher.MetadataFetcher, timeNow fun
 	return PredictionCompiler{metadataFetcher: fetcher, timeNow: timeNow}
 }
 
-type partiallyCompile = func(Prediction, *types.Prediction, *types.Account, *metadatafetcher.MetadataFetcher, func() time.Time) error
+type partiallyCompile = func(Prediction, *core.Prediction, *core.Account, *metadatafetcher.MetadataFetcher, func() time.Time) error
 
 var (
 	partialCompilerNames = []string{
@@ -58,19 +58,19 @@ var (
 // Compile compiles a JSON string representing a prediction into a prediction that can be used throughout the engine.
 // If a MetadataFetcher is supplied on construction, it may also return an Account representing the post author's
 // social media account (but otherwise the Account will be nil).
-func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *types.Account, error) {
+func (c PredictionCompiler) Compile(rawPredictionBs []byte) (core.Prediction, *core.Account, error) {
 	var (
-		account    *types.Account
-		prediction = types.Prediction{}
+		account    *core.Account
+		prediction = core.Prediction{}
 		raw        = Prediction{}
 	)
 
 	if err := json.Unmarshal([]byte(rawPredictionBs), &raw); err != nil {
-		return prediction, nil, fmt.Errorf("while unmarshalling raw incoming JSON for compilation: %w: %v", types.ErrInvalidJSON, err)
+		return prediction, nil, fmt.Errorf("while unmarshalling raw incoming JSON for compilation: %w: %v", core.ErrInvalidJSON, err)
 	}
 
 	for _, name := range partialCompilerNames {
-		var maybeAccount types.Account
+		var maybeAccount core.Account
 		if err := partialCompilerFns[name](raw, &prediction, &maybeAccount, c.metadataFetcher, c.timeNow); err != nil {
 			return prediction, &maybeAccount, fmt.Errorf("while running compiler step %v: %w", name, err)
 		}
@@ -82,15 +82,15 @@ func (c PredictionCompiler) Compile(rawPredictionBs []byte) (types.Prediction, *
 	return prediction, account, nil
 }
 
-func compileReporter(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileReporter(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	if raw.Reporter == "" {
-		return types.ErrEmptyReporter
+		return core.ErrEmptyReporter
 	}
 	prediction.Reporter = raw.Reporter
 	return nil
 }
 
-func compileVersion(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileVersion(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	if raw.Version == "" {
 		raw.Version = "1.0.0"
 	}
@@ -98,44 +98,44 @@ func compileVersion(raw Prediction, prediction *types.Prediction, account *types
 	return nil
 }
 
-func compileUUID(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileUUID(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	prediction.UUID = raw.UUID
 	return nil
 }
 
-func compileFlags(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileFlags(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	prediction.Paused = raw.Paused
 	prediction.Hidden = raw.Hidden
 	prediction.Deleted = raw.Deleted
 	return nil
 }
 
-func compileCreatedAt(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileCreatedAt(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	if timeNow != nil && raw.CreatedAt == "" {
-		raw.CreatedAt = types.ISO8601(timeNow().Format(time.RFC3339))
+		raw.CreatedAt = core.ISO8601(timeNow().Format(time.RFC3339))
 	}
 	prediction.CreatedAt = raw.CreatedAt
 	return nil
 }
 
-func compilePostURL(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compilePostURL(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	if raw.PostURL == "" {
-		return types.ErrEmptyPostURL
+		return core.ErrEmptyPostURL
 	}
 	prediction.PostURL = raw.PostURL
 	return nil
 }
 
-func compileMetadata(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileMetadata(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	// N.B. This is not necessary but staticcheck complains that account is overwritten before first use.
 	if account != nil && account.URL != nil {
 		return errors.New("predictionCompiler.compile: received a non-nil account when about to compile metadata")
 	}
 	if mf == nil && (raw.PostAuthor == "" || raw.PostAuthorURL == "") {
-		return types.ErrEmptyPostAuthor
+		return core.ErrEmptyPostAuthor
 	}
 	if mf == nil && (raw.PostedAt == "") {
-		return types.ErrEmptyPostedAt
+		return core.ErrEmptyPostedAt
 	}
 	if mf != nil && (raw.PostAuthor == "" || raw.PostedAt == "" || raw.PostAuthorURL == "") {
 		log.Info().Msgf("Fetching metadata for %v\n", raw.PostURL)
@@ -162,13 +162,13 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 		}
 	}
 	if raw.PostAuthor == "" {
-		return types.ErrEmptyPostAuthor
+		return core.ErrEmptyPostAuthor
 	}
 	if raw.PostedAt == "" {
-		return types.ErrEmptyPostedAt
+		return core.ErrEmptyPostedAt
 	}
 	if _, err := raw.PostedAt.Seconds(); err != nil {
-		return types.ErrInvalidPostedAt
+		return core.ErrInvalidPostedAt
 	}
 
 	prediction.PostAuthor = raw.PostAuthor
@@ -178,8 +178,8 @@ func compileMetadata(raw Prediction, prediction *types.Prediction, account *type
 	return nil
 }
 
-func compileGiven(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
-	prediction.Given = map[string]*types.Condition{}
+func compileGiven(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+	prediction.Given = map[string]*core.Condition{}
 	for name, condition := range raw.Given {
 		c, err := mapCondition(condition, name, prediction.PostedAt)
 		if err != nil {
@@ -190,24 +190,24 @@ func compileGiven(raw Prediction, prediction *types.Prediction, account *types.A
 	return nil
 }
 
-func compilePredictionType(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
-	prediction.Type = types.PredictionTypeFromString(raw.Type)
-	if prediction.Type == types.PredictionTypeUnsupported {
+func compilePredictionType(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+	prediction.Type = core.PredictionTypeFromString(raw.Type)
+	if prediction.Type == core.PredictionTypeUnsupported {
 		prediction.Type = CalculatePredictionType(*prediction)
 	}
 	return nil
 }
 
-func compilePredictionState(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
-	status, err := types.ConditionStatusFromString(raw.PredictionState.Status)
+func compilePredictionState(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+	status, err := core.ConditionStatusFromString(raw.PredictionState.Status)
 	if err != nil {
 		return err
 	}
-	value, err := types.PredictionStateValueFromString(raw.PredictionState.Value)
+	value, err := core.PredictionStateValueFromString(raw.PredictionState.Value)
 	if err != nil {
 		return err
 	}
-	prediction.State = types.PredictionState{
+	prediction.State = core.PredictionState{
 		Status: status,
 		LastTs: raw.PredictionState.LastTs,
 		Value:  value,
@@ -215,9 +215,9 @@ func compilePredictionState(raw Prediction, prediction *types.Prediction, accoun
 	return nil
 }
 
-func compileInnerPrediction(raw Prediction, prediction *types.Prediction, account *types.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
+func compileInnerPrediction(raw Prediction, prediction *core.Prediction, account *core.Account, mf *metadatafetcher.MetadataFetcher, timeNow func() time.Time) error {
 	var (
-		b   *types.BoolExpr
+		b   *core.BoolExpr
 		err error
 	)
 	if raw.PrePredict != nil {
@@ -243,7 +243,7 @@ func compileInnerPrediction(raw Prediction, prediction *types.Prediction, accoun
 		prediction.PrePredict.AnnulledIfPredictIsFalse = raw.PrePredict.AnnulledIfPredictIsFalse
 
 		if prediction.PrePredict.Predict == nil && (prediction.PrePredict.WrongIf != nil || prediction.PrePredict.AnnulledIf != nil) {
-			return types.ErrMissingRequiredPrePredictPredictIf
+			return core.ErrMissingRequiredPrePredictPredictIf
 		}
 	}
 
@@ -264,7 +264,7 @@ func compileInnerPrediction(raw Prediction, prediction *types.Prediction, accoun
 	}
 
 	if raw.Predict.Predict == "" {
-		return types.ErrEmptyPredict
+		return core.ErrEmptyPredict
 	}
 	b, err = mapBoolExpr(&raw.Predict.Predict, prediction.Given)
 	if err != nil {

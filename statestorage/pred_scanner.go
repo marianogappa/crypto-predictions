@@ -1,17 +1,15 @@
 package statestorage
 
-import (
-	"github.com/marianogappa/predictions/types"
-)
+import "github.com/marianogappa/predictions/core"
 
 // PredictionScanner is a storage-layer Prediction iterator that follows the Scanner interface.
 type PredictionScanner struct {
 	Error error
 
 	store       StateStorage
-	predictions []types.Prediction
+	predictions []core.Prediction
 	lastUUID    string
-	filters     types.APIFilters
+	filters     core.APIFilters
 	limit       int
 }
 
@@ -28,17 +26,17 @@ func NewAllPredictionsScanner(store StateStorage) *PredictionScanner {
 }
 
 var (
-	filterEvolvable = types.APIFilters{
+	filterEvolvable = core.APIFilters{
 		PredictionStateValues: []string{
-			types.ONGOINGPREPREDICTION.String(),
-			types.ONGOINGPREDICTION.String(),
+			core.ONGOINGPREPREDICTION.String(),
+			core.ONGOINGPREDICTION.String(),
 		},
 		Paused:               pBool(false),
 		Deleted:              pBool(false),
 		IncludeUIUnsupported: true,
 	}
 
-	filterAll = types.APIFilters{
+	filterAll = core.APIFilters{
 		Paused:               nil,
 		Deleted:              nil,
 		Hidden:               nil,
@@ -46,14 +44,14 @@ var (
 	}
 )
 
-func newPredictionScanner(store StateStorage, filters types.APIFilters, batchSize int) *PredictionScanner {
+func newPredictionScanner(store StateStorage, filters core.APIFilters, batchSize int) *PredictionScanner {
 	if batchSize == 0 {
 		batchSize = 100
 	}
 	return &PredictionScanner{store: store, filters: filters, limit: batchSize}
 }
 
-func (it *PredictionScanner) query() ([]types.Prediction, error) {
+func (it *PredictionScanner) query() ([]core.Prediction, error) {
 	filters := it.filters
 
 	// Note that the iterator strategy is WHERE uuid > lastUUID.
@@ -63,7 +61,7 @@ func (it *PredictionScanner) query() ([]types.Prediction, error) {
 
 	preds, err := it.store.GetPredictions(
 		filters,
-		[]string{types.PredictionsUUIDAsc.String()},
+		[]string{core.PredictionsUUIDAsc.String()},
 		it.limit, 0,
 	)
 	if err != nil {
@@ -76,16 +74,16 @@ func (it *PredictionScanner) query() ([]types.Prediction, error) {
 	return preds, nil
 }
 
-// Scan retrieves the next prediction and stores it within the supplied *types.Prediction, and returns false when
+// Scan retrieves the next prediction and stores it within the supplied *core.Prediction, and returns false when
 // there are no predictions left or there is an error. To differentiate these cases, inspect the Error property.
-func (it *PredictionScanner) Scan(prediction *types.Prediction) bool {
+func (it *PredictionScanner) Scan(prediction *core.Prediction) bool {
 	it.Error = nil
 	if len(it.predictions) == 0 {
 		var err error
 		it.predictions, err = it.query()
 		if err != nil {
 			it.Error = err
-			*prediction = types.Prediction{}
+			*prediction = core.Prediction{}
 			return false
 		}
 	}

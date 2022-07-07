@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles"
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/imagebuilder"
 	"github.com/marianogappa/predictions/printer"
 	"github.com/marianogappa/predictions/statestorage"
-	"github.com/marianogappa/predictions/types"
 	"github.com/rs/zerolog/log"
 )
 
@@ -59,7 +59,7 @@ func (r *Daemon) Run(nowTs int) []error {
 	r.errs = []error{}
 	var (
 		predictionsScanner = statestorage.NewEvolvablePredictionsScanner(r.store)
-		prediction         types.Prediction
+		prediction         core.Prediction
 	)
 
 	for predictionsScanner.Scan(&prediction) {
@@ -78,18 +78,18 @@ func (r *Daemon) Run(nowTs int) []error {
 	return r.errs
 }
 
-func (r *Daemon) maybeActionPredictionCreated(prediction types.Prediction, nowTs int) {
-	if prediction.State.Status != types.UNSTARTED {
+func (r *Daemon) maybeActionPredictionCreated(prediction core.Prediction, nowTs int) {
+	if prediction.State.Status != core.UNSTARTED {
 		return
 	}
-	err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+	err := r.store.LogPredictionStateValueChange(core.PredictionStateValueChange{
 		PredictionUUID: prediction.UUID,
 		StateValue:     prediction.State.Value.String(),
-		CreatedAt:      types.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
+		CreatedAt:      core.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
 	})
 	r.addErrs(&prediction, err)
 
-	err = r.store.InsertPredictionInteraction(types.PredictionInteraction{
+	err = r.store.InsertPredictionInteraction(core.PredictionInteraction{
 		PostURL:        prediction.PostURL,
 		PredictionUUID: prediction.UUID,
 		ActionType:     actionTypePredictionCreated.String(),
@@ -98,7 +98,7 @@ func (r *Daemon) maybeActionPredictionCreated(prediction types.Prediction, nowTs
 	r.addErrs(&prediction, err)
 }
 
-func (r *Daemon) evolvePrediction(prediction *types.Prediction, m candles.IMarket, nowTs int) {
+func (r *Daemon) evolvePrediction(prediction *core.Prediction, m candles.IMarket, nowTs int) {
 	predRunner, errs := NewPredEvolver(prediction, r.market, nowTs)
 	r.addErrs(prediction, errs...)
 	if len(errs) > 0 {
@@ -108,15 +108,15 @@ func (r *Daemon) evolvePrediction(prediction *types.Prediction, m candles.IMarke
 	r.addErrs(predRunner.prediction, errs...)
 }
 
-func (r *Daemon) maybeActionPredictionFinal(prediction types.Prediction, nowTs int) {
+func (r *Daemon) maybeActionPredictionFinal(prediction core.Prediction, nowTs int) {
 	if !prediction.Evaluate().IsFinal() {
 		return
 	}
 
-	err := r.store.LogPredictionStateValueChange(types.PredictionStateValueChange{
+	err := r.store.LogPredictionStateValueChange(core.PredictionStateValueChange{
 		PredictionUUID: prediction.UUID,
 		StateValue:     prediction.State.Value.String(),
-		CreatedAt:      types.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
+		CreatedAt:      core.ISO8601(time.Unix(int64(nowTs), 0).Format(time.RFC3339)),
 	})
 	r.addErrs(&prediction, err)
 
@@ -124,8 +124,8 @@ func (r *Daemon) maybeActionPredictionFinal(prediction types.Prediction, nowTs i
 	log.Info().Msgf("Prediction just finished: [%v] with value [%v]!\n", description, prediction.State.Value)
 
 	// TODO this will have to change for prediction types where ANNULLED is a possible final state
-	if prediction.State.Value == types.CORRECT || prediction.State.Value == types.INCORRECT {
-		err := r.store.InsertPredictionInteraction(types.PredictionInteraction{
+	if prediction.State.Value == core.CORRECT || prediction.State.Value == core.INCORRECT {
+		err := r.store.InsertPredictionInteraction(core.PredictionInteraction{
 			PostURL:        prediction.PostURL,
 			PredictionUUID: prediction.UUID,
 			ActionType:     actionTypeBecameFinal.String(),
@@ -135,12 +135,12 @@ func (r *Daemon) maybeActionPredictionFinal(prediction types.Prediction, nowTs i
 	}
 }
 
-func (r *Daemon) storeEvolvedPrediction(prediction types.Prediction) {
-	_, err := r.store.UpsertPredictions([]*types.Prediction{&prediction})
+func (r *Daemon) storeEvolvedPrediction(prediction core.Prediction) {
+	_, err := r.store.UpsertPredictions([]*core.Prediction{&prediction})
 	r.addErrs(&prediction, err)
 }
 
-func (r *Daemon) addErrs(prediction *types.Prediction, errs ...error) {
+func (r *Daemon) addErrs(prediction *core.Prediction, errs ...error) {
 	for _, err := range errs {
 		if err == nil {
 			continue

@@ -3,8 +3,8 @@ package backoffice
 import (
 	"fmt"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/request"
-	"github.com/marianogappa/predictions/types"
 )
 
 type apiClient struct {
@@ -44,8 +44,8 @@ func (c apiClient) new(pred []byte, store bool) parsedResponse {
 }
 
 type getBody struct {
-	Filters  types.APIFilters `json:"filters"`
-	OrderBys []string         `json:"orderBys"`
+	Filters  core.APIFilters `json:"filters"`
+	OrderBys []string        `json:"orderBys"`
 }
 
 func (c apiClient) get(body getBody) parsedResponse {

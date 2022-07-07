@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/metadatafetcher"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,9 +18,9 @@ func tp(s string) time.Time {
 	return t
 }
 
-func tpToISO(s string) types.ISO8601 {
+func tpToISO(s string) core.ISO8601 {
 	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return types.ISO8601(t.Format(time.RFC3339))
+	return core.ISO8601(t.Format(time.RFC3339))
 }
 
 func TestParseDuration(t *testing.T) {
@@ -135,18 +135,18 @@ func TestMapOperand(t *testing.T) {
 	tss := []struct {
 		raw      string
 		err      error
-		expected types.Operand
+		expected core.Operand
 	}{
 		{
 			raw:      "",
-			err:      types.ErrInvalidOperand,
-			expected: types.Operand{},
+			err:      core.ErrInvalidOperand,
+			expected: core.Operand{},
 		},
 		{
 			raw: "1.1",
 			err: nil,
-			expected: types.Operand{
-				Type:       types.NUMBER,
+			expected: core.Operand{
+				Type:       core.NUMBER,
 				Provider:   "",
 				QuoteAsset: "",
 				BaseAsset:  "",
@@ -156,19 +156,19 @@ func TestMapOperand(t *testing.T) {
 		},
 		{
 			raw:      "COIN:BINANCE:BTC:USDT",
-			err:      types.ErrInvalidOperand,
-			expected: types.Operand{},
+			err:      core.ErrInvalidOperand,
+			expected: core.Operand{},
 		},
 		{
 			raw:      "COIN:BINANCE:BTC-BTC",
-			err:      types.ErrEqualBaseQuoteAssets,
-			expected: types.Operand{},
+			err:      core.ErrEqualBaseQuoteAssets,
+			expected: core.Operand{},
 		},
 		{
 			raw: "COIN:BINANCE:BTC-USDT",
 			err: nil,
-			expected: types.Operand{
-				Type:       types.COIN,
+			expected: core.Operand{
+				Type:       core.COIN,
 				Provider:   "BINANCE",
 				BaseAsset:  "BTC",
 				QuoteAsset: "USDT",
@@ -178,17 +178,17 @@ func TestMapOperand(t *testing.T) {
 		},
 		{
 			raw: "COIN:BINANCE:BTC",
-			err: types.ErrEmptyQuoteAsset,
+			err: core.ErrEmptyQuoteAsset,
 		},
 		{
 			raw: "MARKETCAP:MESSARI:BTC-USDT",
-			err: types.ErrNonEmptyQuoteAssetOnNonCoin,
+			err: core.ErrNonEmptyQuoteAssetOnNonCoin,
 		},
 		{
 			raw: "MARKETCAP:MESSARI:BTC",
 			err: nil,
-			expected: types.Operand{
-				Type:      types.MARKETCAP,
+			expected: core.Operand{
+				Type:      core.MARKETCAP,
 				Provider:  "MESSARI",
 				BaseAsset: "BTC",
 				Number:    0,
@@ -227,9 +227,9 @@ func TestMapOperands(t *testing.T) {
 		t.FailNow()
 	}
 
-	expected := []types.Operand{
+	expected := []core.Operand{
 		{
-			Type:       types.COIN,
+			Type:       core.COIN,
 			Provider:   "BINANCE",
 			BaseAsset:  "BTC",
 			QuoteAsset: "USDT",
@@ -237,7 +237,7 @@ func TestMapOperands(t *testing.T) {
 			Str:        "COIN:BINANCE:BTC-USDT",
 		},
 		{
-			Type:   types.NUMBER,
+			Type:   core.NUMBER,
 			Number: 1.1,
 			Str:    "1.1",
 		},
@@ -248,8 +248,8 @@ func TestMapOperands(t *testing.T) {
 	}
 
 	_, err = mapOperands([]string{"", "1.1"})
-	if !errors.Is(err, types.ErrInvalidOperand) {
-		t.Errorf("expected %v but got: %v", types.ErrInvalidOperand, err)
+	if !errors.Is(err, core.ErrInvalidOperand) {
+		t.Errorf("expected %v but got: %v", core.ErrInvalidOperand, err)
 		t.FailNow()
 	}
 }
@@ -258,7 +258,7 @@ func TestMapFromTs(t *testing.T) {
 	tss := []struct {
 		name     string
 		cond     Condition
-		postedAt types.ISO8601
+		postedAt core.ISO8601
 		err      error
 		expected int
 	}{
@@ -273,7 +273,7 @@ func TestMapFromTs(t *testing.T) {
 			name:     "Invalid dates fail",
 			cond:     Condition{FromISO8601: "invalid date"},
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrInvalidFromISO8601,
+			err:      core.ErrInvalidFromISO8601,
 			expected: 0,
 		},
 		{
@@ -320,13 +320,13 @@ func TestMapToTs(t *testing.T) {
 			name:   "All empty",
 			cond:   Condition{ToISO8601: "", ToDuration: ""},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    types.ErrOneOfToISO8601ToDurationRequired,
+			err:    core.ErrOneOfToISO8601ToDurationRequired,
 		},
 		{
 			name:   "Invalid duration",
 			cond:   Condition{ToISO8601: "", ToDuration: "invalid"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    types.ErrInvalidDuration,
+			err:    core.ErrInvalidDuration,
 		},
 		{
 			name:     "Uses FromISO8601+ToDuration when ToISO8601",
@@ -339,7 +339,7 @@ func TestMapToTs(t *testing.T) {
 			name:   "Invalid dates fail",
 			cond:   Condition{ToISO8601: "invalid date", ToDuration: "2w"},
 			fromTs: int(tp("2020-01-02 00:00:00").Unix()),
-			err:    types.ErrInvalidToISO8601,
+			err:    core.ErrInvalidToISO8601,
 		},
 		{
 			name:     "Valid dates take precedence over everything",
@@ -378,51 +378,51 @@ func TestMapCondition(t *testing.T) {
 		name     string
 		cond     Condition
 		condName string
-		postedAt types.ISO8601
+		postedAt core.ISO8601
 		err      error
-		expected types.Condition
+		expected core.Condition
 	}{
 		{
 			name:     "Invalid condition syntax",
 			cond:     Condition{Condition: "invalid condition syntax!!"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrInvalidConditionSyntax,
+			err:      core.ErrInvalidConditionSyntax,
 		},
 		{
 			name:     "Empty quote asset",
 			cond:     Condition{Condition: "COIN:BINANCE:BTC >= 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrEmptyQuoteAsset,
+			err:      core.ErrEmptyQuoteAsset,
 		},
 		{
 			name:     "Unknown condition operator",
 			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT != 60000"},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrUnknownConditionOperator,
+			err:      core.ErrUnknownConditionOperator,
 		},
 		{
 			name:     "Unknown condition operator",
 			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", ErrorMarginRatio: 0.4},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrErrorMarginRatioAbove30,
+			err:      core.ErrErrorMarginRatioAbove30,
 		},
 		{
 			name:     "Unknown condition state value",
 			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: ConditionState{Value: "???"}},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrUnknownConditionStateValue,
+			err:      core.ErrUnknownConditionStateValue,
 		},
 		{
 			name:     "Unknown condition status",
 			cond:     Condition{Condition: "COIN:BINANCE:BTC-USDT >= 60000", State: ConditionState{Value: "UNDECIDED", Status: "???"}},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrUnknownConditionStatus,
+			err:      core.ErrUnknownConditionStatus,
 		},
 		{
 			name: "Invalid FromISO8601",
@@ -433,7 +433,7 @@ func TestMapCondition(t *testing.T) {
 			},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrInvalidFromISO8601,
+			err:      core.ErrInvalidFromISO8601,
 		},
 		{
 			name: "Invalid ToISO8601",
@@ -444,7 +444,7 @@ func TestMapCondition(t *testing.T) {
 			},
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
-			err:      types.ErrInvalidToISO8601,
+			err:      core.ErrInvalidToISO8601,
 		},
 		{
 			name: "Happy case",
@@ -456,24 +456,24 @@ func TestMapCondition(t *testing.T) {
 			condName: "main",
 			postedAt: tpToISO("2020-01-02 00:00:00"),
 			err:      nil,
-			expected: types.Condition{
+			expected: core.Condition{
 				Name:     "main",
 				Operator: "BETWEEN",
-				Operands: []types.Operand{
+				Operands: []core.Operand{
 					{
-						Type:       types.COIN,
+						Type:       core.COIN,
 						Provider:   "BINANCE",
 						QuoteAsset: "USDT",
 						BaseAsset:  "BTC",
 						Str:        "COIN:BINANCE:BTC-USDT",
 					},
 					{
-						Type:   types.NUMBER,
+						Type:   core.NUMBER,
 						Number: 60000,
 						Str:    "60000",
 					},
 					{
-						Type:   types.NUMBER,
+						Type:   core.NUMBER,
 						Number: 70000,
 						Str:    "70000",
 					},
@@ -482,7 +482,7 @@ func TestMapCondition(t *testing.T) {
 				ToTs:             int(tp("2020-01-03 00:00:00").Unix()),
 				ToDuration:       "",
 				Assumed:          nil,
-				State:            types.ConditionState{Value: types.UNDECIDED, Status: types.STARTED},
+				State:            core.ConditionState{Value: core.UNDECIDED, Status: core.STARTED},
 				ErrorMarginRatio: 0,
 			},
 		},
@@ -524,14 +524,14 @@ func TestMapBoolExprNil(t *testing.T) {
 func TestMapBoolExprInvalid(t *testing.T) {
 	invalid := "invalid"
 	_, err := mapBoolExpr(&invalid, nil)
-	if !errors.Is(err, types.ErrBoolExprSyntaxError) {
+	if !errors.Is(err, core.ErrBoolExprSyntaxError) {
 		t.Errorf("err should have been ErrBoolExprSyntaxError but was %v", err)
 	}
 }
 
 func TestMapBoolExprHappyCase(t *testing.T) {
 	valid := "main"
-	_, err := mapBoolExpr(&valid, map[string]*types.Condition{"main": {}})
+	_, err := mapBoolExpr(&valid, map[string]*core.Condition{"main": {}})
 	if err != nil {
 		t.Errorf("err should have been nil but was %v", err)
 	}
@@ -562,63 +562,63 @@ func TestCompile(t *testing.T) {
 		timeNow              func() time.Time
 		postMetadataFetchErr error
 		err                  error
-		expected             types.Prediction
+		expected             core.Prediction
 	}{
 		{
 			name:     "Invalid JSON",
 			pred:     "invalid!!",
-			err:      types.ErrInvalidJSON,
-			expected: types.Prediction{},
+			err:      core.ErrInvalidJSON,
+			expected: core.Prediction{},
 		},
 		{
 			name:     "Empty reporter",
 			pred:     `{"reporter": ""}`,
-			err:      types.ErrEmptyReporter,
-			expected: types.Prediction{},
+			err:      core.ErrEmptyReporter,
+			expected: core.Prediction{},
 		},
 		{
 			name:     "Empty postUrl",
 			pred:     `{"reporter": "admin", "postUrl": ""}`,
-			err:      types.ErrEmptyPostURL,
-			expected: types.Prediction{},
+			err:      core.ErrEmptyPostURL,
+			expected: core.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns error",
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
-			postMetadataFetchErr: types.ErrEmptyPostAuthor,
-			err:                  types.ErrEmptyPostAuthor,
-			expected:             types.Prediction{},
+			postMetadataFetchErr: core.ErrEmptyPostAuthor,
+			err:                  core.ErrEmptyPostAuthor,
+			expected:             core.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns postAuthor but not postedAt",
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
-				PostCreatedAt: types.ISO8601(""),
+				Author:        core.Account{Handle: "CryptoCapo_"},
+				PostCreatedAt: core.ISO8601(""),
 			},
-			err:      types.ErrEmptyPostedAt,
-			expected: types.Prediction{},
+			err:      core.ErrEmptyPostedAt,
+			expected: core.Prediction{},
 		},
 		{
 			name:                 "Metadata fetcher returns postAuthor and invalid postedAt",
 			pred:                 `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
-				PostCreatedAt: types.ISO8601("INVALID!!!"),
+				Author:        core.Account{Handle: "CryptoCapo_"},
+				PostCreatedAt: core.ISO8601("INVALID!!!"),
 			},
-			err:      types.ErrInvalidPostedAt,
-			expected: types.Prediction{},
+			err:      core.ErrInvalidPostedAt,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Empty main predict",
 			pred: `{"reporter": "admin", "postUrl": "https://twitter.com/CryptoCapo_/status/1491357566974054400"}`,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err: types.ErrEmptyPredict,
+			err: core.ErrEmptyPredict,
 		},
 		{
 			name: "Error mapping condition: no ToISO8601",
@@ -636,11 +636,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrOneOfToISO8601ToDurationRequired,
-			expected: types.Prediction{},
+			err:      core.ErrOneOfToISO8601ToDurationRequired,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping prePredict.predict: ErrBoolExprSyntaxError",
@@ -662,11 +662,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping prePredict.wrongIf: ErrBoolExprSyntaxError",
@@ -689,11 +689,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping prePredict.annulledIf: ErrBoolExprSyntaxError",
@@ -717,11 +717,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Must have prePredict.predict if it has prePredict.wrongIf",
@@ -740,11 +740,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrMissingRequiredPrePredictPredictIf,
-			expected: types.Prediction{},
+			err:      core.ErrMissingRequiredPrePredictPredictIf,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Must have prePredict.predict if it has prePredict.annulledIf",
@@ -763,11 +763,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrMissingRequiredPrePredictPredictIf,
-			expected: types.Prediction{},
+			err:      core.ErrMissingRequiredPrePredictPredictIf,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping predict.wrongIf: ErrBoolExprSyntaxError",
@@ -787,11 +787,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping predict.annulledIf: ErrBoolExprSyntaxError",
@@ -811,11 +811,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping predict.predict: ErrBoolExprSyntaxError",
@@ -834,11 +834,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrBoolExprSyntaxError,
-			expected: types.Prediction{},
+			err:      core.ErrBoolExprSyntaxError,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping prediction state: ErrUnknownConditionStatus",
@@ -865,11 +865,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrUnknownConditionStatus,
-			expected: types.Prediction{},
+			err:      core.ErrUnknownConditionStatus,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Error mapping prediction state: ErrUnknownPredictionStateValue",
@@ -897,11 +897,11 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
-			err:      types.ErrUnknownPredictionStateValue,
-			expected: types.Prediction{},
+			err:      core.ErrUnknownPredictionStateValue,
+			expected: core.Prediction{},
 		},
 		{
 			name: "Does not overwrite author & created at with metadata, when fields are set",
@@ -922,42 +922,42 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
 			err:     nil,
-			expected: types.Prediction{
+			expected: core.Prediction{
 				Version:    "1.0.0",
 				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
 				Reporter:   "admin",
 				PostAuthor: "NOT CryptoCapo!",
 				PostText:   "",
-				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
+				PostedAt:   core.ISO8601("2022-02-09T10:25:26.000Z"),
 				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
-				Given: map[string]*types.Condition{
+				Given: map[string]*core.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
-						Operands: []types.Operand{
-							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+						Operands: []core.Operand{
+							{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+							{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
 						ToDuration: "2d",
 					},
 				},
-				Predict: types.Predict{
-					Predict: types.BoolExpr{
-						Operator: types.LITERAL,
+				Predict: core.Predict{
+					Predict: core.BoolExpr{
+						Operator: core.LITERAL,
 						Operands: nil,
-						Literal: &types.Condition{
+						Literal: &core.Condition{
 							Name:     "main",
 							Operator: "<=",
-							Operands: []types.Operand{
-								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+							Operands: []core.Operand{
+								{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -965,7 +965,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
-				Type: types.PredictionTypeCoinOperatorFloatDeadline,
+				Type: core.PredictionTypeCoinOperatorFloatDeadline,
 			},
 		},
 		{
@@ -986,42 +986,42 @@ func TestCompile(t *testing.T) {
 			}`,
 			postMetadataFetchErr: nil,
 			postMetadata: mfTypes.PostMetadata{
-				Author:        types.Account{Handle: "CryptoCapo_"},
+				Author:        core.Account{Handle: "CryptoCapo_"},
 				PostCreatedAt: tpToISO("2020-01-02 00:00:00"),
 			},
 			timeNow: func() time.Time { return tp("2020-01-03 00:00:00") },
 			err:     nil,
-			expected: types.Prediction{
+			expected: core.Prediction{
 				Version:    "1.0.0",
 				CreatedAt:  tpToISO("2020-01-03 00:00:00"),
 				Reporter:   "admin",
 				PostAuthor: "CryptoCapo_",
 				PostText:   "",
-				PostedAt:   types.ISO8601("2022-02-09T10:25:26.000Z"),
+				PostedAt:   core.ISO8601("2022-02-09T10:25:26.000Z"),
 				PostURL:    "https://twitter.com/CryptoCapo_/status/1491357566974054400",
-				Given: map[string]*types.Condition{
+				Given: map[string]*core.Condition{
 					"main": {
 						Name:     "main",
 						Operator: "<=",
-						Operands: []types.Operand{
-							{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-							{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+						Operands: []core.Operand{
+							{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+							{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 						},
 						FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 						ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
 						ToDuration: "2d",
 					},
 				},
-				Predict: types.Predict{
-					Predict: types.BoolExpr{
-						Operator: types.LITERAL,
+				Predict: core.Predict{
+					Predict: core.BoolExpr{
+						Operator: core.LITERAL,
 						Operands: nil,
-						Literal: &types.Condition{
+						Literal: &core.Condition{
 							Name:     "main",
 							Operator: "<=",
-							Operands: []types.Operand{
-								{Type: types.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
-								{Type: types.NUMBER, Number: types.JSONFloat64(0.845), Str: "0.845"},
+							Operands: []core.Operand{
+								{Type: core.COIN, Provider: "BINANCE", BaseAsset: "ADA", QuoteAsset: "USDT", Str: "COIN:BINANCE:ADA-USDT"},
+								{Type: core.NUMBER, Number: core.JSONFloat64(0.845), Str: "0.845"},
 							},
 							FromTs:     int(tp("2022-02-09 10:25:26").Unix()),
 							ToTs:       int(tp("2022-02-11 10:25:26").Unix()),
@@ -1029,7 +1029,7 @@ func TestCompile(t *testing.T) {
 						},
 					},
 				},
-				Type: types.PredictionTypeCoinOperatorFloatDeadline,
+				Type: core.PredictionTypeCoinOperatorFloatDeadline,
 			},
 		},
 	}

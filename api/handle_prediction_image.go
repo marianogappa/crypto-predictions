@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/marianogappa/predictions/types"
+	"github.com/marianogappa/predictions/core"
 	"github.com/swaggest/usecase"
 )
 
@@ -20,7 +20,7 @@ type apiReqGetPredictionImage struct {
 
 func (a *API) getPredictionImage(uuid string) apiResponse[apiResGetPredictionImage] {
 	preds, err := a.store.GetPredictions(
-		types.APIFilters{UUIDs: []string{uuid}},
+		core.APIFilters{UUIDs: []string{uuid}},
 		[]string{},
 		0, 0,
 	)
@@ -32,15 +32,15 @@ func (a *API) getPredictionImage(uuid string) apiResponse[apiResGetPredictionIma
 	}
 	pred := preds[0]
 	if pred.PostAuthorURL == "" {
-		return failWith(types.ErrStorageErrorRetrievingAccounts, errors.New("prediction has no postAuthorURL"), apiResGetPredictionImage{})
+		return failWith(core.ErrStorageErrorRetrievingAccounts, errors.New("prediction has no postAuthorURL"), apiResGetPredictionImage{})
 	}
 
-	accounts, err := a.store.GetAccounts(types.APIAccountFilters{URLs: []string{pred.PostAuthorURL}}, []string{}, 0, 0)
+	accounts, err := a.store.GetAccounts(core.APIAccountFilters{URLs: []string{pred.PostAuthorURL}}, []string{}, 0, 0)
 	if err != nil {
-		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPredictionImage{})
+		return failWith(core.ErrStorageErrorRetrievingAccounts, err, apiResGetPredictionImage{})
 	}
 	if len(accounts) != 1 {
-		return failWith(types.ErrStorageErrorRetrievingAccounts, err, apiResGetPredictionImage{})
+		return failWith(core.ErrStorageErrorRetrievingAccounts, err, apiResGetPredictionImage{})
 	}
 	account := accounts[0]
 

@@ -1,4 +1,4 @@
-package types
+package core
 
 // BoolExpr represents a boolean expression in a prediction step.
 type BoolExpr struct {

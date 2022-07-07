@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/marianogappa/predictions/core"
 	mfTypes "github.com/marianogappa/predictions/metadatafetcher/types"
-	"github.com/marianogappa/predictions/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -157,7 +157,7 @@ func TestYoutubeHappyCase(t *testing.T) {
 	}
 
 	expected := mfTypes.PostMetadata{
-		Author: types.Account{
+		Author: core.Account{
 			URL:           mURL("https://youtube.com/channel/UCy6kyFxaMqGtpE3pQTflK8A"),
 			AccountType:   "YOUTUBE",
 			FollowerCount: 2290000,
@@ -174,7 +174,7 @@ func TestYoutubeHappyCase(t *testing.T) {
 		ThumbnailImgMedium: "https://i.ytimg.com/vi/ozgGPWnVLkY/mqdefault.jpg",
 		PostTitle:          "Dozens of diplomats walk out during Russian foreign minister's UN speech",
 		PostText:           "Dozens of diplomats walked out of a speech by the Russian foreign minister",
-		PostCreatedAt:      types.ISO8601("2022-03-01T16:28:50Z"),
+		PostCreatedAt:      core.ISO8601("2022-03-01T16:28:50Z"),
 		PostType:           mfTypes.YOUTUBE,
 	}
 

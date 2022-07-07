@@ -1,4 +1,4 @@
-package types
+package core
 
 // Prediction is the struct that represents a prediction after it being compiled.
 type Prediction struct {
