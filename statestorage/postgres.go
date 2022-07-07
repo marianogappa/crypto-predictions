@@ -197,13 +197,13 @@ func (s PostgresDBStateStorage) GetAccounts(filters core.APIAccountFilters, orde
 		limitStr = fmt.Sprintf(" LIMIT %v OFFSET %v", limit, offset)
 	}
 
-	sql := fmt.Sprintf("SELECT url, account_type, handle, follower_count, thumbnails, name, description, created_at, is_verified FROM accounts WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
+	query := fmt.Sprintf("SELECT url, account_type, handle, follower_count, thumbnails, name, description, created_at, is_verified FROM accounts WHERE %v ORDER BY %v%v", where, orderBy, limitStr)
 
 	if s.debug {
-		log.Info().Msgf("PostgresDBStateStorage.GetAccounts: for filters %+v and orderBy %+v: %v\n", filters, orderBys, sql)
+		log.Info().Msgf("PostgresDBStateStorage.GetAccounts: for filters %+v and orderBy %+v: %v\n", filters, orderBys, query)
 	}
 
-	rows, err := s.db.Query(sql, args...)
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -212,13 +212,14 @@ func (s PostgresDBStateStorage) GetAccounts(filters core.APIAccountFilters, orde
 	result := []core.Account{}
 	for rows.Next() {
 		var (
-			a          core.Account
-			dbURL      string
-			thumbnails []string
-			createdAt  pq.NullTime
+			a                   core.Account
+			handle, description sql.NullString
+			dbURL               string
+			thumbnails          []string
+			createdAt           pq.NullTime
 		)
 
-		err := rows.Scan(&dbURL, &a.AccountType, &a.Handle, &a.FollowerCount, pq.Array(&thumbnails), &a.Name, &a.Description, &createdAt, &a.IsVerified)
+		err := rows.Scan(&dbURL, &a.AccountType, &handle, &a.FollowerCount, pq.Array(&thumbnails), &a.Name, &description, &createdAt, &a.IsVerified)
 		if err != nil {
 			log.Info().Msgf("error reading account from db, with error: %v\n", err)
 		}
@@ -228,6 +229,8 @@ func (s PostgresDBStateStorage) GetAccounts(filters core.APIAccountFilters, orde
 			log.Info().Msgf("error reading url from account from db, with error: %v\n", err)
 		}
 		a.URL = u
+		a.Handle = handle.String
+		a.Description = description.String
 
 		for _, dbURL := range thumbnails {
 			u, err := url.Parse(dbURL)
