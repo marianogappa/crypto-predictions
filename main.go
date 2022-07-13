@@ -88,7 +88,7 @@ func main() {
 		}
 
 		// The market component queries all exchange APIs for market data.
-		market = candles.NewMarket(marketCacheSizes)
+		market = candles.NewMarket(candles.WithCacheSizes(marketCacheSizes))
 
 		// The metadataFetcher component queries the Twitter/Youtube APIs for social post metadata, e.g. timestamps.
 		metadataFetcher = metadatafetcher.NewMetadataFetcher()

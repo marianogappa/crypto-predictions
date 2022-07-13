@@ -30,7 +30,7 @@ var (
 // Daemon is the main struct for the Daemon component.
 type Daemon struct {
 	store            statestorage.StateStorage
-	market           candles.IMarket
+	market           core.IMarket
 	predImageBuilder imagebuilder.PredictionImageBuilder
 	enableTweeting   bool
 	enableReplying   bool
@@ -40,7 +40,7 @@ type Daemon struct {
 }
 
 // NewDaemon is the constructor for the Daemon component.
-func NewDaemon(market candles.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool, websiteURL string) *Daemon {
+func NewDaemon(market core.IMarket, store statestorage.StateStorage, imgBuilder imagebuilder.PredictionImageBuilder, enableTweeting, enableReplying bool, websiteURL string) *Daemon {
 	return &Daemon{store: store, market: market, predImageBuilder: imgBuilder, enableTweeting: enableTweeting, enableReplying: enableReplying, websiteURL: websiteURL}
 }
 
@@ -98,7 +98,7 @@ func (r *Daemon) maybeActionPredictionCreated(prediction core.Prediction, nowTs 
 	r.addErrs(&prediction, err)
 }
 
-func (r *Daemon) evolvePrediction(prediction *core.Prediction, m candles.IMarket, nowTs int) {
+func (r *Daemon) evolvePrediction(prediction *core.Prediction, m core.IMarket, nowTs int) {
 	predRunner, errs := NewPredEvolver(prediction, r.market, nowTs)
 	r.addErrs(prediction, errs...)
 	if len(errs) > 0 {
