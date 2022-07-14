@@ -81,16 +81,24 @@ func (r *PredEvolver) Run(once bool) []error {
 }
 
 func (r *PredEvolver) runCondition(cond *core.Condition) error {
-	ticks := map[string]common.Tick{}
+	var (
+		lowestTicks  = map[string]core.Tick{}
+		highestTicks = map[string]core.Tick{}
+	)
 	for key, ticker := range r.tickers[cond.Name] {
 		candlestick, err := ticker.Next()
 		if err != nil {
 			return err
 		}
-		ticks[key] = candlestick.ToTick()
+		lowestTicks[key] = core.Tick{Timestamp: candlestick.Timestamp, Value: candlestick.LowestPrice}
+		highestTicks[key] = core.Tick{Timestamp: candlestick.Timestamp, Value: candlestick.HighestPrice}
 	}
 
-	return cond.Run(ticks)
+	err := cond.Run(lowestTicks)
+	if err != nil {
+		return err
+	}
+	return cond.Run(highestTicks)
 }
 
 func (r *PredEvolver) actionableNonStuckUndecidedConditions(stuckConditions map[string]struct{}) []*core.Condition {

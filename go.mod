@@ -10,7 +10,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.6
-	github.com/marianogappa/crypto-candles v0.0.0-20220713210301-fe881d948de3
+	github.com/marianogappa/crypto-candles v0.0.0-20220714160702-ea5912802d36
 	github.com/rs/zerolog v1.27.0
 	github.com/swaggest/jsonschema-go v0.3.35
 	github.com/swaggest/rest v0.2.29

@@ -192,13 +192,13 @@ func (v OperandType) toMarketType() common.MarketType {
 type ConditionState struct {
 	Status    ConditionStatus
 	LastTs    int
-	LastTicks map[string]common.Tick
+	LastTicks map[string]Tick
 	Value     ConditionStateValue
 }
 
 // Clone returns a deep copy of ConditionState that does not share any memory with the original struct.
 func (s ConditionState) Clone() ConditionState {
-	clonedLastTicks := make(map[string]common.Tick, len(s.LastTicks))
+	clonedLastTicks := make(map[string]Tick, len(s.LastTicks))
 	for k, v := range s.LastTicks {
 		clonedLastTicks[k] = v
 	}
@@ -640,4 +640,10 @@ type PredictionInteraction struct {
 // IMarket is an interface to candles.Market just to be able to mock it for tests
 type IMarket interface {
 	Iterator(marketSource common.MarketSource, startTime time.Time, candlestickInterval time.Duration) (iterator.Iterator, error)
+}
+
+// Tick is a subset of a candlestick for one of the 4 available prices
+type Tick struct {
+	Timestamp int                `json:"t"`
+	Value     common.JSONFloat64 `json:"v"`
 }

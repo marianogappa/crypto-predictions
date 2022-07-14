@@ -216,12 +216,12 @@ func endTimeTruncatedDueToResultInvalidation(p Prediction, condition Condition, 
 		penultimateTimestamp   = penultimateCandlestick.Timestamp
 		diffSeconds            = lastTimestamp - penultimateTimestamp
 		nextTimestamp          = lastTimestamp + diffSeconds // Tick timestamp must be in the future
-		lowTick                = common.Tick{Timestamp: nextTimestamp, Value: lastCandlestick.LowestPrice}
-		highTick               = common.Tick{Timestamp: nextTimestamp + 1, Value: lastCandlestick.HighestPrice}
+		lowTick                = Tick{Timestamp: nextTimestamp, Value: lastCandlestick.LowestPrice}
+		highTick               = Tick{Timestamp: nextTimestamp + 1, Value: lastCandlestick.HighestPrice}
 	)
 
-	_ = condition.Run(map[string]common.Tick{coin: lowTick})
-	_ = condition.Run(map[string]common.Tick{coin: highTick})
+	_ = condition.Run(map[string]Tick{coin: lowTick})
+	_ = condition.Run(map[string]Tick{coin: highTick})
 
 	if condition.Evaluate() != TRUE {
 		return endTime

@@ -3,8 +3,6 @@ package core
 import (
 	"reflect"
 	"testing"
-
-	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 func TestBoolExprEvaluate(t *testing.T) {
@@ -403,7 +401,7 @@ func TestBoolExprClearState(t *testing.T) {
 					State: ConditionState{
 						Status:    FINISHED,
 						LastTs:    12345,
-						LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+						LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 						Value:     TRUE,
 					},
 				},
@@ -414,7 +412,7 @@ func TestBoolExprClearState(t *testing.T) {
 					State: ConditionState{
 						Status:    FINISHED,
 						LastTs:    12345,
-						LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+						LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 						Value:     TRUE,
 					},
 				},
@@ -424,7 +422,7 @@ func TestBoolExprClearState(t *testing.T) {
 			State: ConditionState{
 				Status:    FINISHED,
 				LastTs:    12345,
-				LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
+				LastTicks: map[string]Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: 12345, Value: 1000}},
 				Value:     TRUE,
 			},
 		},
