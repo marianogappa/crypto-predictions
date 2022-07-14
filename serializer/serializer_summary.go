@@ -34,12 +34,12 @@ func (s PredictionSerializer) predictionTypeCoinOperatorFloatDeadline(p core.Pre
 
 	candlesticks := map[string][]common.Candlestick{}
 	opStr := typedPred.Coin().Str
-	it, err := (*s.mkt).GetIterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, false, chartParams.candlestickIntervalMinutes())
+	it, err := (*s.mkt).Iterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, chartParams.candlestickInterval)
 	if err != nil {
 		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
-		candlestick, err := it.NextCandlestick()
+		candlestick, err := it.Next()
 		if err != nil {
 			return compiler.PredictionSummary{}, err
 		}
@@ -70,12 +70,12 @@ func (s PredictionSerializer) predictionTypeCoinWillReachInvalidatedIfItReaches(
 
 	candlesticks := map[string][]common.Candlestick{}
 	opStr := typedPred.Coin().Str
-	it, err := (*s.mkt).GetIterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, false, chartParams.candlestickIntervalMinutes())
+	it, err := (*s.mkt).Iterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, chartParams.candlestickInterval)
 	if err != nil {
 		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
-		candlestick, err := it.NextCandlestick()
+		candlestick, err := it.Next()
 		if err != nil {
 			return compiler.PredictionSummary{}, err
 		}
@@ -108,12 +108,12 @@ func (s PredictionSerializer) predictionTypeCoinWillRange(p core.Prediction) (co
 
 	candlesticks := map[string][]common.Candlestick{}
 	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin.ToMarketSource(), chartParams.startTime, false, chartParams.candlestickIntervalMinutes())
+	it, err := (*s.mkt).Iterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, chartParams.candlestickInterval)
 	if err != nil {
 		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
-		candlestick, err := it.NextCandlestick()
+		candlestick, err := it.Next()
 		if err != nil {
 			return compiler.PredictionSummary{}, err
 		}
@@ -145,12 +145,12 @@ func (s PredictionSerializer) predictionTypeCoinWillReachBeforeItReaches(p core.
 
 	candlesticks := map[string][]common.Candlestick{}
 	opStr := coin.Str
-	it, err := (*s.mkt).GetIterator(coin.ToMarketSource(), chartParams.startTime, false, chartParams.candlestickIntervalMinutes())
+	it, err := (*s.mkt).Iterator(typedPred.Coin().ToMarketSource(), chartParams.startTime, chartParams.candlestickInterval)
 	if err != nil {
 		return compiler.PredictionSummary{}, err
 	}
 	for i := 0; i < chartParams.candlestickCount; i++ {
-		candlestick, err := it.NextCandlestick()
+		candlestick, err := it.Next()
 		if err != nil {
 			return compiler.PredictionSummary{}, err
 		}
@@ -175,10 +175,6 @@ type candlestickChartParams struct {
 	startTime           time.Time
 	candlestickCount    int
 	candlestickInterval time.Duration
-}
-
-func (p candlestickChartParams) candlestickIntervalMinutes() int {
-	return int(p.candlestickInterval / time.Minute)
 }
 
 func getCandlestickChartParams(p core.Prediction) (candlestickChartParams, error) {

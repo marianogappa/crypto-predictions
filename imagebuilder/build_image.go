@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
 	"github.com/rs/zerolog/log"
@@ -23,13 +22,13 @@ import (
 
 // PredictionImageBuilder builds images based on Predictions, including candlestick charts, post author image, etc.
 type PredictionImageBuilder struct {
-	market     candles.IMarket
+	market     core.IMarket
 	templates  map[string]*template.Template
 	chromePath string
 }
 
 // NewPredictionImageBuilder constructs a PredictionImageBuilder.
-func NewPredictionImageBuilder(m candles.IMarket, files embed.FS, chromePath string) PredictionImageBuilder {
+func NewPredictionImageBuilder(m core.IMarket, files embed.FS, chromePath string) PredictionImageBuilder {
 	templates, _ := loadTemplates(files)
 	return PredictionImageBuilder{market: m, templates: templates, chromePath: chromePath}
 }

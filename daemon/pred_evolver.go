@@ -6,15 +6,15 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/marianogappa/crypto-candles/candles"
 	"github.com/marianogappa/crypto-candles/candles/common"
+	"github.com/marianogappa/crypto-candles/candles/iterator"
 	"github.com/marianogappa/predictions/core"
 )
 
 // PredEvolver is the struct that evolves a prediction's state upon reading market data.
 type PredEvolver struct {
 	prediction *core.Prediction
-	tickers    map[string]map[string]common.Iterator
+	tickers    map[string]map[string]iterator.Iterator
 }
 
 var (
@@ -22,9 +22,9 @@ var (
 )
 
 // NewPredEvolver is the constructor for PredEvolver.
-func NewPredEvolver(prediction *core.Prediction, m candles.IMarket, nowTs int) (*PredEvolver, []error) {
+func NewPredEvolver(prediction *core.Prediction, m core.IMarket, nowTs int) (*PredEvolver, []error) {
 	errs := []error{}
-	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]common.Iterator)}
+	result := PredEvolver{prediction: prediction, tickers: make(map[string]map[string]iterator.Iterator)}
 
 	predStateValue := prediction.Evaluate()
 	if predStateValue != core.ONGOINGPREPREDICTION && predStateValue != core.ONGOINGPREDICTION {
@@ -35,13 +35,14 @@ func NewPredEvolver(prediction *core.Prediction, m candles.IMarket, nowTs int) (
 	for _, condition := range prediction.UndecidedConditions() {
 		startTime, startFromNext := calculateStartTs(condition)
 
-		result.tickers[condition.Name] = map[string]common.Iterator{}
+		result.tickers[condition.Name] = map[string]iterator.Iterator{}
 		for _, operand := range condition.NonNumberOperands() {
-			ticker, err := m.GetIterator(operand.ToMarketSource(), startTime, startFromNext, 1)
+			ticker, err := m.Iterator(operand.ToMarketSource(), startTime, 1*time.Minute)
 			if err != nil {
 				errs = append(errs, err)
 				return &result, errs
 			}
+			ticker.SetStartFromNext(startFromNext)
 
 			result.tickers[condition.Name][operand.Str] = ticker
 		}
@@ -82,11 +83,11 @@ func (r *PredEvolver) Run(once bool) []error {
 func (r *PredEvolver) runCondition(cond *core.Condition) error {
 	ticks := map[string]common.Tick{}
 	for key, ticker := range r.tickers[cond.Name] {
-		tick, err := ticker.NextTick()
+		candlestick, err := ticker.Next()
 		if err != nil {
 			return err
 		}
-		ticks[key] = tick
+		ticks[key] = candlestick.ToTick()
 	}
 
 	return cond.Run(ticks)

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles/common"
+	"github.com/marianogappa/crypto-candles/candles/iterator"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/rs/zerolog/log"
@@ -104,7 +105,7 @@ func newTestMarket(ticks map[string][]common.Tick) *testMarket {
 	return &testMarket{ticks}
 }
 
-func (m *testMarket) GetIterator(marketSource common.MarketSource, startTime time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error) {
+func (m *testMarket) Iterator(marketSource common.MarketSource, startTime time.Time, candlestickInterval time.Duration) (iterator.Iterator, error) {
 	if _, ok := m.ticks[marketSource.String()]; !ok {
 		return nil, common.ErrInvalidMarketPair
 	}
@@ -115,9 +116,18 @@ type testIterator struct {
 	ticks []common.Tick
 }
 
-func newTestIterator(ticks []common.Tick) common.Iterator {
+func newTestIterator(ticks []common.Tick) iterator.Iterator {
 	return &testIterator{ticks}
 }
+
+// Not using Scanner interface
+func (i *testIterator) Scan(*common.Candlestick) bool { return false }
+
+// Not using Scanner interface
+func (i *testIterator) Error() error { return nil }
+
+func (i *testIterator) SetStartFromNext(bool)           {}
+func (i *testIterator) SetTimeNowFunc(func() time.Time) {}
 
 func (i *testIterator) NextTick() (common.Tick, error) {
 	if len(i.ticks) > 0 {
@@ -128,16 +138,12 @@ func (i *testIterator) NextTick() (common.Tick, error) {
 	return common.Tick{}, common.ErrOutOfTicks
 }
 
-func (i *testIterator) NextCandlestick() (common.Candlestick, error) {
+func (i *testIterator) Next() (common.Candlestick, error) {
 	tick, err := i.NextTick()
 	if err != nil {
 		return common.Candlestick{}, err
 	}
 	return common.Candlestick{OpenPrice: tick.Value, HighestPrice: tick.Value, LowestPrice: tick.Value, ClosePrice: tick.Value}, nil
-}
-
-func (i *testIterator) IsOutOfTicks() bool {
-	return len(i.ticks) == 0
 }
 
 func envOrStr(env, or string) string {

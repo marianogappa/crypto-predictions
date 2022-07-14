@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles/common"
+	"github.com/marianogappa/crypto-candles/candles/iterator"
 	"github.com/marianogappa/predictions/core"
 	"github.com/stretchr/testify/require"
 )
@@ -286,20 +287,24 @@ type testMarket struct {
 	calls []marketCall
 }
 
-func (m *testMarket) GetIterator(marketSource common.MarketSource, tm time.Time, startFromNext bool, intervalMinutes int) (common.Iterator, error) {
-	m.calls = append(m.calls, marketCall{marketSource, tm, startFromNext})
-	return testIterator{}, nil
+func (m *testMarket) Iterator(marketSource common.MarketSource, tm time.Time, candlestickInterval time.Duration) (iterator.Iterator, error) {
+	m.calls = append(m.calls, marketCall{marketSource, tm, false})
+	return testIterator{m}, nil
 }
 
-type testIterator struct{}
+type testIterator struct{ mkt *testMarket }
 
 func (i testIterator) NextTick() (common.Tick, error) {
 	return common.Tick{}, nil
 }
 
-func (i testIterator) NextCandlestick() (common.Candlestick, error) {
+func (i testIterator) Next() (common.Candlestick, error) {
 	return common.Candlestick{}, nil
 }
-func (i testIterator) IsOutOfTicks() bool {
-	return true
-}
+
+// Not using the Scanner interface
+func (i testIterator) Scan(*common.Candlestick) bool { return false }
+func (i testIterator) Error() error                  { return nil }
+
+func (i testIterator) SetStartFromNext(b bool)         { i.mkt.calls[len(i.mkt.calls)-1].startFromNext = b }
+func (i testIterator) SetTimeNowFunc(func() time.Time) {}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/marianogappa/crypto-candles/candles/common"
+	"github.com/marianogappa/crypto-candles/candles/iterator"
 )
 
 var (
@@ -634,4 +635,9 @@ type PredictionInteraction struct {
 	PredictionUUID     string
 	Status             string // PENDING, POSTED, ERROR
 	Error              string
+}
+
+// IMarket is an interface to candles.Market just to be able to mock it for tests
+type IMarket interface {
+	Iterator(marketSource common.MarketSource, startTime time.Time, candlestickInterval time.Duration) (iterator.Iterator, error)
 }
