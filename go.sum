@@ -817,6 +817,10 @@ github.com/marianogappa/crypto-candles v0.0.0-20220712141007-b6d685189c3c h1:N0f
 github.com/marianogappa/crypto-candles v0.0.0-20220712141007-b6d685189c3c/go.mod h1:slZtE+faVOf2H2QI/yXrFN+xAEHAXg3gd9nI9wMvGt0=
 github.com/marianogappa/crypto-candles v0.0.0-20220713210301-fe881d948de3 h1:R71GcKvAC3TWsz0kIe9ZuKmgrx70cMzx6/39iTjryQ8=
 github.com/marianogappa/crypto-candles v0.0.0-20220713210301-fe881d948de3/go.mod h1:slZtE+faVOf2H2QI/yXrFN+xAEHAXg3gd9nI9wMvGt0=
+github.com/marianogappa/crypto-candles v0.0.0-20220714144120-819436a0dd3e h1:TuGr3OzDxpr5L1j+M9YUuAbDi3H9w57qfF0EBxQoTus=
+github.com/marianogappa/crypto-candles v0.0.0-20220714144120-819436a0dd3e/go.mod h1:slZtE+faVOf2H2QI/yXrFN+xAEHAXg3gd9nI9wMvGt0=
+github.com/marianogappa/crypto-candles v0.0.0-20220714160702-ea5912802d36 h1:cEOIxaoSrRh0N9Wg2W5S2p2MpCxQ6nZKHRlwcB0xli8=
+github.com/marianogappa/crypto-candles v0.0.0-20220714160702-ea5912802d36/go.mod h1:slZtE+faVOf2H2QI/yXrFN+xAEHAXg3gd9nI9wMvGt0=
 github.com/markbates/oncer v0.0.0-20181203154359-bf2de49a0be2/go.mod h1:Ld9puTsIW75CHf65OeIOkyKbteujpZVXDpWK6YGZbxE=
 github.com/markbates/pkger v0.15.1/go.mod h1:0JoVlrol20BSywW79rN3kdFFsE5xYM+rSCQDXbLhiuI=
 github.com/markbates/safe v1.0.1/go.mod h1:nAqgmRi7cY2nqMc92/bSEeQA+R4OheNU2T1kNSCBdG0=
