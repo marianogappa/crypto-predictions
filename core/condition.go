@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/marianogappa/crypto-candles/candles/common"
 )
 
 // Condition represents a boolean condition that looks like "BTC/USDT >= 45000 within 3 weeks".
@@ -63,7 +61,7 @@ var (
 // Run evolves the state of a condition by analyzing the next tuple of ticks from its non-literal operands.
 // In order to run, it depends on the caller (i.e. PredRunner) to call all associated TickIterators and supply the
 // next ticks.
-func (c *Condition) Run(ticks map[string]common.Tick) error {
+func (c *Condition) Run(ticks map[string]Tick) error {
 	// State should not change after it's in a final status.
 	if c.State.Status == FINISHED {
 		return nil
@@ -95,7 +93,9 @@ func (c *Condition) Run(ticks map[string]common.Tick) error {
 	// If the last timestamp in the state is newer than the current one, there's a problem with the supplied ticks!
 	received := time.Unix(int64(timestamp), 0).Format(time.RFC3339)
 	last := time.Unix(int64(c.State.LastTs), 0).Format(time.RFC3339)
-	if timestamp <= c.State.LastTs {
+	// N.B. Ideally we'd want <= here to avoid a potential issue of processing the same timestamp over and over again,
+	// but the problem is that there are 2 ticks per candlestick (i.e. LowestValue & HighestValue).
+	if timestamp < c.State.LastTs {
 		return fmt.Errorf("%w: for cond %v received %v but last is %v", errOlderTickTimestampSupplied, c.Name, received, last)
 	}
 

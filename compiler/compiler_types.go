@@ -8,10 +8,10 @@ import (
 
 // ConditionState holds the state of evolving a condition using market data.
 type ConditionState struct {
-	Status    string                 `json:"status" enum:"UNSTARTED,STARTED,FINISHED" example:"STARTED"`
-	LastTs    int                    `json:"lastTs" example:"1649594376"`
-	LastTicks map[string]common.Tick `json:"lastTicks"`
-	Value     string                 `json:"value" enum:"UNDECIDED,TRUE,FALSE" example:"UNDECIDED"`
+	Status    string               `json:"status" enum:"UNSTARTED,STARTED,FINISHED" example:"STARTED"`
+	LastTs    int                  `json:"lastTs" example:"1649594376"`
+	LastTicks map[string]core.Tick `json:"lastTicks"`
+	Value     string               `json:"value" enum:"UNDECIDED,TRUE,FALSE" example:"UNDECIDED"`
 }
 
 // PredictionState holds the state of evolving a prediction using market data.

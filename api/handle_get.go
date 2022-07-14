@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/serializer"
@@ -145,7 +144,7 @@ func (compilerPrediction) PrepareJSONSchema(schema *jsonschema.Schema) error {
 				State: compiler.ConditionState{
 					Status: "STARTED",
 					LastTs: 1651162692,
-					LastTicks: map[string]common.Tick{
+					LastTicks: map[string]core.Tick{
 						"COIN:BINANCE:BTC-USDT": {
 							Timestamp: 1651162692,
 							Value:     41000,

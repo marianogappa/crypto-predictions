@@ -12,6 +12,7 @@ import (
 
 	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/crypto-candles/candles/iterator"
+	"github.com/marianogappa/predictions/core"
 	fetcherTypes "github.com/marianogappa/predictions/metadatafetcher/types"
 	"github.com/marianogappa/predictions/statestorage"
 	"github.com/rs/zerolog/log"
@@ -98,10 +99,10 @@ func (t testFetcher) Fetch(url *url.URL) (fetcherTypes.PostMetadata, error) {
 }
 
 type testMarket struct {
-	ticks map[string][]common.Tick
+	ticks map[string][]core.Tick
 }
 
-func newTestMarket(ticks map[string][]common.Tick) *testMarket {
+func newTestMarket(ticks map[string][]core.Tick) *testMarket {
 	return &testMarket{ticks}
 }
 
@@ -113,10 +114,10 @@ func (m *testMarket) Iterator(marketSource common.MarketSource, startTime time.T
 }
 
 type testIterator struct {
-	ticks []common.Tick
+	ticks []core.Tick
 }
 
-func newTestIterator(ticks []common.Tick) iterator.Iterator {
+func newTestIterator(ticks []core.Tick) iterator.Iterator {
 	return &testIterator{ticks}
 }
 
@@ -129,13 +130,13 @@ func (i *testIterator) Error() error { return nil }
 func (i *testIterator) SetStartFromNext(bool)           {}
 func (i *testIterator) SetTimeNowFunc(func() time.Time) {}
 
-func (i *testIterator) NextTick() (common.Tick, error) {
+func (i *testIterator) NextTick() (core.Tick, error) {
 	if len(i.ticks) > 0 {
 		tick := i.ticks[0]
 		i.ticks = i.ticks[1:]
 		return tick, nil
 	}
-	return common.Tick{}, common.ErrOutOfTicks
+	return core.Tick{}, common.ErrOutOfTicks
 }
 
 func (i *testIterator) Next() (common.Candlestick, error) {

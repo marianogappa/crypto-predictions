@@ -22,7 +22,7 @@ func TestNewPredRunner(t *testing.T) {
 			FromTs:   tInt("2022-02-27 15:20:00"),
 			ToTs:     tInt("2022-03-27 15:20:00"),
 			Operands: []core.Operand{operand("COIN:BINANCE:BTC-USDT"), operand("60000")},
-			State:    core.ConditionState{Value: core.UNDECIDED, LastTs: 0, LastTicks: map[string]common.Tick{}},
+			State:    core.ConditionState{Value: core.UNDECIDED, LastTs: 0, LastTicks: map[string]core.Tick{}},
 		}
 		literalTrueBoolExpr      = &core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: trueCond}
 		literalFalseBoolExpr     = &core.BoolExpr{Operator: core.LITERAL, Operands: nil, Literal: falseCond}
@@ -174,7 +174,7 @@ func TestNewPredRunner(t *testing.T) {
 						State: core.ConditionState{
 							Value:     core.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
-							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
+							LastTicks: map[string]core.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
 					}},
 				}),
@@ -194,7 +194,7 @@ func TestNewPredRunner(t *testing.T) {
 						State: core.ConditionState{
 							Value:     core.UNDECIDED,
 							LastTs:    tInt("2022-02-27 16:20:00"),
-							LastTicks: map[string]common.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
+							LastTicks: map[string]core.Tick{"COIN:BINANCE:BTC-USDT": {Timestamp: tInt("2022-02-27 16:20:00"), Value: 60000}},
 						},
 					}},
 				}),
@@ -294,8 +294,8 @@ func (m *testMarket) Iterator(marketSource common.MarketSource, tm time.Time, ca
 
 type testIterator struct{ mkt *testMarket }
 
-func (i testIterator) NextTick() (common.Tick, error) {
-	return common.Tick{}, nil
+func (i testIterator) NextTick() (core.Tick, error) {
+	return core.Tick{}, nil
 }
 
 func (i testIterator) Next() (common.Candlestick, error) {

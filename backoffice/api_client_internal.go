@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/marianogappa/crypto-candles/candles/common"
 	"github.com/marianogappa/predictions/compiler"
 	"github.com/marianogappa/predictions/core"
 	"github.com/marianogappa/predictions/request"
@@ -128,11 +127,11 @@ func (r response) parse() parsedResponse {
 }
 
 type predictionSummary struct {
-	TickMap  map[string][]common.Tick `json:"tickMap"`
-	Coin     string                   `json:"coin"`
-	Goal     core.JSONFloat64         `json:"goal"`
-	Operator string                   `json:"operator"`
-	Deadline core.ISO8601             `json:"deadline"`
+	TickMap  map[string][]core.Tick `json:"tickMap"`
+	Coin     string                 `json:"coin"`
+	Goal     core.JSONFloat64       `json:"goal"`
+	Operator string                 `json:"operator"`
+	Deadline core.ISO8601           `json:"deadline"`
 }
 type parsedResponse struct {
 	Status               int
