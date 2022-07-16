@@ -164,7 +164,7 @@ func (r *Daemon) ActionPrediction(prediction core.Prediction, actType actionType
 func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nSee it here: %v/predictions/{POST_URL}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/p/{POST_UUID}", r.websiteURL)
 	}
 	var (
 		description      = printer.NewPredictionPrettyPrinter(prediction).String()
@@ -181,7 +181,7 @@ func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core
 func (r *Daemon) tweetActionPredictionCreated(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nFollow it here: %v/predictions/{POST_URL}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/p/{POST_UUID}", r.websiteURL)
 	}
 
 	var (
@@ -210,6 +210,7 @@ func (r *Daemon) doTweet(text string, prediction core.Prediction, account core.A
 
 	text = strings.Replace(text, "{HANDLE}", handle, -1)
 	text = strings.Replace(text, "{POST_URL}", url.QueryEscape(prediction.PostURL), -1)
+	text = strings.Replace(text, "{POST_UUID}", url.QueryEscape(prediction.UUID), -1)
 
 	tweetURL, err := twitter.NewTwitter("").Tweet(text, imageURL, inReplyToStatusID)
 	if err != nil {
