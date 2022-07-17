@@ -49,7 +49,6 @@ func (r *Daemon) BlockinglyRunEvery(dur time.Duration) {
 	log.Info().Msgf("Daemon scheduler started and will run again every: %v", dur)
 	for {
 		r.Run(int(time.Now().Unix()))
-		r.ActionPendingInteractions(time.Now)
 		time.Sleep(dur)
 	}
 }
@@ -69,6 +68,8 @@ func (r *Daemon) Run(nowTs int) []error {
 		r.storeEvolvedPrediction(prediction)
 	}
 	r.addErrs(nil, predictionsScanner.Error)
+
+	r.ActionPendingInteractions(time.Now)
 
 	log.Info().Msgf("Daemon.Run: finished with cache hit ratio of %.2f\n", r.market.(candles.Market).CalculateCacheHitRatio())
 	if len(r.errs) > 0 {
