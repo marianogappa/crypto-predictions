@@ -183,183 +183,7 @@
             font-family: 'Roboto', sans-serif;
             font-size: 11px;
         }
-    </style>
-    <style>
-        .chartWithMarkerOverlay {
-            position: relative;
-            margin-top: -60px;
-            /* border: 1px solid red; */
-        }
 
-        .footnote {
-            /* border: 1px solid red; */
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        #line-chart-marker {
-            /* border: 1px solid yellow; */
-            height: 408px;
-        }
-
-        .topSection {
-            margin: 40px;
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            margin-left: 80px;
-            margin-right: 80px;
-        }
-
-        .topLeft,
-        .topRight {
-            /* border: 1px solid red; */
-            display: flex;
-            flex: 1;
-        }
-
-        .topRight {
-            margin-top: 49px;
-        }
-
-        html,
-        body {
-            width: 1200px;
-            height: 675px;
-            margin: 0;
-            padding: 0;
-            background-color: black;
-            /* border: 1px solid white; */
-            background-image: url('background.jpg');
-        }
-
-        .postAuthor {
-            display: inline;
-            position: absolute;
-            left: 80px;
-            font-size: 12px;
-            color: white;
-            top: 221px;
-            font-family: 'Roboto', sans-serif;
-            font-weight: bolder;
-            width: 220px;
-            text-align: center;
-            text-shadow: 2px 2px 2px #000;
-            /* border: 1px solid red; */
-
-        }
-
-        .bubble {
-            font-family: 'Roboto', sans-serif;
-            font-size: 18px;
-            line-height: 24px;
-            width: 300px;
-            border-radius: 40px;
-            text-align: center;
-            color: #000;
-            padding: 14px;
-            display: inline;
-            position: absolute;
-            left: 293px;
-            background-color: #FFF;
-            opacity: 0.8;
-            top: 32px;
-        }
-
-        .bubble-bottom-left:before {
-            content: "";
-            width: 0px;
-            height: 0px;
-            position: absolute;
-            border-left: 24px solid #FFF;
-            border-right: 12px solid transparent;
-            border-top: 12px solid #FFF;
-            border-bottom: 20px solid transparent;
-            left: 32px;
-            bottom: -24px;
-        }
-
-        .profileImage {
-            border-radius: 50%;
-            overflow: hidden;
-            border: 5px solid #FFF;
-            width: 13rem;
-            height: 13rem;
-            background-size: cover;
-        }
-
-        .filler {
-            flex-grow: 1;
-        }
-
-        .predictionResult {
-            font-size: 50px;
-            color: white;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        #predictionResultImage {
-            height: 50px;
-            width: 50px;
-            margin-left: 15px;
-            margin-top: -2px;
-        }
-
-        .overlay {
-            position: absolute;
-            height: 0;
-            width: 0;
-        }
-
-        .verticalLine {
-            border: 1px solid white;
-        }
-
-        .postedAt,
-        .endedAt {
-            height: 20px;
-            width: 20px;
-        }
-
-        .postedAt {
-            content: url('eyes_1f440.png');
-        }
-
-        .endedAt {
-            content: url('chequered-flag_1f3c1.png');
-        }
-
-        .greenLine {
-            border-top: 1px dashed #00c30f;
-        }
-
-        .yellowLine {
-            border-top: 1px dashed yellow;
-        }
-
-        .redLine {
-            border-bottom: 1px dashed red;
-        }
-
-        .greenBox {
-            background-color: rgba(0, 195, 15, .2);
-        }
-
-        .yellowBox {
-            background-color: rgba(0, 195, 15, .2);
-        }
-
-        .redBox {
-            background-color: rgba(255, 0, 0, .2);
-        }
-
-        .goalCaption {
-            color: white;
-            font-family: 'Roboto', sans-serif;
-            font-size: 11px;
-        }
     </style>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
@@ -449,8 +273,12 @@
 
                 const postedAtTs = new Date(prediction.postedAt).getTime() / 1000
                 const firstCoinCandles = prediction.summary.candlestickMap[Object.keys(prediction.summary.candlestickMap)[0]]
-                if (postedAtTs && postedAtTs >= firstCoinCandles[0].t && postedAtTs <= firstCoinCandles[firstCoinCandles.length - 1].t) {
+                if (postedAtTs && postedAtTs >= firstCoinCandles[0].t) {
                     postedAtLineAt = new Date(prediction.postedAt)
+                    // Special case: if post started at end of x-axis, make x-axis twice as large so that "now tracking" legend can be appreciated
+                    if (postedAtTs >= firstCoinCandles[firstCoinCandles.length - 1].t) {
+                        options.hAxis.maxValue = new Date((firstCoinCandles[firstCoinCandles.length - 1].t + (firstCoinCandles[firstCoinCandles.length - 1].t - firstCoinCandles[0].t)) * 1000)
+                    }
                 }
 
                 return {
