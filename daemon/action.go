@@ -164,7 +164,7 @@ func (r *Daemon) ActionPrediction(prediction core.Prediction, actType actionType
 func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nSee it here: %v/p/{POST_UUID}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/p/{POST_UUID} ${BASE_ASSET} {HASHTAG}", r.websiteURL)
 	}
 	var (
 		description      = printer.NewPredictionPrettyPrinter(prediction).String()
@@ -181,7 +181,7 @@ func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core
 func (r *Daemon) tweetActionPredictionCreated(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nFollow it here: %v/p/{POST_UUID}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/p/{POST_UUID} ${BASE_ASSET} {HASHTAG}", r.websiteURL)
 	}
 
 	var (
@@ -211,12 +211,26 @@ func (r *Daemon) doTweet(text string, prediction core.Prediction, account core.A
 	text = strings.Replace(text, "{HANDLE}", handle, -1)
 	text = strings.Replace(text, "{POST_URL}", url.QueryEscape(prediction.PostURL), -1)
 	text = strings.Replace(text, "{POST_UUID}", url.QueryEscape(prediction.UUID), -1)
+	text = strings.Replace(text, "{BASE_ASSET}", url.QueryEscape(prediction.CalculateMainCoin().BaseAsset), -1)
+	text = strings.Replace(text, "{HASHTAG}", url.QueryEscape(calculateHashtag(prediction)), -1)
 
 	tweetURL, err := twitter.NewTwitter("").Tweet(text, imageURL, inReplyToStatusID)
 	if err != nil {
 		return "", err
 	}
 	return tweetURL, nil
+}
+
+func calculateHashtag(prediction core.Prediction) string {
+	hashtagFunctions := []func(core.Prediction) string{
+		func(p core.Prediction) string { return "#crypto" },
+		func(p core.Prediction) string { return "#CryptoTwitter" },
+		func(p core.Prediction) string { return "#cryptocurrency" },
+		func(p core.Prediction) string { return "#investing" },
+		func(p core.Prediction) string { return "#finance" },
+	}
+
+	return hashtagFunctions[int(prediction.UUID[len(prediction.UUID)-1])%len(hashtagFunctions)](prediction)
 }
 
 func getStatusIDFromTweetURL(url string) (int, error) {
