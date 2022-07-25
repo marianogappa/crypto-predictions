@@ -234,7 +234,7 @@ func parseDuration(dur string, fromTime time.Time) string {
 		if num == 1 {
 			return "within a month"
 		}
-		return fmt.Sprintf("in %v months", num)
+		return fmt.Sprintf("within %v months", num)
 	}
 	matches = rxDurationWeeks.FindStringSubmatch(dur)
 	if len(matches) == 2 {
@@ -242,7 +242,7 @@ func parseDuration(dur string, fromTime time.Time) string {
 		if num == 1 {
 			return "within a week"
 		}
-		return fmt.Sprintf("in %v weeks", num)
+		return fmt.Sprintf("within %v weeks", num)
 	}
 	matches = rxDurationDays.FindStringSubmatch(dur)
 	if len(matches) == 2 {
@@ -250,7 +250,7 @@ func parseDuration(dur string, fromTime time.Time) string {
 		if num == 1 {
 			return "within 1 day"
 		}
-		return fmt.Sprintf("in %v days", num)
+		return fmt.Sprintf("within %v days", num)
 	}
 	matches = rxDurationHours.FindStringSubmatch(dur)
 	if len(matches) == 2 {
@@ -258,7 +258,7 @@ func parseDuration(dur string, fromTime time.Time) string {
 		if num == 1 {
 			return "within the hour"
 		}
-		return fmt.Sprintf("in %v hours", num)
+		return fmt.Sprintf("within %v hours", num)
 	}
 	return "by ???"
 }
