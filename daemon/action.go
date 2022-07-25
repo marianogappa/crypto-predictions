@@ -211,8 +211,8 @@ func (r *Daemon) doTweet(text string, prediction core.Prediction, account core.A
 	text = strings.Replace(text, "{HANDLE}", handle, -1)
 	text = strings.Replace(text, "{POST_URL}", url.QueryEscape(prediction.PostURL), -1)
 	text = strings.Replace(text, "{POST_UUID}", url.QueryEscape(prediction.UUID), -1)
-	text = strings.Replace(text, "{BASE_ASSET}", url.QueryEscape(prediction.CalculateMainCoin().BaseAsset), -1)
-	text = strings.Replace(text, "{HASHTAG}", url.QueryEscape(calculateHashtag(prediction)), -1)
+	text = strings.Replace(text, "{BASE_ASSET}", prediction.CalculateMainCoin().BaseAsset, -1)
+	text = strings.Replace(text, "{HASHTAG}", calculateHashtag(prediction), -1)
 
 	tweetURL, err := twitter.NewTwitter("").Tweet(text, imageURL, inReplyToStatusID)
 	if err != nil {
