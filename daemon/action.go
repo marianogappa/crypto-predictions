@@ -164,7 +164,7 @@ func (r *Daemon) ActionPrediction(prediction core.Prediction, actType actionType
 func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nSee it here: %v/p/{POST_UUID} ${BASE_ASSET} {HASHTAG}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nSee it here: %v/p/{POST_UUID}\n ${BASE_ASSET} {HASHTAG}", r.websiteURL)
 	}
 	var (
 		description      = printer.NewPredictionPrettyPrinter(prediction).String()
@@ -181,7 +181,7 @@ func (r *Daemon) tweetActionBecameFinal(prediction core.Prediction, account core
 func (r *Daemon) tweetActionPredictionCreated(prediction core.Prediction, account core.Account) (string, error) {
 	var urlPart string
 	if r.websiteURL != "" {
-		urlPart = fmt.Sprintf("\n\nFollow it here: %v/p/{POST_UUID} ${BASE_ASSET} {HASHTAG}", r.websiteURL)
+		urlPart = fmt.Sprintf("\n\nFollow it here: %v/p/{POST_UUID}\n ${BASE_ASSET} {HASHTAG}", r.websiteURL)
 	}
 
 	var (
