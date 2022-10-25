@@ -50,7 +50,7 @@ func NewAPI(
 
 	var (
 		handlerGetPagesPrediction   = a.apiGetPagesPrediction()
-		handlerHealthcheck          = nethttp.NewHandler(a.apiHealthcheck())
+		handlerHealthcheck          = a.apiHealthcheck()
 		handlerGetPredictions       = nethttp.NewHandler(a.apiGetPredictions())
 		handlerPostPrediction       = nethttp.NewHandler(a.apiPostPrediction())
 		handlerGetPredictionImage   = nethttp.NewHandler(a.apiGetPredictionImage())
@@ -66,9 +66,9 @@ func NewAPI(
 	)
 
 	service.Get("/pages/prediction/{id}", handlerGetPagesPrediction)
+	service.Get("/", handlerHealthcheck)
 	service.Group(func(r chi.Router) {
 		r.Use(adminAuth, nethttp.HTTPBasicSecurityMiddleware(apiSchema, "Admin", "Admin access"))
-		r.Method(http.MethodGet, "/", handlerHealthcheck)
 		r.Method(http.MethodGet, "/predictions", handlerGetPredictions)
 		r.Method(http.MethodPost, "/predictions", handlerPostPrediction)
 		r.Method(http.MethodGet, "/predictions/{uuid}/image", handlerGetPredictionImage)
