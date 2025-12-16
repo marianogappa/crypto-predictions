@@ -21,16 +21,16 @@ func NewMetadataFetcher(apiURL string) MetadataFetcher {
 	return MetadataFetcher{apiURL}
 }
 
-// Fetch requests metadata from Twitter API for the specified URL.
+// Fetch requests metadata from Twitter using oEmbed API scraping.
 func (f MetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
-	path := strings.Split(u.Path, "/")
-	if len(path) != 4 || path[0] != "" || path[2] != "status" {
-		return types.PostMetadata{}, fmt.Errorf("invalid path for Twitter metadata fetching: %v", path)
+	tweetURL := u.String()
+	if !strings.HasPrefix(tweetURL, "http://") && !strings.HasPrefix(tweetURL, "https://") {
+		tweetURL = "https://" + u.Host + u.Path
 	}
 
-	tweet, err := NewTwitter(f.apiURL).getTweetByID(path[3])
+	tweet, err := scrapeTweetData(tweetURL, f.apiURL)
 	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("while getting tweet by ID (%v): %w", path[3], err)
+		return types.PostMetadata{}, fmt.Errorf("while scraping tweet data: %w", err)
 	}
 
 	userURL, err := url.Parse(fmt.Sprintf("https://twitter.com/%v", tweet.UserHandle))
@@ -38,30 +38,40 @@ func (f MetadataFetcher) Fetch(u *url.URL) (types.PostMetadata, error) {
 		return types.PostMetadata{}, fmt.Errorf("error parsing user's URL: %w", err)
 	}
 
-	userProfileImgURL, err := url.Parse(tweet.ProfileImgURL)
-	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile image URL: %w", err)
+	// Build thumbnails array - empty if ProfileImgURL is not available
+	thumbnails := []*url.URL{}
+	if tweet.ProfileImgURL != "" {
+		userProfileImgURL, err := url.Parse(tweet.ProfileImgURL)
+		if err == nil {
+			thumbnails = append(thumbnails, userProfileImgURL)
+			// Also add medium size version if available
+			userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgURL, "_normal.", "_400x400.", -1))
+			if err == nil {
+				thumbnails = append(thumbnails, userProfileMediumImgURL)
+			}
+		}
 	}
 
-	userProfileMediumImgURL, err := url.Parse(strings.Replace(tweet.ProfileImgURL, "_normal.", "_400x400.", -1))
-	if err != nil {
-		return types.PostMetadata{}, fmt.Errorf("error parsing user's profile medium image URL: %w", err)
+	// Set CreatedAt only if UserCreatedAt is not zero
+	var userCreatedAt *time.Time
+	if !tweet.UserCreatedAt.IsZero() {
+		userCreatedAt = &tweet.UserCreatedAt
 	}
 
 	return types.PostMetadata{
 		Author: core.Account{
 			URL:           userURL,
 			AccountType:   "TWITTER",
-			FollowerCount: tweet.FollowersCount,
-			Thumbnails:    []*url.URL{userProfileImgURL, userProfileMediumImgURL},
+			FollowerCount: tweet.FollowersCount, // Will be 0 if not available
+			Thumbnails:    thumbnails,           // Will be empty slice if not available
 			Handle:        tweet.UserHandle,
 			Name:          tweet.UserName,
-			IsVerified:    tweet.Verified,
-			CreatedAt:     &tweet.UserCreatedAt,
+			IsVerified:    tweet.Verified, // Will be false if not available
+			CreatedAt:     userCreatedAt,  // Will be nil if not available
 		},
 		PostTitle:     tweet.TweetText,
 		PostText:      tweet.TweetText,
-		PostCreatedAt: core.ISO8601(tweet.TweetCreatedAt.Format(time.RFC3339)), // TODO
+		PostCreatedAt: core.ISO8601(tweet.TweetCreatedAt.Format(time.RFC3339)),
 		PostType:      types.TWITTER,
 	}, nil
 }
