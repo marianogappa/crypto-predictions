@@ -3,3 +3,4 @@ dist/
 crypto-predictions
 config.json
 predictions
+.vscode/
