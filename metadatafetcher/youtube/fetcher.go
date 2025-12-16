@@ -84,6 +84,7 @@ func (f MetadataFetcher) Fetch(fetchURL *url.URL) (mfTypes.PostMetadata, error) 
 			Name:          channel.Title,
 			Description:   channel.Description,
 			CreatedAt:     &chPublishedAt,
+			Handle:        channel.Title,
 		},
 		ThumbnailImgSmall:  video.ThumbnailDefaultURL,
 		ThumbnailImgMedium: video.ThumbnailMediumURL,

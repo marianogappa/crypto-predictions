@@ -72,5 +72,5 @@ func (f MetadataFetcher) IsCorrectFetcher(url *url.URL) bool {
 	if err != nil {
 		host = url.Host
 	}
-	return host == "twitter.com" || host == "www.twitter.com"
+	return host == "twitter.com" || host == "www.twitter.com" || host == "x.com" || host == "www.x.com"
 }
